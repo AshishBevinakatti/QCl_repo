@@ -1,0 +1,11 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "skill": {
+      "erp-prp": "allow"
+    },
+    "external_directory": {
+      "/run/media/ash_63/DATA/ERP_Resouce/**": "allow"
+    }
+  }
+}
