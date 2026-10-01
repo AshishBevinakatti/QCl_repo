@@ -47,6 +47,25 @@
 - User interaction: answers as above; commit still NOT approved — report first, then re-ask.
 - Next: deliver full Phase 0 work report, then re-ask the commit question.
 
+## 2026-10-01T09:46:34+05:30 — Initial commit + develop + fresh-developer test
+- Phase/unit: 0 – bootstrap        Branch: main → develop
+- What: user approved commit ("Yes, commit as proposed"). Pre-commit: read `opencode.json` (no secrets);
+  found `.opencode/node_modules/` — excluded via its nested `.gitignore` (only `skills/` staged).
+  Staged explicit paths (`ERP_DEV`, `AGENTS.md`, `opencode.json`, `.opencode`); fixed malformed
+  `.gitattributes` line 3 (multi-pattern line rejected by git) and re-staged. Committed, created
+  `develop`, switched to it. Fresh-developer test: clean local clone of `develop` — full docs tree,
+  clean status. Wrote `phase-0/PHASE-REPORT.md` (uncommitted).
+- Why: Phase 0 exit — skeleton committed on `develop`, inventory approved, clone-verified.
+- Resources used: none
+- Files changed: 67 files, +2859 (see commit); plus uncommitted `PHASE-REPORT.md`
+- Commands that changed state: `git init -b main`, `git add <explicit paths>`, `git commit`, `git branch develop`, `git checkout develop`, `git clone -b develop . /tmp/opencode/freshclone` (test only)
+- Verification: `git log --oneline -n 5` → `fec27bb docs(core): phase 0 bootstrap — skeleton, inventory, extracts`;
+  `git status` clean on both worktree and clone; forbidden-file scan 0; `git check-attr` clean.
+  NOT verified: clone from a remote (no remote configured — nothing pushed, per rule).
+- Problems & fixes: `.gitattributes` multi-pattern line invalid — split to one pattern per line.
+- User interaction: commit approved as proposed; PHASE-REPORT + continue-to-Phase-1 still to be approved.
+- Next: present commit + report; ask to commit PHASE-REPORT and whether to continue to Phase 1.
+
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);
   facilities depth TBD in requirements analysis; tax/posting treatment TBD; RFID 1 terminal + 100 cards;
