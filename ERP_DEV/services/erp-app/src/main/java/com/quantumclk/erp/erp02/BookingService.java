@@ -27,7 +27,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class BookingService {
 
-  static final ZoneId ZONE = ZoneId.of("Asia/Kolkata");
+  public static final ZoneId ZONE = ZoneId.of("Asia/Kolkata");
 
   private final RoomCategoryRepository categories;
   private final RoomRepository rooms;

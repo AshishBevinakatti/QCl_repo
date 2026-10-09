@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiHealth, availability, bookRoom, createGuest, listCategories, rupees, searchGuests, type CategoryDto, type GuestDto } from './api';
+import { apiHealth, availability, board, bookRoom, checkIn, checkOut, createGuest, dashboard, listCategories, rupees, searchGuests, transferStay, walkIn, type CategoryDto, type DashboardDto, type GuestDto, type RoomBoard } from './api';
 
 /**
  * 3.0 base shell: nav skeleton + live API status + room categories.
@@ -44,6 +44,8 @@ export default function App() {
       </ul>
       <Guests />
       <Booking cats={cats} />
+      <FrontOffice />
+      <Housekeeping />
     </div>
   );
 }
@@ -158,5 +160,119 @@ function Booking({ cats }: { cats: CategoryDto[] }) {
       </form>
       {msg && <p>{msg}</p>}
     </section>
+  );
+}
+
+/** 3.3 Reception dashboard: arrivals, in-house, room grid, check-in/out/transfer/walk-in. */
+function FrontOffice() {
+  const today = new Date().toISOString().slice(0, 10);
+  const [date, setDate] = useState(today);
+  const [dash, setDash] = useState<DashboardDto | null>(null);
+  const [reservationId, setReservationId] = useState('');
+  const [stayId, setStayId] = useState('');
+  const [roomId, setRoomId] = useState('');
+  const [msg, setMsg] = useState('');
+
+  async function load(d: string) {
+    setMsg('');
+    try {
+      setDash(await dashboard(d));
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'dashboard failed (login required)');
+    }
+  }
+
+  async function act(label: string, fn: () => Promise<{ id: string; status: string; roomId: string }>) {
+    setMsg('');
+    try {
+      const s = await fn();
+      setMsg(`${label}: stay ${s.id.slice(0, 8)} ${s.status}`);
+      await load(date);
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : `${label} failed`);
+    }
+  }
+
+  return (
+    <section>
+      <h2>Front office</h2>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+        <input type="date" value={date} onChange={(e) => { setDate(e.target.value); load(e.target.value); }} aria-label="business date" />
+        <button type="button" onClick={() => load(date)}>Refresh</button>
+      </div>
+      {dash && (
+        <>
+          <p>Arrivals: {dash.arrivals.length} · In-house: {dash.inHouse.length} · Outstanding: ₹0 (billing 3.4)</p>
+          <p>Rooms: {dash.rooms.map((r) => `${r.roomNo}:${r.status}`).join(' ')}</p>
+        </>
+      )}
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+        <input value={reservationId} onChange={(e) => setReservationId(e.target.value)} placeholder="reservation id" aria-label="reservation id" />
+        <input value={roomId} onChange={(e) => setRoomId(e.target.value)} placeholder="room id (optional)" aria-label="room id" />
+        <button type="button" onClick={() => act('checked in', () => checkIn(reservationId, roomId || undefined))}>Check in</button>
+      </div>
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <input value={stayId} onChange={(e) => setStayId(e.target.value)} placeholder="stay id" aria-label="stay id" />
+        <button type="button" onClick={() => act('checked out', () => checkOut(stayId))}>Check out</button>
+        <button type="button" onClick={() => act('transferred', () => transferStay(stayId, roomId, 'desk move'))}>Transfer</button>
+      </div>
+      {msg && <p>{msg}</p>}
+    </section>
+  );
+}
+
+/** 3.3 Housekeeping board: room readiness + task advance. */
+function Housekeeping() {
+  const [rooms, setRooms] = useState<RoomBoard[]>([]);
+  const [msg, setMsg] = useState('');
+
+  async function load() {
+    try {
+      setRooms(await board());
+    } catch {
+      setMsg('board failed (login required)');
+    }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  return (
+    <section>
+      <h2>Housekeeping</h2>
+      <button type="button" onClick={load}>Refresh</button>
+      <ul>
+        {rooms.slice(0, 12).map((r) => (
+          <li key={r.roomId}>{r.roomNo}: {r.status} ({r.openTasks} open)</li>
+        ))}
+      </ul>
+      {msg && <p>{msg}</p>}
+      <WalkIn />
+    </section>
+  );
+}
+
+function WalkIn() {
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [msg, setMsg] = useState('');
+  return (
+    <form
+      onSubmit={async (e) => {
+        e.preventDefault();
+        try {
+          const cats = await listCategories();
+          const s = await walkIn(name, phone, cats.items[0].id);
+          setMsg(`walk-in checked in: ${s.id.slice(0, 8)}`);
+        } catch (err) {
+          setMsg(err instanceof Error ? err.message : 'walk-in failed');
+        }
+      }}
+      style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}
+    >
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="walk-in name" aria-label="walk-in name" />
+      <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="phone" aria-label="walk-in phone" />
+      <button type="submit">Walk in</button>
+      {msg && <p>{msg}</p>}
+    </form>
   );
 }

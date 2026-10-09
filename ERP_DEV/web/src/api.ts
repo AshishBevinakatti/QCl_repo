@@ -95,7 +95,76 @@ export interface ReservationDto {
   advanceDuePaise: number;
   status: string;
 }
+export interface DashboardDto {
+  date: string;
+  arrivals: string[];
+  inHouse: string[];
+  rooms: { id: string; roomNo: string; status: string }[];
+  occupancy: { categoryId: string; category: string; total: number; occupied: number; free: number }[];
+}
 
+export async function dashboard(date: string): Promise<DashboardDto> {
+  const res = await fetch(`/api/v1/front-office/dashboard?date=${date}`);
+  if (!res.ok) throw new Error(`dashboard failed: ${res.status}`);
+  return res.json();
+}
+
+export interface StayDto {
+  id: string;
+  reservationId: string;
+  roomId: string;
+  status: string;
+}
+
+async function stayAction(url: string, body: unknown): Promise<StayDto> {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? `stay action failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export const checkIn = (reservationId: string, roomId?: string) =>
+  stayAction('/api/v1/stays/check-in', { reservationId, ...(roomId ? { roomId } : {}) });
+export const checkOut = (stayId: string) => stayAction(`/api/v1/stays/${stayId}/check-out`, {});
+export const transferStay = (stayId: string, toRoomId: string, reason?: string) =>
+  stayAction(`/api/v1/stays/${stayId}/transfer`, { toRoomId, reason });
+export const walkIn = (name: string, phone: string, categoryId: string) =>
+  stayAction('/api/v1/walk-ins', { name, phone, categoryId });
+
+export interface TaskDto {
+  id: string;
+  roomId: string;
+  assignee: string | null;
+  status: string;
+}
+
+export interface RoomBoard {
+  roomId: string;
+  roomNo: string;
+  status: string;
+  openTasks: number;
+}
+
+export async function board(): Promise<RoomBoard[]> {
+  const res = await fetch('/api/v1/housekeeping/board');
+  if (!res.ok) throw new Error(`board failed: ${res.status}`);
+  return res.json();
+}
+
+export async function advanceTask(id: string): Promise<TaskDto> {
+  const res = await fetch(`/api/v1/housekeeping/tasks/${id}/advance`, { method: 'PATCH' });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? `advance failed: ${res.status}`);
+  }
+  return res.json();
+}
 export async function bookRoom(
   name: string, phone: string, categoryId: string, from: string, to: string, promo?: string,
 ): Promise<ReservationDto> {

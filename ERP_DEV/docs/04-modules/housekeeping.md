@@ -25,3 +25,4 @@ Checkout-creates-task test, ready-flips-status test, reception-visibility test.
 
 ## Change history
 - 2026-10-09: Phase 1 baseline from SOW §19.
+- 2026-10-09 (3.3, as-built): `hsk/` (task entity with forward-only advance, service flips room ready on done, role-gated transitions); board endpoint (rooms + open-task counts); shell Housekeeping section. Reception task-write → 403 proven by test. Code: `services/erp-app/.../hsk/`.
