@@ -85,6 +85,8 @@
 - Problems & fixes: user asked to code in the same instruction as baseline — conflicts with Rule 3 (plan→approve before code) + Rule 4 (phases in order) + Phase 2 stack ADR (Q-006/Q-010). Flagged to user per conflict rule; no code/branch started. Website-ready claim unverified → Q-008.
 - User interaction: approval requested for baseline + Q-008/Q-009/Q-010 + commit question; "continue to Phase 2?" comes only after baseline approval.
 - Next: present baseline + gate conflict + ask approvals; on approval, commit docs, then start Phase 2 (stack ADR + design).
+- Commit `e68cee5` on `develop` (user-approved 2026-10-09 via question tool: baseline approved, commit as proposed, proposal stack confirmed for Phase 2, simulators for website/keys). `git log --oneline -n 5` → `e68cee5` on top of `54f4700`. No merges/tags/pushes. Fresh-developer test: clean clone of `develop` to `/tmp/opencode/freshclone-p1` — phase-1 + requirements trees present, status clean → pass. Wrote `03-phases/phase-1/PHASE-REPORT.md` (uncommitted — rides with next approved commit).
+- Phase-gate answer 2026-10-09: user chose "Continue to Phase 2" (via question tool). Phase 1 closed; beginning Phase 2 planning.
 
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);
