@@ -56,7 +56,6 @@ export async function searchGuests(q: string): Promise<GuestPage> {
   if (!res.ok) throw new Error(`guests failed: ${res.status}`);
   return res.json();
 }
-
 export async function createGuest(name: string, phone: string): Promise<GuestDto> {
   const res = await fetch('/api/v1/guests', {
     method: 'POST',
@@ -66,6 +65,51 @@ export async function createGuest(name: string, phone: string): Promise<GuestDto
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.message ?? `create failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export interface AvailabilityDto {
+  categoryId: string;
+  from: string;
+  to: string;
+  totalRooms: number;
+  booked: number;
+  available: number;
+}
+
+export async function availability(categoryId: string, from: string, to: string): Promise<AvailabilityDto> {
+  const res = await fetch(`/api/v1/availability?categoryId=${categoryId}&from=${from}&to=${to}`);
+  if (!res.ok) throw new Error(`availability failed: ${res.status}`);
+  return res.json();
+}
+
+export interface ReservationDto {
+  id: string;
+  guestId: string;
+  categoryId: string;
+  checkinDate: string;
+  checkoutDate: string;
+  nights: number;
+  quotedTotalPaise: number;
+  advanceDuePaise: number;
+  status: string;
+}
+
+export async function bookRoom(
+  name: string, phone: string, categoryId: string, from: string, to: string, promo?: string,
+): Promise<ReservationDto> {
+  const res = await fetch('/api/v1/reservations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() },
+    body: JSON.stringify({
+      newGuest: { name, phone }, categoryId, checkinDate: from, checkoutDate: to,
+      ...(promo ? { promoCode: promo } : {}),
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message ?? `booking failed: ${res.status}`);
   }
   return res.json();
 }

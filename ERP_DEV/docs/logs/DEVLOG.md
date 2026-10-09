@@ -132,6 +132,18 @@
 - User interaction: 3.1 PLAN approved; commit requested at presentation.
 - Next: commit 3.1 → merge to develop (separate approval) → 3.2 Booking engine (PLAN first).
 - Commit `b033e35` (user-approved): 3.1 on `feature/3.1-guest-crm` (15 files, +760/−16). Tree clean.
+- Merge `0e34622` (user-approved 2026-10-09): `feature/3.1-guest-crm` → `develop` (`--no-ff`). Post-merge `mvn verify` on `develop` → 19/0/0 BUILD SUCCESS. Unit 3.1 complete. No tags/pushes.
+
+## 2026-10-09T22:00:00+05:30 — Unit 3.2 Booking engine built + verified (availability, holds, pricing, race-proof)
+- Phase/unit: 3.2 – Booking engine        Branch: feature/3.2-booking-engine (from develop, plan-approved)
+- What: V4 migration (room/rate_plan/promo/reservation/reservation_hold + 30 rooms + weekend plans + WELCOME10 + max_nights) — seed rewritten portable after catching Postgres-only funcs; entities + overlap query + category lock; PricingService (per-night round-DOWN, plan-then-config, strict promos, price-lock, advance recorded); BookingService (idempotent book, hold 15m + 60s sweeper, confirm/modify/cancel + tiers, folio TODOs for 3.4); ReservationController (availability/dashboard endpoints); 12 new tests incl. parallel last-room race (exactly-one-winner) + expiry; shell booking screen; module doc + traceability + regenerated openapi (14 paths).
+- Files changed: V4 SQL, `erp02/` (10 main files), `ErpApplication` (+scheduling), `RoomCategoryRepository` (+lock), `Configs` helper, `BookingApiTest` + `BookingRaceTest`, `web/src/{App.tsx, api.ts}`, docs (erp-02, TRACEABILITY, openapi)
+- Commands that changed state: `git checkout -b feature/3.2-booking-engine develop`; `mvn -B verify` iterations; `npm run build`
+- Verification: `mvn -B verify` → Tests run: 31, Failures: 0, Errors: 0, BUILD SUCCESS; `npm run build` green; live boot → V1→V4 clean, `/health` UP, anon POST /reservations → 401, openapi 14 paths saved. NOT verified: authed live booking (no Keycloak — MockMvc covers); browser click-through; Postgres-cluster race (H2 + Postgres share the pessimistic design; Phase 5 load test confirms).
+- Problems & fixes: (1) Postgres-only seed funcs → explicit UUID rows (lesson: seeds must be portable from line one); (2) 4-arg ResponseStatusException ctor absent → id in reason; (3) H2 partial indexes (again) → full unique; (4) two of my own test bugs (mock-user leak into anonymous test → @WithAnonymousUser; config count 14→15 after V4).
+- User interaction: 3.2 PLAN approved; commit requested at presentation.
+- Next: commit 3.2 → merge to develop (separate approval) → 3.3 Front-office + housekeeping (PLAN first).
+- Commit `d4874af` (user-approved): 3.2 on `feature/3.2-booking-engine` (29 files, +2509/−26). Tree clean.
 
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);

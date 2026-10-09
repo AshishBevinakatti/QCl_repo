@@ -50,3 +50,4 @@ Double-booking report → check transaction isolation + constraint + hold-expiry
 
 ## Change history
 - 2026-10-09: Phase 1 baseline from SOW §5 + assumed defaults (user authorised assumptions). No design/code yet.
+- 2026-10-09 (3.2, as-built): `V4__booking` (room/rate_plan/promo/reservation/reservation_hold + 30 rooms + weekend plans + WELCOME10 + `booking.max_nights`); category-pool model (holds consume pool, rooms assigned at check-in 3.3); pessimistic category lock per write; PricingService (per-night round-DOWN, plan-wins-then-config-fallback, promo strict-400, price-lock, advance recorded-not-collected until 3.4); BookingService (hold 15m + sweeper 60s, confirm/modify/cancel + tiers, idempotent replay header); race test green (last-room exactly-one-winner); shell booking screen. Known gaps → 3.4: advance capture gate, folio fee/refund posting. Code: `services/erp-app/.../erp02/`, `web/src/{App.tsx (Booking), api.ts}`.

@@ -2,6 +2,7 @@ package com.quantumclk.erp;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Golden Hills Resort ERP — modular monolith entry point (ADR-001).
@@ -9,6 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * each package owns its tables and exposes versioned REST resources.
  */
 @SpringBootApplication
+@EnableScheduling
 public class ErpApplication {
 
   public static void main(String[] args) {
