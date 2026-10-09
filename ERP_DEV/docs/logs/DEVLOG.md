@@ -103,6 +103,8 @@
 - Problems & fixes: no java/mvn/node/docker on machine → user approved user-local install; truncated first downloads (short curl timeout) → re-downloaded fully; `mvn` URL 404 → used archive.apache.org 3.9.9; shell tool waits on background procs → live-run wrapped with `timeout + kill + wait` so the shell exits.
 - User interaction: toolchain install approved; branch created (told user); commit + merge approval requested at presentation.
 - Next: commit slice on feature branch → merge to develop (separate approval) → Phase 2 gate (PHASE-REPORT + fresh-dev test + continue to Phase 3?).
+- Fix `41407de` (user-approved): V1 migration was silently blocked by `.gitignore` `*.sql` → added `!**/src/main/resources/db/migration/*.sql` exception and committed V1. Lesson: `*.sql` ignores migrations too — exception recorded in gitignore.
+- Fresh-slice test 2026-10-09: clean clone of `feature/2-slice-hello-world` to `/tmp/opencode/freshclone-slice` → `mvn -B verify` → BUILD SUCCESS, Tests run: 4, Failures: 0, Errors: 0. Proves the committed tree (incl. V1 fix) builds green with no local leftovers.
 
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);
