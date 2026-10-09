@@ -34,3 +34,38 @@ export async function listCategories(): Promise<CategoryPage> {
 export function rupees(paise: number): string {
   return `₹${(paise / 100).toLocaleString('en-IN')}`;
 }
+
+export interface GuestDto {
+  id: string;
+  name: string;
+  phone: string;
+  idType: string | null;
+  preferences: string;
+  status: string;
+  mergedIntoId: string | null;
+}
+
+export interface GuestPage {
+  items: GuestDto[];
+  page: number;
+  total: number;
+}
+
+export async function searchGuests(q: string): Promise<GuestPage> {
+  const res = await fetch(`/api/v1/guests?search=${encodeURIComponent(q)}`);
+  if (!res.ok) throw new Error(`guests failed: ${res.status}`);
+  return res.json();
+}
+
+export async function createGuest(name: string, phone: string): Promise<GuestDto> {
+  const res = await fetch('/api/v1/guests', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, phone }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message ?? `create failed: ${res.status}`);
+  }
+  return res.json();
+}

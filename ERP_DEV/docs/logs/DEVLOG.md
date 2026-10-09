@@ -120,6 +120,18 @@
 - Commit `52024bf` (user-approved): 3.0 backend on `feature/3.0-foundation` (22 files, +763/−13). Node v22.12.0 + npm 10.9.0 installed user-local (`~/.local/node`, user-approved) for the UI shell.
 - UI shell 2026-10-09 (uncommitted): Vite React-TS scaffold in `ERP_DEV/web` (private, React 19); `src/api.ts` typed client (health + categories envelope + rupees); `src/App.tsx` 3.0 shell (nav skeleton + live status + category list); `vite.config.ts` dev proxy `/api → localhost:8080`; `web/.env.example` (VITE_API_URL blank = same origin); `index.html` title set. Verified: `npm install` + `npm run build` green; `vite preview` serves shell (200); backend live at same time (`/health` UP, anon `/room-categories` 401 — shell calls public endpoints until Keycloak login lands). NOT verified: browser click-through (no browser here); Keycloak login flow (realm pending).
 - Commit `fc7b3ed` (user-approved): UI shell on `feature/3.0-foundation` (22 files, +1725/−2). Tree clean (node_modules/dist ignored).
+- Merge `1a7af15` (user-approved 2026-10-09): `feature/3.0-foundation` → `develop` (`--no-ff`). Post-merge verify on `develop`: backend `mvn verify` 10/0/0 BUILD SUCCESS; web `npm run build` green. Unit 3.0 complete. No tags/pushes.
+
+## 2026-10-09T21:30:00+05:30 — Unit 3.1 Guest/CRM built + verified (CRUD, dedupe, search, merge)
+- Phase/unit: 3.1 – Guest/CRM        Branch: feature/3.1-guest-crm (from develop, plan-approved)
+- What: V3 migration (`guest` + full `UNIQUE(property_id, phone)` + `guest_communication` + 3 demo guests); entities + search repo; `GuestController` (create 201 / duplicate 409 / validation 400 / search / update + clash 409 / stays-hook `[]` / manager-only merge + audit); validation handler → contract 400 shape; 9 GuestApiTest; shell Guests screen (search + create); module doc as-built + TRACEABILITY REQ-ERP04 code/tests + data-model unique note.
+- Files changed: V3 SQL, `erp04/` (4 main files), `GlobalExceptionHandler` (+validation), `Guest.java` unique, `GuestApiTest`, `web/src/{App.tsx, api.ts}`, docs (erp-04, data-model, TRACEABILITY)
+- Commands that changed state: `git checkout -b feature/3.1-guest-crm develop`; `mvn -B verify` iterations; `npm run build`
+- Verification: `mvn -B verify` → Tests run: 19, Failures: 0, Errors: 0, BUILD SUCCESS; `npm run build` green; live boot → V1→V3 migrate clean, `/health` UP, anon `/guests` + `/stays` → 401. NOT verified: authed live guest calls (no Keycloak here — covered by MockMvc tests); browser click-through; member-link + history population (units 3.5/3.2).
+- Problems & fixes: (1) H2 rejects partial (WHERE) indexes → full unique constraint (same-phone re-registration 409s by design; merge covers same-person-different-phone); lesson: keep DDL identical on both DBs; (2) 4-arg ResponseStatusException ctor doesn't exist in Spring 6.1 → id in reason string.
+- User interaction: 3.1 PLAN approved; commit requested at presentation.
+- Next: commit 3.1 → merge to develop (separate approval) → 3.2 Booking engine (PLAN first).
+- Commit `b033e35` (user-approved): 3.1 on `feature/3.1-guest-crm` (15 files, +760/−16). Tree clean.
 
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);
