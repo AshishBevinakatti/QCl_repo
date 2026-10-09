@@ -22,7 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class RoomCategoryController {
 
   /** Demo property seeded by V1 migration ([ASSUMED] single-property MVP). */
-  static final UUID GOLDEN_HILLS_PROPERTY_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
+  public static final UUID GOLDEN_HILLS_PROPERTY_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
   private final RoomCategoryRepository repository;
 

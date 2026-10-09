@@ -108,6 +108,16 @@
 - Merge `de4544c` (user-approved 2026-10-09): `feature/2-slice-hello-world` → `develop` (`--no-ff`; includes `2080131` slice + `41407de` V1 fix + `d2074c8` logs). Post-merge `mvn -B verify` on `develop` → BUILD SUCCESS, 4/0/0. Wrote `03-phases/phase-2/PHASE-REPORT.md` (uncommitted — rides with next approved commit). No tags/pushes.
 - Phase-gate answer 2026-10-09: user chose "Continue to Phase 3". Phase 2 closed; beginning Phase 3.0 (foundation) planning.
 
+## 2026-10-09T21:05:00+05:30 — Unit 3.0 foundation built + verified (auth, RBAC, audit, config)
+- Phase/unit: 3.0 – foundation        Branch: feature/3.0-foundation (from develop, plan-approved)
+- What: deps (spring-security, oauth2-resource-server, security-test — stack-implied, ADR-001); V2 migration (`app_user`, `role_permission` seeded matrix, `app_config` 14 assumed defaults, `audit_event`); entities + repos; `AuditLog` same-txn writer; Keycloak JWT resource server + deny-by-default + contract 401/403 + claims→authority mapping; `ConfigController` (reads any login, PATCH SUPERADMIN + audited); tests (RBAC matrix, claims mapping ×2, audit-on-write; updated slice tests to stub users); CI +gitleaks/dependency-review; module doc + traceability code/test columns.
+- Files changed: `services/erp-app/pom.xml`, `src/main/.../{auth,audit,config}/` (9 files), V2 SQL, `application.properties`, `src/test/...` (SecurityTest, JwtRolesMappingTest, updated RoomCategoryApiTest, test props), `.github/workflows/ci.yml`, `docs/04-modules/erp-08-admin-reporting.md`, `TRACEABILITY.md`
+- Commands that changed state: `git checkout -b feature/3.0-foundation develop`; `mvn -B verify` iterations
+- Verification: `mvn -B verify` → Tests run: 10, Failures: 0, Errors: 0, BUILD SUCCESS; live boot → `/health` UP public, anon `/room-categories` + `/config` → 401. NOT verified: real Keycloak realm run (no Docker here — stub-free runtime path documented in DAY-ONE as pending a Docker host); UI shell (needs Node — asked user, pending).
+- Problems & fixes: (1) generics invariance in converter lambda → explicit cast; (2) package-visible constant across packages → public; (3) `TIMESTAMPTZ` unknown to H2 → `TIMESTAMP WITH TIME ZONE` (both DBs); (4) test JwtDecoder stub never took effect (anonymous-safe 401s) → replaced stub-token mechanics with standard `@WithMockUser` + dedicated claims-mapping unit tests (lesson: test authorization with framework support; token verification belongs to Keycloak runtime); (5) missing spring-security-test dep → added.
+- User interaction: 3.0 PLAN approved; commit + Node-shell questions requested at presentation.
+- Next: commit 3.0 backend → UI shell decision (Node install vs defer to 3.7) → merge to develop (separate approval) → 3.1 Guest/CRM.
+
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);
   facilities depth TBD in requirements analysis; tax/posting treatment TBD; RFID 1 terminal + 100 cards;

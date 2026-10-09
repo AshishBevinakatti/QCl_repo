@@ -46,11 +46,11 @@
 | §10+§21 | REQ-ERP07-005 | Guest folio | 02-architecture/data-model.md + 02-architecture/api.md + 02-architecture/integrations.md + 02-architecture/screens.md(§5,9) | TBD P3.4 | TBD P3.4/5 | 04-modules/erp-07-payment-billing.md | baselined |
 | §10 | REQ-ERP07-006 | Payment dashboard + reconciliation | 02-architecture/data-model.md + 02-architecture/api.md + 02-architecture/integrations.md + 02-architecture/screens.md(§5,9) | TBD P3.4/3.7 | TBD P3.4/5 | 04-modules/erp-07-payment-billing.md | baselined |
 | §11 | REQ-ERP08-001 | Admin dashboard | 02-architecture/security.md + 02-architecture/api.md + 02-architecture/screens.md(§10) | TBD P3.7 | TBD P5 | 04-modules/erp-08-admin-reporting.md | baselined |
-| §11+§22 | REQ-ERP08-002 | Users + RBAC deny-by-default | 02-architecture/security.md + 02-architecture/api.md + 02-architecture/screens.md(§10) | TBD P3.0 | TBD P3.0/5 | 04-modules/erp-08-admin-reporting.md | baselined |
+| §11+§22 | REQ-ERP08-002 | Users + RBAC deny-by-default | 02-architecture/security.md + 02-architecture/api.md + 02-architecture/screens.md(§10) | services/erp-app/.../auth/ (3.0) | SecurityTest + JwtRolesMappingTest | 04-modules/erp-08-admin-reporting.md | baselined |
 | §11+§23 | REQ-ERP08-003 | Report library | 02-architecture/security.md + 02-architecture/api.md + 02-architecture/screens.md(§10) | TBD P3.7 | TBD P5 | 04-modules/erp-08-admin-reporting.md | baselined |
 | §11 | REQ-ERP08-004 | Excel/CSV/PDF exports | 02-architecture/security.md + 02-architecture/api.md + 02-architecture/screens.md(§10) | TBD P3.7 | TBD P5 | 04-modules/erp-08-admin-reporting.md | baselined |
-| §11 | REQ-ERP08-005 | Config panel | 02-architecture/security.md + 02-architecture/api.md + 02-architecture/screens.md(§10) | TBD P3.0 | TBD P3.0/5 | 04-modules/erp-08-admin-reporting.md | baselined |
-| §11 | REQ-ERP08-006 | Audit viewer | 02-architecture/security.md + 02-architecture/api.md + 02-architecture/screens.md(§10) | TBD P3.0/3.7 | TBD P5 | 04-modules/erp-08-admin-reporting.md | baselined |
+| §11 | REQ-ERP08-005 | Config panel | 02-architecture/security.md + 02-architecture/api.md + 02-architecture/screens.md(§10) | services/erp-app/.../config/ (3.0) | SecurityTest (audit-on-write) | 04-modules/erp-08-admin-reporting.md | baselined |
+| §11 | REQ-ERP08-006 | Audit viewer | 02-architecture/security.md + 02-architecture/api.md + 02-architecture/screens.md(§10) | services/erp-app/.../audit/ writer (3.0) | SecurityTest (audit-on-write) | 04-modules/erp-08-admin-reporting.md | baselined |
 | §12 | REQ-ERP09-001 | Channel adapter + mock | 02-architecture/integrations.md + 02-architecture/api.md + 02-architecture/screens.md(§11) | TBD P4.1 | TBD P4.1/5 | 04-modules/erp-09-ota-channel.md | baselined |
 | §12 | REQ-ERP09-002 | Inventory push | 02-architecture/integrations.md + 02-architecture/api.md + 02-architecture/screens.md(§11) | TBD P4.1 | TBD P4.1/5 | 04-modules/erp-09-ota-channel.md | baselined |
 | §12 | REQ-ERP09-003 | Reservation import idempotent | 02-architecture/integrations.md + 02-architecture/api.md + 02-architecture/screens.md(§11) | TBD P4.1 | TBD P4.1/5 | 04-modules/erp-09-ota-channel.md | baselined |
@@ -63,6 +63,6 @@
 | §20 | REQ-HSK-002 | Maintenance requests | 02-architecture/data-model.md + 02-architecture/screens.md(§12,14) | TBD P4.3 | TBD P4.3/5 | 04-modules/maintenance.md | baselined |
 | §21 | REQ-XCUT-001 | Folio posting config | 02-architecture/data-model.md (folio posting config) | TBD P3.4 | TBD P3.4/5 | 04-modules/erp-07-payment-billing.md | baselined |
 | §§24–25 | REQ-XCUT-002 | Notification adapters | 02-architecture/integrations.md (adapters) | TBD P4.x | TBD P5 | 04-modules/erp-08-admin-reporting.md | baselined |
-| §25 | REQ-XCUT-003 | Audit/RBAC/security baseline | 02-architecture/security.md | TBD P3.0 | TBD P5 | 02-architecture/security.md | baselined |
+| §25 | REQ-XCUT-003 | Audit/RBAC/security baseline | 02-architecture/security.md | services/erp-app/.../auth+audit (3.0) | SecurityTest + JwtRolesMappingTest | 02-architecture/security.md | baselined |
 | §25 | REQ-XCUT-004 | Hosting-agnostic + backup docs | 02-architecture/environments.md | TBD P2/7 | TBD P5/7 | 05-operations/deployment.md | baselined |
-| §29.1 | REQ-XCUT-005 | Migration + seed data | 02-architecture/environments.md (migration + seed) | TBD P3.0/7 | TBD P5/7 | 05-operations/deployment.md | baselined |
+| §29.1 | REQ-XCUT-005 | Migration + seed data | 02-architecture/environments.md (migration + seed) | db/migration/V1+V2 + seeds (3.0) | Flyway migrate on boot (all tests) | 05-operations/deployment.md | baselined |
