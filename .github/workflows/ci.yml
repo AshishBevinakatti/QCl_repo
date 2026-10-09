@@ -1,0 +1,20 @@
+name: ci
+
+on:
+  push:
+    branches: ["develop", "main", "feature/**"]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Build + test (ERP_DEV monorepo)
+        run: mvn -B verify
+        working-directory: ERP_DEV

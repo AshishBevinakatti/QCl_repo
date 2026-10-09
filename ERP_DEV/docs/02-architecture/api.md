@@ -2,6 +2,8 @@
 
 - Purpose: one versioned contract frontend, website, terminal, and channel adapters code against. Audience: user (approver), backend + frontend developers. Last verified: 2026-10-09. Owner: project team.
 - Sources: module docs `04-modules/*` (endpoint lists), data-model.md (resources), ADR-001 (Spring Boot + React, OpenAPI codegen). OpenAPI file itself is generated in the hello-world slice (springdoc) and kept at `services/.../openapi.yaml` + published copy in `docs/02-architecture/openapi/` — this doc is the human-readable contract the generator must match.
+- Slice proof (2026-10-09, verified live): generated spec saved at `docs/02-architecture/openapi/erp-app.json`
+  (paths: `/api/v1/health`, `/api/v1/room-categories`, `/api/v1/room-categories/{id}`); runtime UI at `/v3/api-docs`.
 
 ## Global conventions (no exceptions)
 - Base: `/api/v1/...`; version in path; breaking change → `/api/v2` + `BREAKING CHANGE` footer + ADR line.

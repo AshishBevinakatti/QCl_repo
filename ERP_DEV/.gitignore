@@ -15,6 +15,7 @@ uploads/
 media/
 backups/
 *.sql
+!**/src/main/resources/db/migration/*.sql
 *.csv
 *.xlsx
 
