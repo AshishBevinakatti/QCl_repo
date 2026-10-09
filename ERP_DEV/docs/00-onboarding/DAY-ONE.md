@@ -23,6 +23,13 @@ Keycloak, Docker + K8s. First runnable slice: `services/erp-app` (health + room-
   java -version   # expected: openjdk 21 (Temurin)
   mvn -version    # expected: Apache Maven 3.9.x, Java 21
   ```
+- Node 22 LTS, user-local (for `ERP_DEV/web` shell):
+  ```
+  curl -sL https://nodejs.org/dist/v22.12.0/node-v22.12.0-linux-x64.tar.xz -o /tmp/node.tar.xz
+  mkdir -p ~/.local/node && tar -xJf /tmp/node.tar.xz -C ~/.local/node --strip-components=1
+  export PATH=$HOME/.local/node/bin:$PATH
+  node --version  # expected: v22.x
+  ```
 - Docker (only for full local stack: Postgres/Redis/Kafka/Keycloak via `ERP_DEV/infra/docker-compose.local.yml`).
   Without Docker: unit tests run on H2 (Postgres-compatibility mode); runtime needs real Postgres.
 
@@ -63,6 +70,15 @@ curl -s http://localhost:8080/api/v1/room-categories | head -c 300
 ```
 With Docker: `docker compose -f ERP_DEV/infra/docker-compose.local.yml up` (Postgres etc.), then run the jar with
 `DB_URL=jdbc:postgresql://localhost:5432/resort_erp DB_USER=resort_user DB_PASSWORD=... java -jar target/*.jar`.
+
+## 5b. Run the web shell
+```
+cd ERP_DEV/web
+export PATH=$HOME/.local/node/bin:$PATH
+npm install          # first time only (deps → node_modules/, git-ignored)
+npm run build        # expected: ✓ built (tsc + vite)
+npm run dev          # vite dev server; /api proxied to localhost:8080 (see vite.config.ts)
+```
 
 ## 6. Repo map
 `ERP_Resort/`: agent config (`.opencode/`, `AGENTS.md`) + `ERP_DEV/` (the project: `pom.xml`, `services/erp-app/`,

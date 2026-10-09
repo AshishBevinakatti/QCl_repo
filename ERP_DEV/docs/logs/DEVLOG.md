@@ -117,6 +117,8 @@
 - Problems & fixes: (1) generics invariance in converter lambda → explicit cast; (2) package-visible constant across packages → public; (3) `TIMESTAMPTZ` unknown to H2 → `TIMESTAMP WITH TIME ZONE` (both DBs); (4) test JwtDecoder stub never took effect (anonymous-safe 401s) → replaced stub-token mechanics with standard `@WithMockUser` + dedicated claims-mapping unit tests (lesson: test authorization with framework support; token verification belongs to Keycloak runtime); (5) missing spring-security-test dep → added.
 - User interaction: 3.0 PLAN approved; commit + Node-shell questions requested at presentation.
 - Next: commit 3.0 backend → UI shell decision (Node install vs defer to 3.7) → merge to develop (separate approval) → 3.1 Guest/CRM.
+- Commit `52024bf` (user-approved): 3.0 backend on `feature/3.0-foundation` (22 files, +763/−13). Node v22.12.0 + npm 10.9.0 installed user-local (`~/.local/node`, user-approved) for the UI shell.
+- UI shell 2026-10-09 (uncommitted): Vite React-TS scaffold in `ERP_DEV/web` (private, React 19); `src/api.ts` typed client (health + categories envelope + rupees); `src/App.tsx` 3.0 shell (nav skeleton + live status + category list); `vite.config.ts` dev proxy `/api → localhost:8080`; `web/.env.example` (VITE_API_URL blank = same origin); `index.html` title set. Verified: `npm install` + `npm run build` green; `vite preview` serves shell (200); backend live at same time (`/health` UP, anon `/room-categories` 401 — shell calls public endpoints until Keycloak login lands). NOT verified: browser click-through (no browser here); Keycloak login flow (realm pending).
 
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);
