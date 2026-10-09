@@ -45,7 +45,7 @@ app_user + role_permission + app_config (key, value jsonb, effective_from)
 | room | id, property_id, category_id, room_no, status (vacant-ready/occupied/dirty/cleaning/ready) | unique(property_id, room_no); index(status) |
 | rate_plan | id, property_id, category_id, name, multiplier_bps, from_date, to_date | index(category_id, from_date, to_date) |
 | promo | id, property_id, code, pct_bps, valid_from/to, max_uses, used | unique(property_id, code) |
-| guest | id, property_id, name, phone, id_type, preferences jsonb, status, merged_into | unique(property_id, phone) where merged_into null; trigram index(name) |
+| guest | id, property_id, name, phone, id_type, preferences jsonb, status, merged_into | unique(property_id, phone) — full unique, not partial (same script runs on H2, which lacks partial indexes); index(property_id, name) |
 | reservation | id, property_id, guest_id, room_id, checkin_date, checkout_date, nights, quoted_total_paise, status (hold/confirmed/checked-in/checked-out/cancelled/expired), source, idempotency_key | unique(property_id, idempotency_key); EXCLUDE overlapping confirmed holds per room (enforced in txn + app lock; concurrency test proves it); index(room_id, checkin_date, checkout_date, status) |
 | reservation_hold | reservation_id PK, expires_at | index(expires_at) for expiry job |
 | stay | id, property_id, reservation_id, room_id, checkin_at, checkout_at, status | index(reservation_id); index(room_id, status) |

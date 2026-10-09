@@ -13,9 +13,20 @@ import org.springframework.web.server.ResponseStatusException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+  @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+  public ResponseEntity<ApiError> handleValidation(
+      org.springframework.web.bind.MethodArgumentNotValidException ex, HttpServletRequest req) {
+    String message =
+        ex.getBindingResult().getFieldErrors().stream()
+            .map(e -> e.getField() + " " + e.getDefaultMessage())
+            .findFirst()
+            .orElse("invalid request");
+    return ResponseEntity.badRequest()
+        .body(new ApiError("VALIDATION_FAILED", message, requestId(req), Map.of()));
+  }
+
   @ExceptionHandler(ResponseStatusException.class)
-  public ResponseEntity<ApiError> handleStatus(ResponseStatusException ex, HttpServletRequest req) {
-    HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
+  public ResponseEntity<ApiError> handleStatus(ResponseStatusException ex, HttpServletRequest req) {    HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
     if (status == null) {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
     }

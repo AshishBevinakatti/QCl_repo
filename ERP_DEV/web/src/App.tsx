@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiHealth, listCategories, rupees, type CategoryDto } from './api';
+import { apiHealth, createGuest, listCategories, rupees, searchGuests, type CategoryDto, type GuestDto } from './api';
 
 /**
  * 3.0 base shell: nav skeleton + live API status + room categories.
@@ -42,6 +42,63 @@ export default function App() {
           </li>
         ))}
       </ul>
+      <Guests />
     </div>
+  );
+}
+
+/** 3.1 Guests screen: search + list + create (merge lives in the manager UI, unit 3.7). */
+function Guests() {
+  const [q, setQ] = useState('');
+  const [guests, setGuests] = useState<GuestDto[]>([]);
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [msg, setMsg] = useState('');
+
+  async function runSearch(e?: React.FormEvent) {
+    e?.preventDefault();
+    setMsg('');
+    try {
+      setGuests((await searchGuests(q)).items);
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'search failed (login required)');
+    }
+  }
+
+  async function runCreate(e: React.FormEvent) {
+    e.preventDefault();
+    setMsg('');
+    try {
+      const g = await createGuest(name, phone);
+      setMsg(`created ${g.name}`);
+      setName('');
+      setPhone('');
+      setGuests((await searchGuests(g.phone)).items);
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'create failed');
+    }
+  }
+
+  return (
+    <section>
+      <h2>Guests</h2>
+      <form onSubmit={runSearch} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="search name or phone" aria-label="search guests" />
+        <button type="submit">Search</button>
+      </form>
+      <ul>
+        {guests.map((g) => (
+          <li key={g.id}>
+            {g.name} — {g.phone} ({g.status})
+          </li>
+        ))}
+      </ul>
+      <form onSubmit={runCreate} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="name" aria-label="guest name" />
+        <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="phone" aria-label="guest phone" />
+        <button type="submit">Add guest</button>
+      </form>
+      {msg && <p>{msg}</p>}
+    </section>
   );
 }
