@@ -131,6 +131,7 @@
 - Problems & fixes: (1) H2 rejects partial (WHERE) indexes → full unique constraint (same-phone re-registration 409s by design; merge covers same-person-different-phone); lesson: keep DDL identical on both DBs; (2) 4-arg ResponseStatusException ctor doesn't exist in Spring 6.1 → id in reason string.
 - User interaction: 3.1 PLAN approved; commit requested at presentation.
 - Next: commit 3.1 → merge to develop (separate approval) → 3.2 Booking engine (PLAN first).
+- Commit `b033e35` (user-approved): 3.1 on `feature/3.1-guest-crm` (15 files, +760/−16). Tree clean.
 
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);
