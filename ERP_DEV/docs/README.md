@@ -15,7 +15,7 @@ Golden Hills Resort ERP (QuantumCLK Technologies). Project root: `ERP_DEV/` (git
 | `01-requirements/DECISIONS-FROM-CLIENT.md` | Decision Pack answers (Phase 1) |
 | `01-requirements/CHANGE_REQUESTS.md` | CR-<nnn> register |
 | `02-architecture/adr/` | Architecture Decision Records (from Phase 2) |
-| `02-architecture/` | data-model, api, security, integrations, environments (from Phase 2) |
+| `02-architecture/` | data-model, api, security, integrations, environments, screens (Phase 2 baseline) |
 | `03-phases/phase-N/` | PLAN + PHASE-REPORT per phase |
 | `04-modules/` | one doc per module (from Phase 3) |
 | `05-operations/` | runbook, backup/restore, deployment, troubleshooting, releases |
