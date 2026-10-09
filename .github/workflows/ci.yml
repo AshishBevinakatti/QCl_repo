@@ -15,6 +15,15 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
       - name: Build + test (ERP_DEV monorepo)
         run: mvn -B verify
         working-directory: ERP_DEV
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+      # Full CVE audit (OWASP) runs as a scheduled weekly job once services grow (Phase 5).

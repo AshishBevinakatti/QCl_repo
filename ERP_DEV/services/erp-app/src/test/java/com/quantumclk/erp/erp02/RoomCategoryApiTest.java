@@ -11,15 +11,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * Slice contract tests (H2, Flyway V1 seed): health + category reads.
+ * Slice contract tests (H2, Flyway V1+V2 seed): health + category reads.
  * WHY these exist: they prove API → DB wiring and lock the envelope/error
- * shape before Phase 3 builds on it.
+ * shape before Phase 3 builds on it. Reads need any login (deny-by-default),
+ * so tests run as a stub RECEPTION user (authN itself is Keycloak's job).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+@WithMockUser(username = "reception-user", authorities = "RECEPTION")
 class RoomCategoryApiTest {
 
   @Autowired private MockMvc mvc;

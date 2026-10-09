@@ -43,3 +43,4 @@ Role matrix assumed until client confirms; report depth grows with Phases 3–4 
 
 ## Change history
 - 2026-10-09: Phase 1 baseline from SOW §§11/22/23 + assumed role matrix.
+- 2026-10-09 (3.0 foundation, as-built): `V2__foundation_rbac_config_audit.sql` (`app_user`, `role_permission` seeded matrix, `app_config` 14 assumed defaults, `audit_event` append-only); `auth/` (Keycloak JWT resource server, deny-by-default, contract 401/403 shapes, claims→authority mapping for `roles` + `realm_access.roles`); `audit/AuditLog` (same-transaction append); `config/ConfigController` (reads any login, PATCH SUPERADMIN + audited); tests: RBAC matrix, claims mapping, audit-on-write (10/10 green with slice suite). Code: `services/erp-app/src/main/java/com/quantumclk/erp/{auth,audit,config}/`.
