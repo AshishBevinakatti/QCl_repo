@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<!-- Slice UI (temporary): proves screen → API → DB end-to-end. React SPA replaces this in Phase 3. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Golden Hills ERP — slice</title>
+  <style>body{font-family:system-ui,sans-serif;max-width:640px;margin:2rem auto;padding:0 1rem}li{margin:.25rem 0}.muted{color:#555}</style>
+</head>
+<body>
+  <h1>Golden Hills ERP — hello slice</h1>
+  <p id="health" class="muted">checking API…</p>
+  <h2>Room categories</h2>
+  <ul id="cats"></ul>
+  <script>
+    async function load() {
+      const h = await (await fetch('api/v1/health')).json();
+      document.getElementById('health').textContent = 'API status: ' + h.status + ' (' + h.service + ')';
+      const page = await (await fetch('api/v1/room-categories')).json();
+      const ul = document.getElementById('cats');
+      ul.innerHTML = '';
+      for (const c of page.items) {
+        const li = document.createElement('li');
+        li.textContent = c.name + ' — ₹' + (c.basePricePaise / 100) + ' / night, sleeps ' + c.capacity;
+        ul.appendChild(li);
+      }
+    }
+    load().catch(e => { document.getElementById('health').textContent = 'API unreachable: ' + e; });
+  </script>
+</body>
+</html>
