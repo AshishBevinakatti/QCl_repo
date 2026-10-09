@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiHealth, createGuest, listCategories, rupees, searchGuests, type CategoryDto, type GuestDto } from './api';
+import { apiHealth, availability, bookRoom, createGuest, listCategories, rupees, searchGuests, type CategoryDto, type GuestDto } from './api';
 
 /**
  * 3.0 base shell: nav skeleton + live API status + room categories.
@@ -43,6 +43,7 @@ export default function App() {
         ))}
       </ul>
       <Guests />
+      <Booking cats={cats} />
     </div>
   );
 }
@@ -97,6 +98,63 @@ function Guests() {
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="name" aria-label="guest name" />
         <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="phone" aria-label="guest phone" />
         <button type="submit">Add guest</button>
+      </form>
+      {msg && <p>{msg}</p>}
+    </section>
+  );
+}
+
+/** 3.2 Booking screen: pick category + dates → availability → guest → book. */
+function Booking({ cats }: { cats: CategoryDto[] }) {
+  const [cat, setCat] = useState('');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [promo, setPromo] = useState('WELCOME10');
+  const [msg, setMsg] = useState('');
+
+  async function check(e: React.FormEvent) {
+    e.preventDefault();
+    setMsg('');
+    try {
+      const a = await availability(cat, from, to);
+      setMsg(`${a.available} of ${a.totalRooms} free`);
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'check failed (login required)');
+    }
+  }
+
+  async function book(e: React.FormEvent) {
+    e.preventDefault();
+    setMsg('');
+    try {
+      const r = await bookRoom(name, phone, cat, from, to, promo || undefined);
+      setMsg(`held ${r.nights} night(s), quote ${rupees(r.quotedTotalPaise)}, advance due ${rupees(r.advanceDuePaise)} (ref ${r.id.slice(0, 8)})`);
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'booking failed');
+    }
+  }
+
+  return (
+    <section>
+      <h2>Book a room</h2>
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+        <select value={cat} onChange={(e) => setCat(e.target.value)} aria-label="category">
+          <option value="">category…</option>
+          {cats.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="check-in" />
+        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="check-out" />
+        <button type="button" onClick={check}>Check</button>
+      </div>
+      <form onSubmit={book} style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="guest name" aria-label="guest name" />
+        <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="phone" aria-label="guest phone" />
+        <input value={promo} onChange={(e) => setPromo(e.target.value)} placeholder="promo (optional)" aria-label="promo" />
+        <button type="submit">Book</button>
       </form>
       {msg && <p>{msg}</p>}
     </section>
