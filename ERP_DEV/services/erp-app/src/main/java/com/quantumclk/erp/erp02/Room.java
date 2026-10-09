@@ -53,4 +53,12 @@ public class Room {
   public String getStatus() {
     return status;
   }
+
+  public void setStatus(String status) {
+    this.status = status;
+  }
+
+  public UUID getPropertyId() {
+    return propertyId;
+  }
 }

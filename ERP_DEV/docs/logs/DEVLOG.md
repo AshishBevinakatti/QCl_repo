@@ -110,6 +110,7 @@
 
 ## 2026-10-09T21:05:00+05:30 — Unit 3.0 foundation built + verified (auth, RBAC, audit, config)
 - Phase/unit: 3.0 – foundation        Branch: feature/3.0-foundation (from develop, plan-approved)
+- Phase/unit: 3.0 – foundation        Branch: feature/3.0-foundation (from develop, plan-approved)
 - What: deps (spring-security, oauth2-resource-server, security-test — stack-implied, ADR-001); V2 migration (`app_user`, `role_permission` seeded matrix, `app_config` 14 assumed defaults, `audit_event`); entities + repos; `AuditLog` same-txn writer; Keycloak JWT resource server + deny-by-default + contract 401/403 + claims→authority mapping; `ConfigController` (reads any login, PATCH SUPERADMIN + audited); tests (RBAC matrix, claims mapping ×2, audit-on-write; updated slice tests to stub users); CI +gitleaks/dependency-review; module doc + traceability code/test columns.
 - Files changed: `services/erp-app/pom.xml`, `src/main/.../{auth,audit,config}/` (9 files), V2 SQL, `application.properties`, `src/test/...` (SecurityTest, JwtRolesMappingTest, updated RoomCategoryApiTest, test props), `.github/workflows/ci.yml`, `docs/04-modules/erp-08-admin-reporting.md`, `TRACEABILITY.md`
 - Commands that changed state: `git checkout -b feature/3.0-foundation develop`; `mvn -B verify` iterations
@@ -144,6 +145,17 @@
 - User interaction: 3.2 PLAN approved; commit requested at presentation.
 - Next: commit 3.2 → merge to develop (separate approval) → 3.3 Front-office + housekeeping (PLAN first).
 - Commit `d4874af` (user-approved): 3.2 on `feature/3.2-booking-engine` (29 files, +2509/−26). Tree clean.
+- Merge 3.2 → develop (user-approved 2026-10-09, `--no-ff`). Post-merge `mvn verify` on `develop` → 31/0/0 BUILD SUCCESS. Unit 3.2 complete. No tags/pushes.
+
+## 2026-10-09T23:15:00+05:30 — Unit 3.3 Front-office + housekeeping built + verified
+- Phase/unit: 3.3 – Front-office + Housekeeping        Branch: feature/3.3-front-office (from develop, plan-approved)
+- What: V5 migration (stay/room_transfer/housekeeping_task); StayService (gated check-in + auto-assign, settlement-gated check-out + auto task, transfer with folio stub, walk-in chain); room-level overlap guard + pessimistic lock + race test; HousekeepingService (forward-only advance, done→ready) + role-gated controller; dashboard/arrivals/occupancy; FolioBalance stub (3.4 fills, no API change); shell reception + board + walk-in screens; module docs + traceability ERP03/HSK-001.
+- Files changed: V5 SQL, `erp03/` (StayService, StayController, Stay, repos, FolioBalance), `hsk/` (entity, service, controller), `Room`/`Reservation` guards, `BookingService.ZONE` public, `FrontOfficeApiTest` + `StayRaceTest`, `web/src/{App.tsx, api.ts}`, docs (erp-03, housekeeping, data-model, TRACEABILITY, api.md gap note)
+- Commands that changed state: `git checkout -b feature/3.3-front-office develop`; `mvn -B verify` iterations; `npm run build`
+- Verification: `mvn -B verify` → Tests run: 40, Failures: 0, Errors: 0, BUILD SUCCESS; `npm run build` green; live boot → V1→V5 clean, `/health` UP, anon stay/board → 401. OpenAPI artifact LAGS (14 paths; new endpoints proven via MockMvc 200/409/422, never 404) — recorded in api.md + module docs, revisit 3.4. NOT verified: authed live flows (no Keycloak); browser click-through; real folio balances (stub returns 0 by design).
+- Problems & fixes: (1) guard-order bug (double check-in gave 422 not 409) → duplicate-stay check first; (2) shared-H2 cross-test interference → unique dates/rooms per test + containment assertions (lesson: never assert global counts in shared DB); (3) repeated near-miss deleting a DEVLOG header with a careless edit — restored immediately, verified via grep (lesson: anchor log edits on unique full lines, re-verify structure after every log edit).
+- User interaction: 3.3 PLAN approved; commit requested at presentation.
+- Next: commit 3.3 → merge to develop (separate approval) → 3.4 Payment & billing (PLAN first).
 
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);

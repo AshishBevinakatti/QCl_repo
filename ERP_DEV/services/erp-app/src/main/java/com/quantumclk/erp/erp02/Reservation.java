@@ -112,6 +112,10 @@ public class Reservation {
     return categoryId;
   }
 
+  public UUID getRoomId() {
+    return roomId;
+  }
+
   public LocalDate getCheckinDate() {
     return checkinDate;
   }
@@ -153,6 +157,15 @@ public class Reservation {
 
   public void confirm() {
     this.status = CONFIRMED;
+  }
+
+  public void checkIn(UUID roomId) {
+    this.status = CHECKED_IN;
+    this.roomId = roomId;
+  }
+
+  public void checkOut() {
+    this.status = CHECKED_OUT;
   }
 
   public void cancel(long feePaise) {

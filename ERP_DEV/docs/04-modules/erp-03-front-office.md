@@ -46,3 +46,4 @@ ID-verification depth pending client process answers; biometric beyond scope (SO
 
 ## Change history
 - 2026-10-09: Phase 1 baseline from SOW §6 + assumed times.
+- 2026-10-09 (3.3, as-built): `V5__front_office_housekeeping` (stay/room_transfer/housekeeping_task); StayService (gated check-in with auto-assign, settlement-gated check-out + auto task, transfer with folio-follows stub, walk-in chain); room-level overlap guard + pessimistic lock + race test; dashboard/arrivals/occupancy; folio stub `FolioBalance` (3.4 fills, no API change); shell reception screens. Code: `services/erp-app/.../erp03/`, `web/src/{App.tsx (FrontOffice/WalkIn), api.ts}`.
