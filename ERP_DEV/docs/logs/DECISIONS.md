@@ -8,3 +8,7 @@
 - D-003 (2026-10-01): tech-stack proposal recorded as input, not a decision (Q-006). No stack assumed (Rule: Phase 2 ADR).
 - D-004 (2026-10-01): extracts store full derived text with hash headers (Rule 1); no raw `.docx`/`.pdf`
   binaries, no personal data, no credentials in the repo.
+- D-005 (2026-10-09): Phase 1 baseline uses CORE only (ERP-02…09 + lite facilities/housekeeping/maintenance); ERP-10…14 excluded per user 2026-10-09 (answers Q-005 scope part). Reason: 2-month MVP; add-ons need later confirmation + flags + CR.
+- D-006 (2026-10-09): all missing client values become `[ASSUMED]` placeholder defaults as configuration (Rule 2): rooms/pricing/hold/advance/cancellation/promo/tax/tiers/RBAC/OTA-sync/facility-hours (see DECISIONS-FROM-CLIENT D-101…D-114). Reason: user authorised assumptions; client answers swap config without code change.
+- D-007 (2026-10-09): RFID terminal + gateway/OTA credentials use simulator/sandbox adapters until hardware/keys arrive (user: hardware not procured, hosting undecided). Reason: SOW §24/§29 make these client-provided; adapters avoid blocking Phase 3/4.
+- D-008 (2026-10-09): "start coding" instruction conflicts with Rule 3 (plan-then-approve) + Rule 4 (phases in order) + Phase 2 stack ADR: baseline approval and design baseline come before code. Flagged to user instead of silently skipping the gate. No code/branch/schema/dependency in Phase 1.

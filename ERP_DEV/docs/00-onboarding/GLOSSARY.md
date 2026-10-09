@@ -16,3 +16,8 @@
 | RBAC | Role-based access control incl. view/create/edit/delete/approve/export/configure/report (SOW §22) |
 | ADR | Architecture Decision Record (`02-architecture/adr/`) |
 | Work unit | One phase (0–2, 5–9) or one module/sub-phase inside Phases 3–4 |
+| Hold | Time-boxed room block before confirmation `[ASSUMED: 15 min]`; expiry auto-releases inventory (REQ-ERP02-005) |
+| Advance | Part-payment required to confirm a booking `[ASSUMED: 30%]` (REQ-ERP02-009) |
+| Idempotency key | Client-supplied key making money-affecting writes replay-safe; replays never duplicate charges/reservations |
+| Sandbox adapter | Test double behind the integration interface (gateway/OTA/terminal) used until real credentials/hardware arrive |
+| Simulator | Sandbox RFID terminal (button/API) standing in for the ESP32 device until procurement (REQ-ERP06-003) |

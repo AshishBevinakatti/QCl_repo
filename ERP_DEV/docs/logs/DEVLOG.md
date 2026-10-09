@@ -66,6 +66,26 @@
 - User interaction: commit approved as proposed; PHASE-REPORT + continue-to-Phase-1 still to be approved.
 - Next: present commit + report; ask to commit PHASE-REPORT and whether to continue to Phase 1.
 
+## 2026-10-01T09:46:34+05:30 — Report committed (54f4700); Phase 0 gate: PAUSE
+- Phase/unit: 0 – gate        Branch: develop
+- What: user approved report commit and chose "Pause here" at the Phase 0 gate. Committed
+  `54f4700` `docs(core): phase 0 report, gate decision, pause` on `develop` (3 files, +72/−6).
+  Tree clean. This entry + STATE update ride with the next approved commit.
+- Commits this session: `fec27bb` (main, skeleton) + `54f4700` (develop, report) — both user-approved; no merges/tags/pushes.
+- Next: on resume, read STATE.md and await user instruction.
+
+## 2026-10-09T19:18:14+05:30 — Phase 1 baseline drafted (CORE, assumed defaults; coding gated)
+- Phase/unit: 1 – Requirement Discovery (baseline)        Branch: develop (no feature branch — docs on develop working tree until plan approved)
+- What: wrote `03-phases/phase-1/PLAN.md`; baselined `01-requirements/REQUIREMENTS.md` (REQ-ERP02…09 + FAC/HSK/XCUT, all `[ASSUMED]` defaults tagged); rebuilt `TRACEABILITY.md` (61 rows, design/code/tests TBD P2/3); rewrote `DECISIONS-FROM-CLIENT.md` (confirmed CORE-only + D-101…D-114 pending); expanded 11 module docs (`04-modules/erp-02…09, facilities, housekeeping, maintenance`) with rules/sources/states/APIs/tests; updated `OPEN_QUESTIONS.md` (Q-005 answered CORE-only; added Q-008 website location, Q-009 creds/hardware, Q-010 stack confirm), `DECISIONS.md` (D-005…D-008), `RISKS.md` (R-007…R-009), `RESOURCES_LOG.md`, `GLOSSARY.md`, `STATE.md`.
+- Why: user 2026-10-09 "assume and start Phase 1 baseline and start coding" + prior answers (team 2–4BE/2FE/1DevOps/1QA; CORE only; hosting undecided; RFID not procured). REQ sources: SOW §§5–12, 18–25, 28–30 via `source-extracts/sow-extract.md`.
+- Resources used: `/run/media/ash_63/DATA/ERP_Resouce/QuantumCLK_Resort_ERP_SOW.docx` (read-only; derived baseline only)
+- Files changed: `docs/03-phases/phase-1/PLAN.md` (new), `docs/01-requirements/REQUIREMENTS.md`, `TRACEABILITY.md`, `DECISIONS-FROM-CLIENT.md`, `docs/04-modules/{erp-02…09,facilities,housekeeping,maintenance}.md`, `docs/logs/{OPEN_QUESTIONS,DECISIONS,RISKS,RESOURCES_LOG,STATE}.md`, `docs/00-onboarding/GLOSSARY.md`
+- Commands that changed state: none destructive; `git status` / `git branch --show-current` / `date -Iseconds` (read-only checks)
+- Verification: re-read PLAN + REQUIREMENTS + TRACEABILITY row count; `git status` shows docs-only modifications on `develop`; no code/schema/dependency added; every guess tagged `[ASSUMED]`; no secrets/raw client files. NOT verified: user approval of baseline (pending); fresh-developer test runs at phase gate, not now.
+- Problems & fixes: user asked to code in the same instruction as baseline — conflicts with Rule 3 (plan→approve before code) + Rule 4 (phases in order) + Phase 2 stack ADR (Q-006/Q-010). Flagged to user per conflict rule; no code/branch started. Website-ready claim unverified → Q-008.
+- User interaction: approval requested for baseline + Q-008/Q-009/Q-010 + commit question; "continue to Phase 2?" comes only after baseline approval.
+- Next: present baseline + gate conflict + ask approvals; on approval, commit docs, then start Phase 2 (stack ADR + design).
+
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);
   facilities depth TBD in requirements analysis; tax/posting treatment TBD; RFID 1 terminal + 100 cards;
