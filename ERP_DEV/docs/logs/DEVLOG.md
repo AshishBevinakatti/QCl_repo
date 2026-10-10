@@ -157,6 +157,17 @@
 - User interaction: 3.4 PLAN approved; commit requested at presentation.
 - Next: commit 3.4 → merge to develop (separate approval) → 3.5 Membership & loyalty (PLAN first).
 - Commit `edded7b` (user-approved): 3.4 on `feature/3.4-payment-billing` (37 files, +2008/−46). Tree clean.
+- Merge 3.4 → develop (user-approved 2026-10-10, `--no-ff`). Post-merge `mvn verify` on `develop` → 44/0/0 BUILD SUCCESS. Unit 3.4 complete. No tags/pushes.
+
+## 2026-10-10T01:00:00+05:30 — Unit 3.5 Membership & loyalty built + verified
+- Phase/unit: 3.5 – Membership & loyalty        Branch: feature/3.5-membership (from develop, plan-approved)
+- What: V7 migration (member/ledger/tier_rule + tier seed); LoyaltyService (enroll, earn hook on capture, redeem with 50% cap, adjustments, renew, expiry job, spend upgrades); earn race FIXED for real (payment-row lock in confirmByRef + violation-as-replay in earn — concurrent callbacks post exactly once); MemberController (enroll/dashboard/ledger/redeem/adjust/renew); member chip on guest profiles (REQ-ERP04-004); shell Members screens; module doc + traceability ERP05.
+- Files changed: V7 SQL, `erp05/` (8 main files), `PaymentService` (earn hook + confirm lock), `GuestController` (member chip), `LoyaltyLedger` (+ref getters), `Payment` (+linkFolio), `PaymentRepository` (+lock + findByBooking), `MemberApiTest` + `EarnRaceTest`, `web/src/{App.tsx, api.ts}`, docs (erp-05, TRACEABILITY)
+- Commands that changed state: `git checkout -b feature/3.5-membership develop`; `mvn -B verify` iterations; `npm run build`
+- Verification: `mvn -B verify` → Tests run: 50, Failures: 0, Errors: 0, BUILD SUCCESS; `npm run build` green; live boot → V1→V7 clean, `/health` UP, anon member read → 401. NOT verified: browser click-through; finance sign-off on points-expiry-with-status (flagged for UAT); RFID card link (4.2).
+- Problems & fixes: (1) concurrent captures double-posted folio entries + earn rows → payment-row lock (serializes callbacks) + violation-as-replay (defense in depth) — the race test earned its keep; (2) my test math assumed weekday rates on calendar-picked dates → parse responses dynamically; (3) expiring-member test depended on other tests' data → self-enrolling.
+- User interaction: 3.5 PLAN approved; commit requested at presentation.
+- Next: commit 3.5 → merge to develop (separate approval) → 3.6 Website CMS (PLAN first) — or 3.7 admin/reporting; website integration pending Q-008.
 
 ## 2026-10-09T23:15:00+05:30 — Unit 3.3 Front-office + housekeeping built + verified
 - Phase/unit: 3.3 – Front-office + Housekeeping        Branch: feature/3.3-front-office (from develop, plan-approved)

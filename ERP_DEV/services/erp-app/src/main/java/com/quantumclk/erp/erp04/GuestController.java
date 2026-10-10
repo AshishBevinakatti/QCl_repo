@@ -1,6 +1,7 @@
 package com.quantumclk.erp.erp04;
 
 import com.quantumclk.erp.audit.AuditLog;
+import com.quantumclk.erp.erp05.MemberRepository;
 import com.quantumclk.erp.erp02.RoomCategoryController;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -35,10 +36,12 @@ import org.springframework.web.server.ResponseStatusException;
 public class GuestController {
 
   private final GuestRepository guests;
+  private final MemberRepository members;
   private final AuditLog auditLog;
 
-  public GuestController(GuestRepository guests, AuditLog auditLog) {
+  public GuestController(GuestRepository guests, MemberRepository members, AuditLog auditLog) {
     this.guests = guests;
+    this.members = members;
     this.auditLog = auditLog;
   }
 
@@ -168,6 +171,12 @@ public class GuestController {
   }
 
   GuestDto toDto(Guest g) {
+    // REQ-ERP04-004: profile carries the member chip (null when not enrolled).
+    UUID memberId =
+        members.findByPropertyIdAndGuestId(
+                RoomCategoryController.GOLDEN_HILLS_PROPERTY_ID, g.getId())
+            .map(com.quantumclk.erp.erp05.Member::getId)
+            .orElse(null);
     return new GuestDto(
         g.getId(),
         g.getName(),
@@ -175,7 +184,8 @@ public class GuestController {
         g.getIdType(),
         g.getPreferences(),
         g.getStatus(),
-        g.getMergedInto() != null ? g.getMergedInto().getId() : null);
+        g.getMergedInto() != null ? g.getMergedInto().getId() : null,
+        memberId);
   }
 
   public record CreateGuest(
@@ -188,7 +198,7 @@ public class GuestController {
 
   public record GuestDto(
       UUID id, String name, String phone, String idType, String preferences, String status,
-      UUID mergedIntoId) {}
+      UUID mergedIntoId, UUID memberId) {}
 
   public record GuestPage(List<GuestDto> items, int page, long total) {}
 }

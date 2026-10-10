@@ -42,3 +42,4 @@ Earn/redeem/adjust math tests, expiry-job test, concurrency on ledger, RBAC test
 
 ## Change history
 - 2026-10-09: Phase 1 baseline from SOW §8 + assumed earn/redeem/validity.
+- 2026-10-10 (3.5, as-built): `V7__membership_loyalty` (member/ledger/tier_rule + tier seed); LoyaltyService (enroll GHM-IDs, earn hook on capture idempotent by payment, redeem with 50% folio cap, adjustments with mandatory reason, renew, nightly expiry, spend-threshold upgrades); earn race fixed for real (payment-row lock + violation-as-replay — concurrent captures post exactly once); guest profile member chip (REQ-ERP04-004 done); shell Members screens. Rounding: earn floors paise→points (guest-visible, documented). Code: `services/erp-app/.../erp05/`, `web/src/{App.tsx (Members), api.ts}`.

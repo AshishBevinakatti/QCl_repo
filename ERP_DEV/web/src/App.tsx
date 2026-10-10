@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiHealth, availability, board, bookRoom, checkIn, checkOut, confirmPayment, createGuest, dashboard, folioByStay, initiatePayment, listCategories, requestRefund, rupees, searchGuests, transferStay, walkIn, type CategoryDto, type DashboardDto, type FolioDto, type GuestDto, type RoomBoard } from './api';
+import { apiHealth, availability, board, bookRoom, checkIn, checkOut, confirmPayment, createGuest, dashboard, enrollMember, folioByStay, initiatePayment, listCategories, memberDashboard, redeemPoints, requestRefund, rupees, searchGuests, transferStay, walkIn, type CategoryDto, type DashboardDto, type FolioDto, type GuestDto, type MemberDto, type RoomBoard } from './api';
 
 /**
  * 3.0 base shell: nav skeleton + live API status + room categories.
@@ -47,6 +47,7 @@ export default function App() {
       <FrontOffice />
       <Housekeeping />
       <Billing />
+      <Members />
     </div>
   );
 }
@@ -341,6 +342,62 @@ function Billing() {
               Refund ₹100
             </button>
           </div>
+        </>
+      )}
+      {msg && <p>{msg}</p>}
+    </section>
+  );
+}
+
+/** 3.5 Members: enroll by guest, dashboard, redeem to folio. */
+function Members() {
+  const [guestId, setGuestId] = useState('');
+  const [member, setMember] = useState<MemberDto | null>(null);
+  const [folioId, setFolioId] = useState('');
+  const [points, setPoints] = useState('100');
+  const [msg, setMsg] = useState('');
+
+  async function enroll(e: React.FormEvent) {
+    e.preventDefault();
+    setMsg('');
+    try {
+      setMember(await enrollMember(guestId));
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'enroll failed');
+    }
+  }
+
+  async function refresh() {
+    if (member) setMember(await memberDashboard(member.id));
+  }
+
+  async function redeem(e: React.FormEvent) {
+    e.preventDefault();
+    setMsg('');
+    try {
+      if (!member) return;
+      setMember(await redeemPoints(member.id, folioId, parseInt(points, 10)));
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'redeem failed');
+    }
+  }
+
+  return (
+    <section>
+      <h2>Members</h2>
+      <form onSubmit={enroll} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+        <input value={guestId} onChange={(e) => setGuestId(e.target.value)} placeholder="guest id" aria-label="guest id" />
+        <button type="submit">Enroll</button>
+      </form>
+      {member && (
+        <>
+          <p>{member.membershipNo} · {member.tier} · {member.points} pts · {member.status} till {member.validTo}</p>
+          <form onSubmit={redeem} style={{ display: 'flex', gap: '0.5rem' }}>
+            <input value={folioId} onChange={(e) => setFolioId(e.target.value)} placeholder="folio id" aria-label="folio id" />
+            <input value={points} onChange={(e) => setPoints(e.target.value)} placeholder="points" aria-label="points" />
+            <button type="submit">Redeem</button>
+            <button type="button" onClick={refresh}>Refresh</button>
+          </form>
         </>
       )}
       {msg && <p>{msg}</p>}

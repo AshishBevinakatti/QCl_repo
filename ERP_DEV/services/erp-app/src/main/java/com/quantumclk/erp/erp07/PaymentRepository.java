@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -22,4 +23,10 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
   List<Payment> findByPropertyId(UUID propertyId);
 
   List<Payment> findByBookingId(UUID bookingId);
+
+  /** Serialises confirm/refund processing per payment (double-posting guard). */
+  @Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+  @Query("SELECT p FROM Payment p WHERE p.propertyId = :property AND p.gatewayRef = :ref")
+  Optional<Payment> lockByGatewayRef(@Param("property") UUID propertyId,
+      @Param("ref") String gatewayRef);
 }
