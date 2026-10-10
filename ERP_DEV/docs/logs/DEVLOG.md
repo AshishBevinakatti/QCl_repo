@@ -253,6 +253,16 @@
 - Next: present + ask to commit (merge separate).
 - Commit `3a720eb` (user-approved): UI dashboard on `feature/ui-reception-dashboard` (14 files, +855/−149). Tree clean except untracked `.vscode/` (never committed). No merge/push.
 
+## 2026-10-10T19:05:00+05:30 — Unit 3.6 front-office lists built + verified
+- Phase/unit: 3.6 (PLAN-approved)        Branch: feature/frontoffice-lists (from develop @ 31c675e)
+- What: `GET /departures` (folio-driven Ready/Pending Payment), `GET /in-house`, `GET /alerts` (open tasks + pending payments with ages + overstays); `Payment.getCreatedAt` (no migration); `FrontOfficeListsApiTest` tests-first (6 tests); dashboard Departures/In-house/Alerts cards + Departures KPI + Billing folio-jump wired (`api.ts`, `dashboard.tsx`, `App.tsx`); docs (PLAN-3.6, erp-03, TRACEABILITY REQ-ERP03-001/006).
+- Files changed: `erp03/StayController` (+3 endpoints + DTOs), `erp07/Payment` (+getter), `FrontOfficeListsApiTest` (new), `web/src/{api.ts,dashboard.tsx,App.tsx}`, docs + logs
+- Commands that changed state: `git checkout -b feature/frontoffice-lists develop`; `mvn -B verify` iterations; `./run-local.sh postgres` restart (PID 145220)
+- Verification: new tests RED first (5×404) then 6/6 green; full suite 56/0/0 BUILD SUCCESS; `npm run build` green; live boot → UP, 3 endpoints 401-anon + present in `/v3/api-docs`. NOT verified: authed live rows (Keycloak token — MockMvc covers); browser visual (no browser here).
+- Problems & fixes: (1) my first phones (0501/0502) collided with StayRaceTest → switched to free 09xx; (2) my Deluxe check-ins exhausted the global ready pool → BillingApiTest 409 → switched to untouched Suite pool. Lesson recorded in module doc: shared-H2 footprint = unique phones + virgin category pool.
+- User interaction: PLAN-3.6 approved; Slice B declined; merge-UI-then-branch order approved.
+- Next: present + ask to commit (merge separate).
+
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);
   facilities depth TBD in requirements analysis; tax/posting treatment TBD; RFID 1 terminal + 100 cards;

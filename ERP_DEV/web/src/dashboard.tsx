@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import bannerImg from './assets/banner.jpg';
 import {
-  board, checkIn, dashboard, enrichReservations, guestById, listCategories, listReservations,
-  reservationById, searchGuests,
-  type DashboardDto, type EnrichedReservation,
+  alerts, board, checkIn, checkOut, dashboard, departures, enrichReservations, guestById,
+  inHouseGuests, listCategories, listReservations, reservationById, rupees, searchGuests,
+  type AlertDto, type DashboardDto, type DepartureDto, type EnrichedReservation, type InHouseDto,
 } from './api';
 import { isAuthenticated, login, logout, roles, username } from './auth';
 import { demoBoard, demoDashboard } from './demo';
-import { Badge, Btn, Donut, Icon, Kpi, Soon, statusTone } from './ui';
+import { Badge, Btn, Donut, Icon, Kpi, statusTone } from './ui';
 
 export type View =
   | 'dashboard' | 'reservations' | 'guests' | 'rooms' | 'check'
@@ -180,11 +180,16 @@ export function Topbar({ onJump, api }: {
 }
 
 /* ---------------- Dashboard ---------------- */
-export function DashboardView({ mode, go }: { mode: Mode; go: (v: View) => void }) {
+export function DashboardView({ mode, go, viewFolio }: {
+  mode: Mode; go: (v: View) => void; viewFolio: (stayId: string) => void;
+}) {
   const today = new Date().toISOString().slice(0, 10);
   const [dash, setDash] = useState<DashboardDto | null>(mode === 'preview' ? demoDashboard : null);
   const [arrivals, setArrivals] = useState<EnrichedReservation[]>([]);
   const [bookings, setBookings] = useState<EnrichedReservation[]>([]);
+  const [departuresList, setDeparturesList] = useState<DepartureDto[]>([]);
+  const [inhouseList, setInhouseList] = useState<InHouseDto[]>([]);
+  const [alertList, setAlertList] = useState<AlertDto[]>([]);
   const [denied, setDenied] = useState(false);
   const [msg, setMsg] = useState('');
   const [acting, setActing] = useState<string | null>(null);
@@ -194,6 +199,7 @@ export function DashboardView({ mode, go }: { mode: Mode; go: (v: View) => void 
     if (mode === 'preview') {
       setDash(demoDashboard);
       setArrivals([]); setBookings([]);
+      setDeparturesList([]); setInhouseList([]); setAlertList([]);
       return;
     }
     try {
@@ -202,6 +208,10 @@ export function DashboardView({ mode, go }: { mode: Mode; go: (v: View) => void 
       setArrivals(await enrichReservations(d.arrivals.slice(0, 25), c.items));
       const recent = await listReservations(today);
       setBookings(await enrichReservations(recent.slice(0, 8).map((r) => r.id), c.items));
+      const [dep, inh, al] = await Promise.all([
+        departures(today), inHouseGuests(), alerts(),
+      ]);
+      setDeparturesList(dep); setInhouseList(inh); setAlertList(al);
     } catch (err) {
       if (err instanceof Error && /401|signed in/i.test(err.message)) setDenied(true);
       else setMsg(err instanceof Error ? err.message : 'Dashboard failed.');
@@ -218,6 +228,19 @@ export function DashboardView({ mode, go }: { mode: Mode; go: (v: View) => void 
       await load();
     } catch (err) {
       setMsg(err instanceof Error ? err.message : 'Check-in failed.');
+    } finally {
+      setActing(null);
+    }
+  }
+
+  async function doCheckOut(stayId: string) {
+    setActing(stayId); setOk(''); setMsg('');
+    try {
+      await checkOut(stayId);
+      setOk('Checked out — room flagged dirty, cleaning task opened.');
+      await load();
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'Check-out failed.');
     } finally {
       setActing(null);
     }
@@ -256,7 +279,7 @@ export function DashboardView({ mode, go }: { mode: Mode; go: (v: View) => void 
       <div className="kpis">
         <Kpi icon="bed" tint="var(--brand)" num={avail} lbl="Rooms Available" sub={`out of ${total} rooms`} />
         <Kpi icon="event_available" tint="var(--gold)" num={dash.arrivals.length} lbl="Expected Arrivals" sub="Today" />
-        <Kpi icon="event_busy" tint="#8a8f85" num="—" lbl="Expected Departures" sub="coming soon" />
+        <Kpi icon="event_busy" tint="#8a8f85" num={mode === 'preview' ? '—' : departuresList.length} lbl="Expected Departures" sub="Today" />
         <Kpi icon="groups" tint="#274b9b" num={dash.inHouse.length} lbl="In-House Guests" sub="Currently staying" />
         <Kpi icon="cleaning_services" tint="var(--danger)" num={ready} lbl="Rooms Awaiting Readiness" sub="Housekeeping in progress" />
       </div>
@@ -325,12 +348,56 @@ export function DashboardView({ mode, go }: { mode: Mode; go: (v: View) => void 
 
       <div className="dash-grid">
         <div className="panel">
-          <div className="phead"><h3>Today&apos;s Departures</h3></div>
-          <Soon icon="event_busy" title="Coming soon" why="No departures endpoint yet — checkout listings arrive in a later unit." />
+          <div className="phead"><h3>Today&apos;s Departures ({mode === 'preview' ? 0 : departuresList.length})</h3><a onClick={() => go('check')}>View all <Icon name="arrow_forward" size={14} /></a></div>
+          {mode === 'preview' ? (
+            <p className="muted">Preview shows the layout only — log in for live departures.</p>
+          ) : departuresList.length === 0 ? (
+            <p className="muted">No departures expected today.</p>
+          ) : (
+            <table className="dtbl">
+              <thead><tr><th>Time</th><th>Guest Name</th><th>Room</th><th>Stay Duration</th><th>Outstanding</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody>
+                {departuresList.map((d) => (
+                  <tr key={d.stayId}>
+                    <td title="Check-out times are not stored — dates only">—</td>
+                    <td>{d.guestName}</td>
+                    <td>{d.roomNo}</td>
+                    <td>{d.nights} night{d.nights === 1 ? '' : 's'}</td>
+                    <td>{rupees(d.outstandingPaise)}</td>
+                    <td><Badge tone={d.status === 'Ready' ? 'green' : 'amber'}>{d.status}</Badge></td>
+                    <td>
+                      {d.status === 'Ready' ? (
+                        <button className="mini-btn" disabled={acting === d.stayId} onClick={() => doCheckOut(d.stayId)}>
+                          {acting === d.stayId ? '…' : 'Check Out'}
+                        </button>
+                      ) : (
+                        <button className="mini-btn" onClick={() => viewFolio(d.stayId)}>View Folio</button>
+                      )}{' '}
+                      <button className="mini-btn" title="Row actions — coming soon">…</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
         <div className="panel">
           <div className="phead"><h3>Alerts &amp; Pending Tasks</h3></div>
-          <Soon icon="notifications" title="Coming soon" why="No alerts or service-request API yet — housekeeping tasks live under Housekeeping." />
+          {mode === 'preview' ? (
+            <p className="muted">Preview shows the layout only — log in for live alerts.</p>
+          ) : alertList.length === 0 ? (
+            <p className="muted">All clear — no pending alerts.</p>
+          ) : (
+            <div className="donut-legend">
+              {alertList.map((a) => (
+                <span className="rowline" key={a.ref + a.text}>
+                  <span className="dot" style={{ background: a.severity === 'high' ? '#d84a4a' : a.severity === 'medium' ? '#b98a2f' : '#274b9b' }} />
+                  {a.text}
+                </span>
+              ))}
+            </div>
+          )}
+          <p className="muted">Guest requests and maintenance issues arrive in a later unit — no source system yet.</p>
         </div>
       </div>
 
@@ -355,8 +422,25 @@ export function DashboardView({ mode, go }: { mode: Mode; go: (v: View) => void 
           )}
         </div>
         <div className="panel">
-          <div className="phead"><h3>In-House Guests ({dash.inHouse.length})</h3></div>
-          <Soon icon="groups" title="Coming soon" why="Stay-detail lookup is not exposed — guest/room rows arrive in a later unit." />
+          <div className="phead"><h3>In-House Guests ({mode === 'preview' ? 0 : inhouseList.length})</h3></div>
+          {mode === 'preview' ? (
+            <p className="muted">Preview shows the layout only — log in for live rows.</p>
+          ) : inhouseList.length === 0 ? (
+            <p className="muted">No guests currently staying.</p>
+          ) : (
+            <table className="dtbl">
+              <thead><tr><th>Guest Name</th><th>Room</th><th>Check-out</th><th>Status</th></tr></thead>
+              <tbody>
+                {inhouseList.map((s) => (
+                  <tr key={s.stayId}>
+                    <td>{s.guestName}</td><td>{s.roomNo}</td>
+                    <td>{s.checkoutDate ?? '—'}</td>
+                    <td><Badge tone="green">{s.status}</Badge></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
         <div className="promo">
           <img src={bannerImg} alt="" />

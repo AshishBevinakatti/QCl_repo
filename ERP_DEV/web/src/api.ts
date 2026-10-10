@@ -412,3 +412,47 @@ export async function enrichReservations(
 export function shortRef(id: string): string {
   return id.slice(0, 8).toUpperCase();
 }
+
+export interface DepartureDto {
+  stayId: string;
+  reservationId: string;
+  guestName: string;
+  roomNo: string;
+  checkinDate: string;
+  checkoutDate: string;
+  nights: number;
+  outstandingPaise: number;
+  status: string;
+}
+
+export async function departures(date: string): Promise<DepartureDto[]> {
+  const res = await apiFetch(`/api/v1/departures?date=${date}`);
+  if (!res.ok) throw new Error(`departures failed: ${res.status}`);
+  return res.json();
+}
+
+export interface InHouseDto {
+  stayId: string;
+  guestName: string;
+  roomNo: string;
+  checkoutDate: string | null;
+  status: string;
+}
+
+export async function inHouseGuests(): Promise<InHouseDto[]> {
+  const res = await apiFetch('/api/v1/in-house');
+  if (!res.ok) throw new Error(`in-house failed: ${res.status}`);
+  return res.json();
+}
+
+export interface AlertDto {
+  severity: string;
+  text: string;
+  ref: string;
+}
+
+export async function alerts(): Promise<AlertDto[]> {
+  const res = await apiFetch('/api/v1/alerts');
+  if (!res.ok) throw new Error(`alerts failed: ${res.status}`);
+  return res.json();
+}
