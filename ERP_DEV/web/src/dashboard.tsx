@@ -1,0 +1,416 @@
+import { useEffect, useState } from 'react';
+import bannerImg from './assets/banner.jpg';
+import {
+  board, checkIn, dashboard, enrichReservations, guestById, listCategories, listReservations,
+  reservationById, searchGuests,
+  type DashboardDto, type EnrichedReservation,
+} from './api';
+import { isAuthenticated, login, logout, roles, username } from './auth';
+import { demoBoard, demoDashboard } from './demo';
+import { Badge, Btn, Donut, Icon, Kpi, Soon, statusTone } from './ui';
+
+export type View =
+  | 'dashboard' | 'reservations' | 'guests' | 'rooms' | 'check'
+  | 'billing' | 'requests' | 'housekeeping' | 'reports' | 'settings';
+export type Mode = 'live' | 'preview';
+
+export interface Jump {
+  view: View;
+  q?: string;
+  reservationId?: string;
+  roomFilter?: string;
+}
+
+/* Room-status → donut bucket. Backend stores free-form lowercase strings;
+ * anything unknown counts as Available (ready-like) — mapping is documented
+ * in docs/04-modules/erp-03-front-office.md, not hidden. */
+const MAINT = new Set(['dirty', 'cleaning', 'inspect', 'out_of_order', 'maintenance']);
+function bucket(status: string): 'available' | 'occupied' | 'maint' {
+  if (status === 'occupied') return 'occupied';
+  if (MAINT.has(status)) return 'maint';
+  return 'available';
+}
+
+const NAV: { id: View; label: string; icon: string }[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+  { id: 'reservations', label: 'Reservations', icon: 'calendar_month' },
+  { id: 'guests', label: 'Guests', icon: 'group' },
+  { id: 'rooms', label: 'Room Management', icon: 'bed' },
+  { id: 'check', label: 'Check-in / Check-out', icon: 'swap_horiz' },
+  { id: 'billing', label: 'Billing & Payments', icon: 'receipt_long' },
+  { id: 'requests', label: 'Service Requests', icon: 'build' },
+  { id: 'housekeeping', label: 'Housekeeping', icon: 'cleaning_services' },
+  { id: 'reports', label: 'Reports', icon: 'bar_chart' },
+];
+
+function greeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+/* ---------------- Sidebar ---------------- */
+export function Sidebar({ view, go, mode, setMode }: {
+  view: View; go: (v: View) => void; mode: Mode; setMode: (m: Mode) => void;
+}) {
+  const authed = isAuthenticated();
+  return (
+    <aside className="sidebar">
+      <div className="brand">Golden Hills<small>Resort ERP</small></div>
+      <div className="mode-toggle" role="group" aria-label="data mode">
+        <button className={mode === 'live' ? 'active' : ''} onClick={() => setMode('live')}>Live</button>
+        <button className={mode === 'preview' ? 'active' : ''} onClick={() => setMode('preview')}>Preview</button>
+      </div>
+      <nav className="nav">
+        {NAV.map((n) => (
+          <button key={n.id} className={view === n.id ? 'active' : ''} onClick={() => go(n.id)}>
+            <Icon name={n.icon} />{n.label}
+          </button>
+        ))}
+      </nav>
+      <div className="side-foot">
+        {authed ? (
+          <div className="usercard">
+            <span className="avatar">{(username() || '?').slice(0, 1).toUpperCase()}</span>
+            <span className="who"><strong>{username()}</strong><small>{roles().join(', ') || 'staff'}</small></span>
+          </div>
+        ) : (
+          <div className="usercard">
+            <span className="avatar">?</span>
+            <span className="who"><strong>Not signed in</strong><small>{mode === 'preview' ? 'preview data' : 'live needs login'}</small></span>
+          </div>
+        )}
+        <nav className="nav">
+          <button className={view === 'settings' ? 'active' : ''} onClick={() => go('settings')}>
+            <Icon name="settings" />Settings
+          </button>
+          {authed
+            ? <button onClick={logout}><Icon name="logout" />Logout</button>
+            : <button onClick={login}><Icon name="login" />Staff log in</button>}
+        </nav>
+      </div>
+    </aside>
+  );
+}
+
+/* ---------------- Topbar ---------------- */
+export function Topbar({ onJump, api }: {
+  onJump: (j: Jump) => void; api: string;
+}) {
+  const [q, setQ] = useState('');
+  const [hits, setHits] = useState<{ kind: string; label: string; sub: string; jump: Jump }[]>([]);
+  const [msg, setMsg] = useState('');
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(t);
+  }, []);
+
+  async function run(e?: React.FormEvent) {
+    e?.preventDefault();
+    const query = q.trim();
+    if (!query) return;
+    setMsg('Searching…');
+    setHits([]);
+    const out: { kind: string; label: string; sub: string; jump: Jump }[] = [];
+    try {
+      const g = await searchGuests(query);
+      for (const item of g.items.slice(0, 5)) {
+        out.push({
+          kind: 'Guest', label: item.name, sub: item.phone,
+          jump: { view: 'guests', q: item.phone },
+        });
+      }
+    } catch { /* signed-out: guest search unavailable */ }
+    if (/^[0-9a-f-]{8,}$/i.test(query)) {
+      try {
+        const r = await reservationById(query);
+        let name = r.guestId;
+        try { name = (await guestById(r.guestId)).name; } catch { /* id fallback */ }
+        out.push({
+          kind: 'Booking', label: `${r.id.slice(0, 8).toUpperCase()} — ${name}`,
+          sub: `${r.checkinDate} → ${r.checkoutDate} · ${r.status}`,
+          jump: { view: 'check', reservationId: r.id },
+        });
+      } catch { /* not a booking id */ }
+    }
+    try {
+      const d = await dashboard(new Date().toISOString().slice(0, 10));
+      for (const r of d.rooms.filter((rm) => rm.roomNo.toLowerCase().includes(query.toLowerCase())).slice(0, 5)) {
+        out.push({
+          kind: 'Room', label: `Room ${r.roomNo}`, sub: r.status,
+          jump: { view: 'rooms', roomFilter: r.roomNo },
+        });
+      }
+    } catch { /* signed-out: room match unavailable */ }
+    setHits(out);
+    setMsg(out.length === 0 ? 'No matches — try a guest name, phone, booking ID, or room number.' : '');
+  }
+
+  const dateStr = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(now);
+  const timeStr = new Intl.DateTimeFormat('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).format(now);
+
+  return (
+    <div>
+      <div className="topbar-new">
+        <form className="searchbox" onSubmit={run}>
+          <Icon name="search" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search guest, booking ID, room number…" aria-label="Search" />
+          <kbd>⌘ K</kbd>
+        </form>
+        <span className="clock"><strong>{dateStr}</strong>{timeStr} · {api}</span>
+        <button className="iconbtn" title="Notifications — coming soon (no alerts API yet)"><Icon name="notifications" /></button>
+      </div>
+      {msg && <p className="muted">{msg}</p>}
+      {hits.length > 0 && (
+        <div className="panel" style={{ marginBottom: '1rem' }}>
+          {hits.map((h, i) => (
+            <div key={i} className="row" style={{ alignItems: 'center', padding: '0.25rem 0' }}>
+              <Badge>{h.kind}</Badge>
+              <span><strong>{h.label}</strong> <span className="muted">{h.sub}</span></span>
+              <Btn ghost onClick={() => { onJump(h.jump); setHits([]); setQ(''); }}>Open</Btn>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- Dashboard ---------------- */
+export function DashboardView({ mode, go }: { mode: Mode; go: (v: View) => void }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [dash, setDash] = useState<DashboardDto | null>(mode === 'preview' ? demoDashboard : null);
+  const [arrivals, setArrivals] = useState<EnrichedReservation[]>([]);
+  const [bookings, setBookings] = useState<EnrichedReservation[]>([]);
+  const [denied, setDenied] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [acting, setActing] = useState<string | null>(null);
+  const [ok, setOk] = useState('');
+
+  async function load() {
+    if (mode === 'preview') {
+      setDash(demoDashboard);
+      setArrivals([]); setBookings([]);
+      return;
+    }
+    try {
+      const [d, c] = await Promise.all([dashboard(today), listCategories()]);
+      setDash(d); setDenied(false); setMsg('');
+      setArrivals(await enrichReservations(d.arrivals.slice(0, 25), c.items));
+      const recent = await listReservations(today);
+      setBookings(await enrichReservations(recent.slice(0, 8).map((r) => r.id), c.items));
+    } catch (err) {
+      if (err instanceof Error && /401|signed in/i.test(err.message)) setDenied(true);
+      else setMsg(err instanceof Error ? err.message : 'Dashboard failed.');
+    }
+  }
+
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [mode]);
+
+  async function doCheckIn(id: string) {
+    setActing(id); setOk(''); setMsg('');
+    try {
+      await checkIn(id);
+      setOk('Checked in — room auto-assigned by the front office.');
+      await load();
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'Check-in failed.');
+    } finally {
+      setActing(null);
+    }
+  }
+
+  if (mode === 'live' && !dash && denied) {
+    return (
+      <div className="panel">
+        <p>This dashboard needs sign-in — use the <strong>Staff log in</strong> button in the sidebar.</p>
+        <p className="muted">Meanwhile, switch to Preview above to review the layout.</p>
+      </div>
+    );
+  }
+  if (mode === 'live' && !dash && msg) return <div className="panel"><p>{msg}</p></div>;
+  if (!dash) return null;
+
+  const total = dash.rooms.length;
+  const avail = dash.rooms.filter((r) => bucket(r.status) === 'available').length;
+  const occ = dash.rooms.filter((r) => bucket(r.status) === 'occupied').length;
+  const maint = total - avail - occ;
+  const ready = dash.rooms.filter((r) => bucket(r.status) === 'maint').length;
+  const pct = (n: number) => (total === 0 ? 0 : Math.round((n / total) * 100));
+
+  return (
+    <>
+      <div className="banner">
+        <img src={bannerImg} alt="" />
+        <div className="shade" />
+        <div className="txt">
+          <h2>{greeting()}, {isAuthenticated() ? username() : 'there'}</h2>
+          <p>Here&apos;s what&apos;s happening at Golden Hills Resort today.</p>
+        </div>
+        <div className="tag">Make every stay<br />a memorable experience.</div>
+      </div>
+
+      <div className="kpis">
+        <Kpi icon="bed" tint="var(--brand)" num={avail} lbl="Rooms Available" sub={`out of ${total} rooms`} />
+        <Kpi icon="event_available" tint="var(--gold)" num={dash.arrivals.length} lbl="Expected Arrivals" sub="Today" />
+        <Kpi icon="event_busy" tint="#8a8f85" num="—" lbl="Expected Departures" sub="coming soon" />
+        <Kpi icon="groups" tint="#274b9b" num={dash.inHouse.length} lbl="In-House Guests" sub="Currently staying" />
+        <Kpi icon="cleaning_services" tint="var(--danger)" num={ready} lbl="Rooms Awaiting Readiness" sub="Housekeeping in progress" />
+      </div>
+
+      {ok && <div className="panel" style={{ marginBottom: '0.9rem' }}>{ok}</div>}
+      {msg && <div className="panel" style={{ marginBottom: '0.9rem' }}>{msg}</div>}
+
+      <div className="dash-grid">
+        <div className="panel">
+          <div className="phead"><h3>Today&apos;s Arrivals ({dash.arrivals.length})</h3><a onClick={() => go('check')}>View all <Icon name="arrow_forward" size={14} /></a></div>
+          {mode === 'preview' ? (
+            <p className="muted">Preview shows the layout only — guest rows are never invented. Log in for live arrivals.</p>
+          ) : arrivals.length === 0 ? (
+            <p className="muted">No arrivals expected today.</p>
+          ) : (
+            <table className="dtbl">
+              <thead><tr><th>Time</th><th>Guest Name</th><th>Booking ID</th><th>Room Type</th><th>Guests</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody>
+                {arrivals.map((a) => (
+                  <tr key={a.id}>
+                    <td title="Check-in times are not stored — dates only">—</td>
+                    <td>{a.guestName}</td>
+                    <td title={a.id}>{a.ref}</td>
+                    <td>{a.category}</td>
+                    <td title="Party size is not stored on a reservation">—</td>
+                    <td><Badge tone={statusTone(a.status)}>{a.status === 'confirmed' ? 'Confirmed' : a.status}</Badge></td>
+                    <td>
+                      <button className="mini-btn" disabled={acting === a.id} onClick={() => doCheckIn(a.id)}>
+                        {acting === a.id ? '…' : 'Check In'}
+                      </button>{' '}
+                      <button className="mini-btn" title="Row actions — coming soon">…</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <div className="panel">
+          <div className="phead"><h3>Room Status Overview</h3><a onClick={() => go('rooms')}>View all <Icon name="arrow_forward" size={14} /></a></div>
+          <div className="donut-wrap">
+            <Donut
+              total={total} label="Total Rooms"
+              slices={[
+                { value: avail, color: '#2e7d32' },
+                { value: occ, color: '#d84a4a' },
+                { value: maint, color: '#b98a2f' },
+              ]}
+            />
+            <div className="donut-legend">
+              <span className="rowline"><span className="dot" style={{ background: '#2e7d32' }} />Available<span className="n">{avail} ({pct(avail)}%)</span></span>
+              <span className="rowline"><span className="dot" style={{ background: '#d84a4a' }} />Occupied<span className="n">{occ} ({pct(occ)}%)</span></span>
+              <span className="rowline" title="Rooms carry no reserved status — reservations hold categories, not rooms"><span className="dot" style={{ background: '#274b9b' }} />Reserved<span className="n">—</span></span>
+              <span className="rowline"><span className="dot" style={{ background: '#b98a2f' }} />Maintenance<span className="n">{maint} ({pct(maint)}%)</span></span>
+            </div>
+          </div>
+          <div className="minis">
+            <div className="mini"><Icon name="bed" /><span><span className="num">{avail}</span><div className="lbl">Available</div></span></div>
+            <div className="mini"><Icon name="hotel" /><span><span className="num">{occ}</span><div className="lbl">Occupied</div></span></div>
+            <div className="mini"><Icon name="event_busy" /><span><span className="num">—</span><div className="lbl">Reserved</div></span></div>
+            <div className="mini"><Icon name="build" /><span><span className="num">{maint}</span><div className="lbl">Maintenance</div></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div className="dash-grid">
+        <div className="panel">
+          <div className="phead"><h3>Today&apos;s Departures</h3></div>
+          <Soon icon="event_busy" title="Coming soon" why="No departures endpoint yet — checkout listings arrive in a later unit." />
+        </div>
+        <div className="panel">
+          <div className="phead"><h3>Alerts &amp; Pending Tasks</h3></div>
+          <Soon icon="notifications" title="Coming soon" why="No alerts or service-request API yet — housekeeping tasks live under Housekeeping." />
+        </div>
+      </div>
+
+      <div className="dash-grid" style={{ gridTemplateColumns: '1fr 1fr 0.9fr' }}>
+        <div className="panel">
+          <div className="phead"><h3>Recent Bookings</h3><a onClick={() => go('check')}>View all <Icon name="arrow_forward" size={14} /></a></div>
+          {mode === 'preview' || bookings.length === 0 ? (
+            <p className="muted">{mode === 'preview' ? 'Preview shows the layout only — log in for live bookings.' : 'No bookings on this date.'}</p>
+          ) : (
+            <table className="dtbl">
+              <thead><tr><th>Guest Name</th><th>Booking ID</th><th>Check-in</th><th>Check-out</th><th>Status</th></tr></thead>
+              <tbody>
+                {bookings.map((b) => (
+                  <tr key={b.id}>
+                    <td>{b.guestName}</td><td title={b.id}>{b.ref}</td>
+                    <td>{b.checkinDate}</td><td>{b.checkoutDate}</td>
+                    <td><Badge tone={statusTone(b.status)}>{b.status}</Badge></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        <div className="panel">
+          <div className="phead"><h3>In-House Guests ({dash.inHouse.length})</h3></div>
+          <Soon icon="groups" title="Coming soon" why="Stay-detail lookup is not exposed — guest/room rows arrive in a later unit." />
+        </div>
+        <div className="promo">
+          <img src={bannerImg} alt="" />
+          <div className="shade" />
+          <div className="txt">
+            <strong>Need to assign a room quickly?</strong>
+            <p>Check available rooms and assign to a guest.</p>
+            <button className="go" onClick={() => go('rooms')}>Manage Rooms <Icon name="arrow_forward" size={15} /></button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ---------------- Room Management ---------------- */
+export function RoomsView({ mode, initialFilter }: { mode: Mode; initialFilter?: string }) {
+  const [rooms, setRooms] = useState<{ id: string; roomNo: string; status: string }[]>(
+    mode === 'preview' ? demoDashboard.rooms : []);
+  const [filter, setFilter] = useState(initialFilter ?? '');
+  const [msg, setMsg] = useState('');
+
+  useEffect(() => { setFilter(initialFilter ?? ''); }, [initialFilter]);
+
+  useEffect(() => {
+    if (mode === 'preview') { setRooms(demoDashboard.rooms); return; }
+    dashboard(new Date().toISOString().slice(0, 10))
+      .then((d) => setRooms(d.rooms))
+      .catch((err) => setMsg(err instanceof Error ? err.message : 'Rooms need login.'));
+  }, [mode]);
+
+  const shown = rooms.filter((r) => r.roomNo.toLowerCase().includes(filter.toLowerCase()));
+  return (
+    <div className="panel">
+      <div className="phead"><h3>Rooms ({shown.length})</h3></div>
+      <div className="row" style={{ marginBottom: '0.7rem' }}>
+        <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filter by room number…" aria-label="Filter rooms" />
+      </div>
+      {msg && <p className="muted">{msg}</p>}
+      <div className="roomgrid">
+        {shown.map((r) => (
+          <div className="roomcell" key={r.id}>
+            <div className="no">{r.roomNo}</div>
+            <Badge tone={statusTone(r.status)}>{r.status}</Badge>
+          </div>
+        ))}
+      </div>
+      {shown.length === 0 && <p className="muted">No rooms match.</p>}
+    </div>
+  );
+}
+
+/* ---------------- Housekeeping preview helper ---------------- */
+export async function previewBoard(mode: Mode) {
+  if (mode === 'preview') return demoBoard;
+  return board();
+}

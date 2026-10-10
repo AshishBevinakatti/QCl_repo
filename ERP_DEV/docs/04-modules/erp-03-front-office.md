@@ -1,7 +1,7 @@
 # ERP-03 — Front Office
 
 - Purpose: reception daily operations — arrivals/departures, check-in/out, allocation/transfer, occupancy, activity logs. Audience: architects, ERP-03 builders. Last verified: 2026-10-09. Owner: project team.
-- SOW: §6 (CORE). REQs: REQ-ERP03-001…007. Phase: 3.3 (with housekeeping). Status: baselined; design/code pending.
+- SOW: §6 (CORE). REQs: REQ-ERP03-001…007. Phase: 3.3 + UI dashboard (2026-10-10). Status: built, live-verified; departures/alerts endpoints still missing (see limits).
 
 ## Actors/roles
 Reception (primary), Manager (approvals/overrides), Housekeeping (status feed), Accounts (balances). Guest verification per SOW §6.
@@ -21,7 +21,8 @@ Uses `reservation`, `room`, `guest` (ERP-02/04) + `stay` (reservation_id, room_i
 Stay: `expected → checked-in → checked-out`; Room (reception view): `vacant-ready → occupied → dirty → cleaning → ready` (housekeeping owns dirty→ready transitions).
 
 ## API endpoints
-`GET /api/v1/front-office/dashboard?date=` · `POST /api/v1/stays/check-in` · `POST /api/v1/stays/{id}/transfer` · `POST /api/v1/stays/{id}/check-out` · `POST /api/v1/walk-ins` · `GET /api/v1/arrivals?date=` · `GET /api/v1/departures?date=`.
+`GET /api/v1/front-office/dashboard?date=` · `POST /api/v1/stays/check-in` · `POST /api/v1/stays/{id}/transfer` · `POST /api/v1/stays/{id}/check-out` · `POST /api/v1/walk-ins` · `GET /api/v1/arrivals?date=`.
+Correction 2026-10-10: earlier text listed `GET /api/v1/departures?date=` — that endpoint does **not** exist (verified in `StayController`); departures, alerts/service-requests, and stay-detail GET are all missing, hence the coming-soon cards below.
 
 ## Screens
 Reception dashboard (arrivals/departures/in-house/room grid/balances), check-in form (verification checklist), transfer dialog, check-out + settlement view, activity log.
@@ -41,9 +42,15 @@ Room-status feed (housekeeping), folio/billing (balances + settlement), guest CR
 ## Tests
 Check-in gate tests (dirty/unpaid blocked), transfer folio-follow test, settlement-block test, RBAC test, arrivals-date-boundary test.
 
+## Reception dashboard UI (as-built 2026-10-10, `web/src/dashboard.tsx`)
+Reference-image layout, theme palette kept: icon side nav (Dashboard, Reservations, Guests, Room Management, Check-in/out, Billing & Payments, Service Requests, Housekeeping, Reports + Settings/Logout + staff card), topbar search (guest name/phone, booking UUID, room number matched client-side), live clock, greeting banner with the user-supplied pool photo (`web/src/assets/banner.jpg`, source logged in RESOURCES_LOG), 5 KPI cards, arrivals table with working Check-In, SVG room-status donut, recent bookings, Manage-Rooms promo. Members screens live under Guests (no Members entry in the reference nav).
+Live vs coming-soon (verified against `StayController`): live = KPIs (except Departures), arrivals enrichment (`GET /reservations/{id}` + `GET /guests/{id}` per row, failures degrade to "—"), donut, recent bookings, room grid; coming-soon = Departures table, Alerts & Tasks, In-House Guests table, Service Requests / Reports / Settings views, row "…" menus, bell badge.
+Donut mapping: `ready`→Available, `occupied`→Occupied, `dirty`/`cleaning`/`inspect`/`out_of_order`→Maintenance, anything else→Available; Reserved shows "—" (rooms carry no reserved status). Arrival Time and Guests-count columns show "—" (backend stores dates, not times; reservations carry no party size). Fonts: SF Pro system stack (Apple-licensed, not bundlable) + Material Symbols CDN (user-approved 2026-10-10). No guest names invented anywhere: Preview shows layout/empty states only (standing user rule).
+
 ## Known limits
 ID-verification depth pending client process answers; biometric beyond scope (SOW §30).
 
 ## Change history
 - 2026-10-09: Phase 1 baseline from SOW §6 + assumed times.
 - 2026-10-09 (3.3, as-built): `V5__front_office_housekeeping` (stay/room_transfer/housekeeping_task); StayService (gated check-in with auto-assign, settlement-gated check-out + auto task, transfer with folio-follows stub, walk-in chain); room-level overlap guard + pessimistic lock + race test; dashboard/arrivals/occupancy; folio stub `FolioBalance` (3.4 fills, no API change); shell reception screens. Code: `services/erp-app/.../erp03/`, `web/src/{App.tsx (FrontOffice/WalkIn), api.ts}`.
+- 2026-10-10 (UI dashboard, as-built): reference-image reception dashboard (`dashboard.tsx`: Sidebar/Topbar/DashboardView/RoomsView), enrichment helpers in `api.ts` (`reservationById`, `enrichReservations`), shared blocks in `ui.tsx` (Icon/Soon/Kpi/Donut), SF Pro stack + Material Symbols CDN in `index.html`, banner photo asset, Preview extended without guest names. No backend change. Verified: `npm run build` green, preview 200 + banner 200.

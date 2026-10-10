@@ -1,28 +1,16 @@
 import { useEffect, useState } from 'react';
 import {
   HttpError, apiHealth, availability, board, bookRoom, checkIn, checkOut, confirmPayment,
-  createGuest, dashboard, enrollMember, folioByStay, guestById, initiatePayment, isAuthError,
+  createGuest, enrollMember, folioByStay, guestById, initiatePayment, isAuthError,
   listCategories, listReservations, redeemPoints, requestRefund, rupees, searchGuests, transferStay,
   walkIn,
-  type CategoryDto, type DashboardDto, type FolioDto, type GuestDto, type MemberDto,
+  type CategoryDto, type FolioDto, type GuestDto, type MemberDto,
   type ReservationSummary, type RoomBoard,
 } from './api';
-import { demoBoard, demoCategories, demoDashboard, demoFolio, demoGuests, demoMember } from './demo';
-import { Alert, Badge, Btn, Card, Field, Stat, statusTone } from './ui';
-import { initAuthOnce, isAuthenticated, login, logout, roles, username } from './auth';
-
-type View = 'dashboard' | 'book' | 'front' | 'guests' | 'members' | 'billing' | 'housekeeping';
-type Mode = 'live' | 'preview';
-
-const NAV: { id: View; label: string }[] = [
-  { id: 'dashboard', label: 'Dashboard' },
-  { id: 'book', label: 'Book a room' },
-  { id: 'front', label: 'Front office' },
-  { id: 'guests', label: 'Guests' },
-  { id: 'members', label: 'Members' },
-  { id: 'billing', label: 'Billing' },
-  { id: 'housekeeping', label: 'Housekeeping' },
-];
+import { demoBoard, demoCategories, demoFolio, demoGuests, demoMember } from './demo';
+import { Alert, Badge, Btn, Card, Field, Soon, Stat, statusTone } from './ui';
+import { DashboardView, RoomsView, Sidebar, Topbar, type Jump, type Mode, type View } from './dashboard';
+import { initAuthOnce } from './auth';
 
 /**
  * Golden Hills ERP workspace. Live mode talks to erp-app as the signed-in
@@ -32,130 +20,64 @@ export default function App() {
   const [view, setView] = useState<View>('dashboard');
   const [mode, setMode] = useState<Mode>('preview');
   const [api, setApi] = useState('checking…');
-  const [apiUp, setApiUp] = useState(false);
-  const [authTick, setAuthTick] = useState(0);
-  const authed = isAuthenticated();
+  const [jump, setJump] = useState<(Jump & { nonce: number }) | null>(null);
 
   useEffect(() => {
     apiHealth()
-      .then((h) => { setApi(`${h.status} (${h.service})`); setApiUp(true); })
-      .catch(() => { setApi('unreachable — start erp-app (DAY-ONE §5)'); setApiUp(false); });
-    initAuthOnce().then(() => setAuthTick((t) => t + 1));
+      .then((h) => setApi(`${h.status}`))
+      .catch(() => setApi('unreachable'));
+    initAuthOnce();
   }, []);
+
+  function go(v: View) {
+    setView(v);
+  }
+
+  function onJump(j: Jump) {
+    setJump({ ...j, nonce: Date.now() });
+    setView(j.view);
+  }
 
   return (
     <div className="erp">
-      <aside className="sidebar">
-        <div className="brand">Golden Hills<small>Resort ERP</small></div>
-        <div className="mode-toggle" role="group" aria-label="data mode">
-          <button className={mode === 'live' ? 'active' : ''} onClick={() => setMode('live')}>Live</button>
-          <button className={mode === 'preview' ? 'active' : ''} onClick={() => setMode('preview')}>Preview</button>
-        </div>
-        <nav className="nav">
-          {NAV.map((n) => (
-            <button key={n.id} className={view === n.id ? 'active' : ''} onClick={() => setView(n.id)}>
-              {n.label}
-            </button>
-          ))}
-        </nav>
-        <div className="side-foot">
-          {authed ? (
-            <>
-              <div style={{ fontWeight: 700, color: '#fff' }}>{username()}</div>
-              <div>{roles().join(', ') || 'no roles'}</div>
-              <button className="btn ghost" style={{ marginTop: 6 }} onClick={logout}>Log out</button>
-            </>
-          ) : (
-            <>
-              <div>Not signed in.</div>
-              <button className="btn ghost" style={{ marginTop: 6 }} onClick={login}>Staff log in</button>
-              <div style={{ marginTop: 6 }}>
-                {mode === 'preview' ? 'Preview: sample data, nothing is saved.' : 'Live needs sign-in.'}
-              </div>
-            </>
-          )}
-        </div>
-      </aside>
-      <main className="main" key={`${mode}-${authed}-${authTick}`}>
-        <div className="topbar">
-          <h1>{NAV.find((n) => n.id === view)!.label}</h1>
-          <span className="sub">{mode === 'preview' ? 'Sample data' : authed ? `Live · ${username()}` : 'Live server data'}</span>
-          <span className={apiUp ? 'status-pill' : 'status-pill down'}>API: {api}</span>
-        </div>
-        {mode === 'preview' && (
-          <Alert kind="info">Preview mode — sample data for review. Log in for live data.</Alert>
+      <Sidebar view={view} go={go} mode={mode} setMode={setMode} />
+      <main className="main">
+        <Topbar onJump={onJump} api={api} />
+        {mode === 'preview' && view === 'dashboard' && (
+          <p className="muted" style={{ marginTop: 0 }}>Preview mode — layout with sample counts. Guest names are never invented: log in for live rows.</p>
         )}
-        {view === 'dashboard' && <DashboardView mode={mode} />}
-        {view === 'book' && <BookView mode={mode} />}
-        {view === 'front' && <FrontView mode={mode} />}
-        {view === 'guests' && <GuestsView mode={mode} />}
-        {view === 'members' && <MembersView mode={mode} />}
+        {view === 'dashboard' && <DashboardView mode={mode} go={go} />}
+        {view === 'reservations' && <BookView mode={mode} />}
+        {view === 'guests' && (
+          <>
+            <GuestsView mode={mode} initialQ={jump?.view === 'guests' ? jump.q : undefined} jumpNonce={jump?.nonce} />
+            <div style={{ marginTop: '1rem' }}><MembersView mode={mode} /></div>
+          </>
+        )}
+        {view === 'rooms' && <RoomsView mode={mode} initialFilter={jump?.view === 'rooms' ? jump.roomFilter : undefined} />}
+        {view === 'check' && <FrontView mode={mode} initialReservationId={jump?.view === 'check' ? jump.reservationId : undefined} jumpNonce={jump?.nonce} />}
         {view === 'billing' && <BillingView mode={mode} />}
+        {view === 'requests' && (
+          <div className="panel">
+            <div className="phead"><h3>Service Requests</h3></div>
+            <Soon icon="build" title="Coming soon" why="No service-request API yet — guest and maintenance requests arrive in a later unit." />
+          </div>
+        )}
         {view === 'housekeeping' && <HousekeepingView mode={mode} />}
+        {view === 'reports' && (
+          <div className="panel">
+            <div className="phead"><h3>Reports</h3></div>
+            <Soon icon="bar_chart" title="Coming soon" why="No reporting API yet — occupancy and revenue reports arrive in a later unit." />
+          </div>
+        )}
+        {view === 'settings' && (
+          <div className="panel">
+            <div className="phead"><h3>Settings</h3></div>
+            <Soon icon="settings" title="Coming soon" why="Property configuration editing arrives in a later unit." />
+          </div>
+        )}
       </main>
     </div>
-  );
-}
-
-function LoginHint() {
-  return (
-    <Alert kind="info">
-      This screen needs sign-in — use the Staff log in button in the sidebar.
-      Meanwhile, switch to Preview above to review the design.
-    </Alert>
-  );
-}
-
-/* ---------------- Dashboard ---------------- */
-function DashboardView({ mode }: { mode: Mode }) {
-  const [dash, setDash] = useState<DashboardDto | null>(mode === 'preview' ? demoDashboard : null);
-  const [denied, setDenied] = useState(false);
-  const [msg, setMsg] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-
-  async function load(d: string) {
-    if (mode === 'preview') { setDash({ ...demoDashboard, date: d }); return; }
-    try { setDash(await dashboard(d)); setMsg(''); setDenied(false); }
-    catch (err) {
-      if (isAuthError(err)) { setDenied(true); setMsg(''); }
-      else setMsg(err instanceof Error ? err.message : 'Dashboard failed.');
-    }
-  }
-
-  useEffect(() => { load(date); /* eslint-disable-next-line */ }, [mode]);
-
-  if (mode === 'live' && !dash && denied) return <LoginHint />;
-  if (mode === 'live' && !dash && msg) return <Alert kind="err">{msg}</Alert>;
-  return (
-    <>
-      <div className="row" style={{ marginBottom: '1rem' }}>
-        <Field label="Business date">
-          <input type="date" value={date} onChange={(e) => { setDate(e.target.value); load(e.target.value); }} />
-        </Field>
-        <Btn ghost onClick={() => load(date)}>Refresh</Btn>
-      </div>
-      {dash && (
-        <>
-          <div className="grid">
-            <Stat num={dash.arrivals.length} lbl="Arrivals today" />
-            <Stat num={dash.inHouse.length} lbl="In-house" />
-            {dash.occupancy.map((o) => (
-              <Stat key={o.categoryId} num={`${o.occupied}/${o.total}`} lbl={`${o.category} occupied`} />
-            ))}
-          </div>
-          <Card title="Rooms">
-            <table className="tbl">
-              <thead><tr><th>Room</th><th>Status</th></tr></thead>
-              <tbody>
-                {dash.rooms.map((r) => (
-                  <tr key={r.id}><td>{r.roomNo}</td><td><Badge tone={statusTone(r.status)}>{r.status}</Badge></td></tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
-        </>
-      )}
-    </>
   );
 }
 
@@ -222,14 +144,30 @@ function BookView({ mode }: { mode: Mode }) {
   );
 }
 
+function LoginHint() {
+  return (
+    <Alert kind="info">
+      This screen needs sign-in — use the Staff log in button in the sidebar.
+      Meanwhile, switch to Preview above to review the design.
+    </Alert>
+  );
+}
+
 /* ---------------- Front office ---------------- */
-function FrontView({ mode }: { mode: Mode }) {
-  const [reservationId, setReservationId] = useState('');
+function FrontView({ mode, initialReservationId, jumpNonce }: {
+  mode: Mode; initialReservationId?: string; jumpNonce?: number;
+}) {
+  const [reservationId, setReservationId] = useState(initialReservationId ?? '');
   const [stayId, setStayId] = useState('');
   const [roomId, setRoomId] = useState('');
   const [msg, setMsg] = useState(''); const [ok, setOk] = useState('');
   const [bookings, setBookings] = useState<ReservationSummary[]>([]);
   const [bdate, setBdate] = useState(new Date().toISOString().slice(0, 10));
+
+  useEffect(() => {
+    if (initialReservationId) setReservationId(initialReservationId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jumpNonce]);
 
   async function act(label: string, fn: () => Promise<{ id: string; status: string }>) {
     setMsg(''); setOk('');
@@ -306,14 +244,25 @@ function FrontView({ mode }: { mode: Mode }) {
   );
 }
 
-/* ---------------- Guests ---------------- */
-function GuestsView({ mode }: { mode: Mode }) {
-  const [q, setQ] = useState('');
+/* ---------------- Guests (+ Members) ---------------- */
+function GuestsView({ mode, initialQ, jumpNonce }: {
+  mode: Mode; initialQ?: string; jumpNonce?: number;
+}) {
+  const [q, setQ] = useState(initialQ ?? '');
   const [guests, setGuests] = useState<GuestDto[]>(mode === 'preview' ? demoGuests : []);
   const [name, setName] = useState(''); const [phone, setPhone] = useState('');
   const [msg, setMsg] = useState(''); const [ok, setOk] = useState('');
   const [cerr, setCerr] = useState('');
   const [dupId, setDupId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialQ === undefined) return;
+    setQ(initialQ);
+    if (mode === 'live' && initialQ) {
+      searchGuests(initialQ).then((p) => setGuests(p.items)).catch(() => setMsg('Search needs login.'));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jumpNonce]);
 
   async function runSearch(e?: React.FormEvent) {
     e?.preventDefault(); setMsg('');

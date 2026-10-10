@@ -362,3 +362,53 @@ export async function bookRoom(
   }
   return res.json();
 }
+
+/** Single booking by id (the dashboard returns id lists; rows need details). */
+export async function reservationById(id: string): Promise<ReservationDto> {
+  const res = await apiFetch(`/api/v1/reservations/${id}`);
+  if (!res.ok) throw new Error(`reservation failed: ${res.status}`);
+  return (await res.json()) as ReservationDto;
+}
+
+export interface EnrichedReservation {
+  id: string;
+  ref: string;
+  guestName: string;
+  category: string;
+  checkinDate: string;
+  checkoutDate: string;
+  status: string;
+}
+
+/**
+ * Dashboard rows need guest + category names the list endpoints don't carry.
+ * Per-row failures degrade to "—" (one bad row must not blank the table).
+ */
+export async function enrichReservations(
+  ids: string[], categories: CategoryDto[],
+): Promise<EnrichedReservation[]> {
+  const catName = (id: string) => categories.find((c) => c.id === id)?.name ?? '—';
+  return Promise.all(ids.map(async (id) => {
+    try {
+      const r = await reservationById(id);
+      let guestName = '—';
+      try {
+        guestName = (await guestById(r.guestId)).name;
+      } catch { /* keep placeholder */ }
+      return {
+        id: r.id, ref: r.id.slice(0, 8), guestName, category: catName(r.categoryId),
+        checkinDate: r.checkinDate, checkoutDate: r.checkoutDate, status: r.status,
+      };
+    } catch {
+      return {
+        id, ref: id.slice(0, 8), guestName: '—', category: '—',
+        checkinDate: '—', checkoutDate: '—', status: 'unknown',
+      };
+    }
+  }));
+}
+
+/** Short human-friendly booking ref for the desk (full UUID stays one click away). */
+export function shortRef(id: string): string {
+  return id.slice(0, 8).toUpperCase();
+}

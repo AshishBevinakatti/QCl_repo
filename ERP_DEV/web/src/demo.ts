@@ -17,10 +17,14 @@ export const demoDashboard: DashboardDto = {
   arrivals: ['res-8f31', 'res-8f32'],
   inHouse: ['stay-11aa', 'stay-11ab', 'stay-11ac'],
   rooms: [
-    { id: 'r1', roomNo: 'DEL-101', status: 'occupied' },
-    { id: 'r2', roomNo: 'DEL-102', status: 'ready' },
-    { id: 'r3', roomNo: 'DEL-103', status: 'dirty' },
-    { id: 'r4', roomNo: 'SUI-201', status: 'ready' },
+    { id: 'r1', roomNo: '101', status: 'ready' },
+    { id: 'r2', roomNo: '102', status: 'occupied' },
+    { id: 'r3', roomNo: '103', status: 'dirty' },
+    { id: 'r4', roomNo: '201', status: 'occupied' },
+    { id: 'r5', roomNo: '202', status: 'ready' },
+    { id: 'r6', roomNo: '205', status: 'occupied' },
+    { id: 'r7', roomNo: '210', status: 'cleaning' },
+    { id: 'r8', roomNo: '302', status: 'inspect' },
   ],
   occupancy: [
     { categoryId: 'c-deluxe', category: 'Deluxe', total: 10, occupied: 6, free: 4 },

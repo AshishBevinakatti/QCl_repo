@@ -242,6 +242,16 @@
 - User interaction: approved "merge auth, then UI" order (commit + merge approved).
 - Next: merge auth → develop (`--no-ff`), branch `feature/ui-reception-dashboard`, implement.
 
+## 2026-10-10T18:40:00+05:30 — UI reception dashboard built + verified (web only)
+- Phase/unit: 3.x UI-dashboard (PLAN-approved)        Branch: feature/ui-reception-dashboard (from develop @ b12e6bf)
+- What: reference-image dashboard — `dashboard.tsx` (Sidebar/Topbar/DashboardView/RoomsView), App shell rewrite (image nav; Members stacked under Guests since the image has no Members entry), `api.ts` enrichment (`reservationById`, `enrichReservations`, per-row "—" degradation), `ui.tsx` (Icon/Soon/Kpi/Donut), SF Pro stack + Material Symbols CDN in `index.html`, banner photo asset, demo rooms extended (no guest names per standing rule), `erp-03` doc as-built + departures-endpoint correction, RESOURCES_LOG + Q-011.
+- Files changed: `web/{index.html,src/{App.tsx,dashboard.tsx(new),api.ts,ui.tsx,demo.ts,index.css,assets/banner.jpg}}`, docs (PLAN-ui, erp-03, RESOURCES_LOG, OPEN_QUESTIONS, DEVLOG, STATE)
+- Commands that changed state: `git checkout -b feature/ui-reception-dashboard develop`; `npm run build` iterations; `vite preview` (temp :4173, stopped)
+- Verification: `npm run build` green (tsc + vite; banner bundled 1.7MB); preview curl `/` 200 + banner asset 200 + Material link + new title in served HTML; backend suite untouched (no backend change — 50/0/0 carried from develop). NOT verified: browser visual click-through (no browser here — user reviews); live-data rows need Keycloak sign-in (running).
+- Problems & fixes: (1) `tsc noUnusedLocals` on unused cats state → removed; (2) no guest-name seeds allowed in Preview (standing rule) → preview tables show structure/empty states, never invented names; (3) `GET /departures` assumed by old module doc — does not exist, corrected in doc + coming-soon cards.
+- User interaction: PLAN approved + start coding; banner photo supplied; Google icons CDN approved.
+- Next: present + ask to commit (merge separate).
+
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);
   facilities depth TBD in requirements analysis; tax/posting treatment TBD; RFID 1 terminal + 100 cards;
