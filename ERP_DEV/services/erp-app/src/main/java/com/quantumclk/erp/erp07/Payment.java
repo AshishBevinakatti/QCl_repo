@@ -95,6 +95,10 @@ public class Payment {
     return gatewayRef;
   }
 
+  public java.time.Instant getCreatedAt() {
+    return createdAt;
+  }
+
   public void capture() {
     this.status = CAPTURED;
   }

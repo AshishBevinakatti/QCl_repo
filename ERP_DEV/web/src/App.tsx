@@ -21,6 +21,8 @@ export default function App() {
   const [mode, setMode] = useState<Mode>('preview');
   const [api, setApi] = useState('checking…');
   const [jump, setJump] = useState<(Jump & { nonce: number }) | null>(null);
+  const [folioStay, setFolioStay] = useState<string | null>(null);
+  const [folioJump, setFolioJump] = useState(0);
 
   useEffect(() => {
     apiHealth()
@@ -46,7 +48,7 @@ export default function App() {
         {mode === 'preview' && view === 'dashboard' && (
           <p className="muted" style={{ marginTop: 0 }}>Preview mode — layout with sample counts. Guest names are never invented: log in for live rows.</p>
         )}
-        {view === 'dashboard' && <DashboardView mode={mode} go={go} />}
+        {view === 'dashboard' && <DashboardView mode={mode} go={go} viewFolio={(stayId) => { setFolioStay(stayId); setFolioJump((n) => n + 1); setView('billing'); }} />}
         {view === 'reservations' && <BookView mode={mode} />}
         {view === 'guests' && (
           <>
@@ -56,7 +58,7 @@ export default function App() {
         )}
         {view === 'rooms' && <RoomsView mode={mode} initialFilter={jump?.view === 'rooms' ? jump.roomFilter : undefined} />}
         {view === 'check' && <FrontView mode={mode} initialReservationId={jump?.view === 'check' ? jump.reservationId : undefined} jumpNonce={jump?.nonce} />}
-        {view === 'billing' && <BillingView mode={mode} />}
+        {view === 'billing' && <BillingView mode={mode} initialStayId={folioStay} folioNonce={folioJump} />}
         {view === 'requests' && (
           <div className="panel">
             <div className="phead"><h3>Service Requests</h3></div>
@@ -394,11 +396,22 @@ function MembersView({ mode }: { mode: Mode }) {
 }
 
 /* ---------------- Billing ---------------- */
-function BillingView({ mode }: { mode: Mode }) {
-  const [stayId, setStayId] = useState('');
+function BillingView({ mode, initialStayId, folioNonce }: {
+  mode: Mode; initialStayId?: string | null; folioNonce?: number;
+}) {
+  const [stayId, setStayId] = useState(initialStayId ?? '');
   const [folio, setFolio] = useState<FolioDto | null>(mode === 'preview' ? demoFolio : null);
   const [paymentId, setPaymentId] = useState('');
   const [msg, setMsg] = useState(''); const [ok, setOk] = useState('');
+
+  useEffect(() => {
+    if (!initialStayId || mode !== 'live') return;
+    setStayId(initialStayId);
+    folioByStay(initialStayId)
+      .then((f) => { setFolio(f); setMsg(''); })
+      .catch(() => setMsg('Folio needs login.'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [folioNonce]);
 
   async function load() {
     setMsg('');
