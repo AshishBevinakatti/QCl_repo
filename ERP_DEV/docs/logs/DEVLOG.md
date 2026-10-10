@@ -262,6 +262,7 @@
 - Problems & fixes: (1) my first phones (0501/0502) collided with StayRaceTest → switched to free 09xx; (2) my Deluxe check-ins exhausted the global ready pool → BillingApiTest 409 → switched to untouched Suite pool. Lesson recorded in module doc: shared-H2 footprint = unique phones + virgin category pool.
 - User interaction: PLAN-3.6 approved; Slice B declined; merge-UI-then-branch order approved.
 - Next: present + ask to commit (merge separate).
+- Commit `bb5968f` (user-approved): 3.6 on `feature/frontoffice-lists` (11 files, +555/−25). Tree clean except untracked `.vscode/`. No merge/push.
 
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);
