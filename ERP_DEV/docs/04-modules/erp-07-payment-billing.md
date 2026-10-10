@@ -50,3 +50,4 @@ Double charge → check idempotency key + webhook redelivery handling. Total mis
 
 ## Change history
 - 2026-10-09: Phase 1 baseline from SOW §10/§21 + sandbox-first + assumed GST.
+- 2026-10-09 (3.4, as-built): `V6__billing` (folio/folio_entry/payment/invoice/refund + gateway config); PaymentGateway interface + SandboxGateway (HMAC callbacks, failure injection); FolioService (derived balances, advance linking at check-in); PaymentService (idempotent initiate, webhook-first confirm, approve/process refunds with row lock); InvoiceService (GST 12% half-up on subtotal, immutable); confirm advance gate + walk-in desk settle; cancellation-fee folio posting; shell billing screens. Rounding policy: booking quotes round DOWN per night; invoices round HALF-UP on the subtotal (documented split: quotes favor guests, invoices follow tax convention). Code: `services/erp-app/.../erp07/`, `web/src/{App.tsx (Billing), api.ts}`.

@@ -1,24 +1,41 @@
 package com.quantumclk.erp.erp03;
 
+import com.quantumclk.erp.audit.AuditLog;
+import com.quantumclk.erp.erp07.FolioService;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 /**
- * Folio STUB for 3.3 (real billing lands in 3.4). The settlement gate in
- * StayService is coded against this interface, so 3.4 fills it in without
- * any API change: outstanding balances + folio transfer on room moves.
+ * Folio facade for front-office gates (was a stub in 3.3, real since 3.4 —
+ * same call sites). Balances derive from folio entries; transfers are
+ * audit-trailed (the folio follows the stay, which follows the guest).
  */
 @Service
 public class FolioBalance {
 
-  /** Outstanding paise for a reservation's folio (stub: always settled). */
-  public long outstandingFor(UUID reservationId) {
-    // TODO(3.4): sum folio entries minus payments for this reservation.
-    return 0;
+  private final FolioService folio;
+  private final StayRepository stays;
+  private final AuditLog auditLog;
+
+  public FolioBalance(FolioService folio, StayRepository stays, AuditLog auditLog) {
+    this.folio = folio;
+    this.stays = stays;
+    this.auditLog = auditLog;
   }
 
-  /** Folio follows the guest across rooms (stub: recorded via audit only). */
-  public void noteTransfer(UUID stayId, UUID fromRoomId, UUID toRoomId) {
-    // TODO(3.4): re-link folio entries to the new room.
+  /** Outstanding paise for a reservation's folio (0 when no folio exists yet). */
+  public long outstandingFor(UUID reservationId) {
+    return stays.findAll().stream()
+        .filter(s -> reservationId.equals(s.getReservationId()))
+        .findFirst()
+        .map(s -> folio.outstandingForStay(s.getId()))
+        .orElse(0L);
+  }
+
+  /** Folio follows the guest across rooms (folio is stay-scoped, so this audits the move). */
+  public void noteTransfer(UUID stayId, UUID fromRoomId, UUID toRoomId, String actor, String ip) {
+    stays.findById(stayId).ifPresent(
+        stay -> auditLog.append(stay.getPropertyId(), actor, "folio.transfer-noted", "folio",
+            stayId.toString(), fromRoomId.toString(), toRoomId.toString(), null, ip));
   }
 }

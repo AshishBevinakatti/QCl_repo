@@ -41,6 +41,7 @@ public class SecurityConfig {
                         "/",
                         "/index.html",
                         "/api/v1/health",
+                        "/api/v1/payments/confirm",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
                         "/error")
