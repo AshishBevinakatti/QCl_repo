@@ -32,12 +32,15 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:24.0
-    command: start-dev
+    command: start-dev --import-realm
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: change-me-locally-only
     ports:
-      - "8080:8080"
+      # 8081 on the host: 8080 is erp-app's port. Realm auto-imports on first boot.
+      - "8081:8080"
+    volumes:
+      - ./keycloak/realm-golden-hills.json:/opt/keycloak/data/import/resort-realm.json:ro
 
 volumes:
   pgdata:

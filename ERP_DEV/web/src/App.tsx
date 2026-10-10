@@ -7,6 +7,7 @@ import {
 } from './api';
 import { demoBoard, demoCategories, demoDashboard, demoFolio, demoGuests, demoMember } from './demo';
 import { Alert, Badge, Btn, Card, Field, Stat, statusTone } from './ui';
+import { initAuthOnce, isAuthenticated, login, logout, roles, username } from './auth';
 
 type View = 'dashboard' | 'book' | 'front' | 'guests' | 'members' | 'billing' | 'housekeeping';
 type Mode = 'live' | 'preview';
@@ -22,20 +23,22 @@ const NAV: { id: View; label: string }[] = [
 ];
 
 /**
- * Golden Hills ERP workspace. Live mode talks to erp-app (login via Keycloak
- * SSO once the realm lands — until then data views ask you to log in).
- * Preview mode runs on labeled sample data so every screen is clickable today.
+ * Golden Hills ERP workspace. Live mode talks to erp-app as the signed-in
+ * staff member (Keycloak SSO); Preview mode runs on labeled sample data.
  */
 export default function App() {
   const [view, setView] = useState<View>('dashboard');
   const [mode, setMode] = useState<Mode>('preview');
   const [api, setApi] = useState('checking…');
   const [apiUp, setApiUp] = useState(false);
+  const [authTick, setAuthTick] = useState(0);
+  const authed = isAuthenticated();
 
   useEffect(() => {
     apiHealth()
       .then((h) => { setApi(`${h.status} (${h.service})`); setApiUp(true); })
       .catch(() => { setApi('unreachable — start erp-app (DAY-ONE §5)'); setApiUp(false); });
+    initAuthOnce().then(() => setAuthTick((t) => t + 1));
   }, []);
 
   return (
@@ -54,19 +57,31 @@ export default function App() {
           ))}
         </nav>
         <div className="side-foot">
-          {mode === 'preview'
-            ? 'Preview: sample data, nothing is saved.'
-            : 'Live: signed in staff only (SSO).'}
+          {authed ? (
+            <>
+              <div style={{ fontWeight: 700, color: '#fff' }}>{username()}</div>
+              <div>{roles().join(', ') || 'no roles'}</div>
+              <button className="btn ghost" style={{ marginTop: 6 }} onClick={logout}>Log out</button>
+            </>
+          ) : (
+            <>
+              <div>Not signed in.</div>
+              <button className="btn ghost" style={{ marginTop: 6 }} onClick={login}>Staff log in</button>
+              <div style={{ marginTop: 6 }}>
+                {mode === 'preview' ? 'Preview: sample data, nothing is saved.' : 'Live needs sign-in.'}
+              </div>
+            </>
+          )}
         </div>
       </aside>
-      <main className="main">
+      <main className="main" key={`${mode}-${authed}-${authTick}`}>
         <div className="topbar">
           <h1>{NAV.find((n) => n.id === view)!.label}</h1>
-          <span className="sub">{mode === 'preview' ? 'Sample data' : 'Live server data'}</span>
+          <span className="sub">{mode === 'preview' ? 'Sample data' : authed ? `Live · ${username()}` : 'Live server data'}</span>
           <span className={apiUp ? 'status-pill' : 'status-pill down'}>API: {api}</span>
         </div>
         {mode === 'preview' && (
-          <Alert kind="info">Preview mode — sample data for review. Switch to Live when staff SSO is connected.</Alert>
+          <Alert kind="info">Preview mode — sample data for review. Log in for live data.</Alert>
         )}
         {view === 'dashboard' && <DashboardView mode={mode} />}
         {view === 'book' && <BookView mode={mode} />}
@@ -83,7 +98,7 @@ export default function App() {
 function LoginHint() {
   return (
     <Alert kind="info">
-      Staff login (Keycloak SSO) is being connected — this screen will show live data after sign-in.
+      This screen needs sign-in — use the Staff log in button in the sidebar.
       Meanwhile, switch to Preview above to review the design.
     </Alert>
   );

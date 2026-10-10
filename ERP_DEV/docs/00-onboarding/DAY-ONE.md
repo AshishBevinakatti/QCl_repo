@@ -70,6 +70,19 @@ curl -s http://localhost:8080/api/v1/room-categories | head -c 300
 ```
 With Docker: `docker compose -f ERP_DEV/infra/docker-compose.local.yml up` (Postgres etc.), then run the jar with
 `DB_URL=jdbc:postgresql://localhost:5432/resort_erp DB_USER=resort_user DB_PASSWORD=... java -jar target/*.jar`.
+Note: the global system Postgres already uses 5432 on this machine — start only
+what you need (e.g. `up -d keycloak`), never the compose `postgres` alongside it.
+
+## 5c. Staff login (Keycloak SSO)
+```
+sg docker -c "docker compose -f ERP_DEV/infra/docker-compose.local.yml up -d keycloak"
+# wait ~60s, then expect 200:
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8081/realms/resort/.well-known/openid-configuration
+# backend with issuer (H2 example; use DB_URL for Postgres):
+KEYCLOAK_ISSUER_URL=http://localhost:8081/realms/resort java -jar target/*.jar
+# web: npm run dev → Staff log in → reception-staff / change-me-dev-only (DEV-ONLY).
+# Full runbook + live proof table: docs/05-operations/keycloak.md
+```
 
 ## 5b. Run the web shell
 ```
