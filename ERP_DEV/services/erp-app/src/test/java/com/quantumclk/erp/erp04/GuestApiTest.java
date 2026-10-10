@@ -1,6 +1,7 @@
 package com.quantumclk.erp.erp04;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -57,7 +58,9 @@ class GuestApiTest {
             post("/api/v1/guests")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"Copy Cat\",\"phone\":\"+91-9822000111\"}"))
-        .andExpect(status().isConflict());
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.code", is("GUEST_EXISTS")))
+        .andExpect(jsonPath("$.details.existingGuestId", notNullValue()));
   }
 
   @Test

@@ -9,8 +9,27 @@ const BASE = import.meta.env.VITE_API_URL ?? '';
  * Single fetch entry point: same-origin/dev-proxy path handling plus the
  * staff JWT when logged in (Keycloak SSO). Server enforces roles; the token
  * here only identifies the caller.
+ *
+ * Errors carry their HTTP status (HttpError) so screens can tell "log in"
+ * (401) apart from "server is misconfigured" (5xx) — lesson 2026-10-10.
  */
 import { getToken } from './auth';
+
+export class HttpError extends Error {
+  status: number;
+  code?: string;
+  details?: Record<string, string>;
+  constructor(status: number, message: string, code?: string, details?: Record<string, string>) {
+    super(message);
+    this.status = status;
+    this.code = code;
+    this.details = details;
+  }
+}
+
+export function isAuthError(err: unknown): boolean {
+  return err instanceof HttpError && err.status === 401;
+}
 
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const url = path.startsWith('http') || (BASE && path.startsWith(BASE)) ? path : `${BASE}${path}`;
@@ -20,7 +39,23 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   }
   const token = await getToken();
   if (token) headers.set('Authorization', `Bearer ${token}`);
-  return globalThis.fetch(url, { ...init, headers });
+  const res = await globalThis.fetch(url, { ...init, headers });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as {
+      message?: string; code?: string; details?: Record<string, string>;
+    };
+    if (res.status === 401) {
+      throw new HttpError(401, 'Not signed in — use Staff log in.', body.code, body.details);
+    }
+    if (res.status >= 500) {
+      throw new HttpError(
+        res.status,
+        'Server error — your login is fine, but the backend may be missing its login config (runbook: docs/05-operations/keycloak.md).',
+      );
+    }
+    throw new HttpError(res.status, body.message ?? `Request failed: ${res.status}`, body.code, body.details);
+  }
+  return res;
 }
 
 export interface CategoryDto {
@@ -74,6 +109,32 @@ export async function searchGuests(q: string): Promise<GuestPage> {
   const res = await apiFetch(`/api/v1/guests?search=${encodeURIComponent(q)}`);
   if (!res.ok) throw new Error(`guests failed: ${res.status}`);
   return res.json();
+}
+
+export async function guestById(id: string): Promise<GuestDto> {
+  const res = await apiFetch(`/api/v1/guests/${id}`);
+  if (!res.ok) throw new Error(`guest failed: ${res.status}`);
+  return res.json();
+}
+
+export interface ReservationSummary {
+  id: string;
+  guestId: string;
+  categoryId: string;
+  checkinDate: string;
+  checkoutDate: string;
+  status: string;
+}
+
+/** Desk aid: bookings overlapping a date, so ids are visible (no memorising). */
+export async function listReservations(date?: string, status?: string): Promise<ReservationSummary[]> {
+  const params = new URLSearchParams();
+  if (date) params.set('date', date);
+  if (status) params.set('status', status);
+  const res = await apiFetch(`/api/v1/reservations?${params}`);
+  if (!res.ok) throw new Error(`reservations failed: ${res.status}`);
+  const page = (await res.json()) as { items: ReservationSummary[] };
+  return page.items;
 }
 export async function createGuest(name: string, phone: string): Promise<GuestDto> {
   const res = await apiFetch('/api/v1/guests', {

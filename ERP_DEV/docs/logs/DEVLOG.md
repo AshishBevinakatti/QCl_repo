@@ -185,6 +185,40 @@
 - Verification: realm JSON valid; `npm run build` green; `mvn verify` 50/0/0; LIVE against real Keycloak tokens — reception `GET /room-categories` 200, reception `PATCH /config` 403, anon 401, forged 401, SUPERADMIN patch 200. Browser click-through left to user (checklist in runbook).
 - Problems & fixes: (1) compose keycloak port clashed with erp-app 8080 → host 8081; (2) direct-grant "Account is not fully set up" → Keycloak 24 user profile requires email — added `@goldenhills.local` via Admin API + realm file (lesson logged in runbook); (3) `sg docker` needed (shell predates docker-group membership); (4) stale erp-app squatting on 8080 from an old timed-out shell → pkill + verify before live runs (lesson: always ps-check port 8080 first).
 - Backend deps: +keycloak-js@24.0.1 (plan-named, pinned).
+- Commit `fc51e1a` (user-approved 2026-10-10): auth on `feature/auth-keycloak-sso` (17 files, +485/−45). NOT merged (explicit user instruction — awaiting click-through + separate approval).
+
+## 2026-10-10T17:45:00+05:30 — Review fixes: friendly duplicate + visible booking ids
+- What (on `feature/auth-keycloak-sso`, uncommitted): `common/ApiException` (stable code + details map)
+  + handler branch; guest duplicate → `GUEST_EXISTS` with human text, id travels in
+  `details.existingGuestId`; frontend HttpError carries code/details; Guests screen shows "already
+  registered" + Show-existing button; Front office gains a bookings-on-date table (short ref, status,
+  Use fills check-in + copies full id); check-in success auto-fills the stay field; GUEST_EXISTS test.
+- Verification: `mvn verify` 50/0/0; `npm run build` green. NOT verified: user click-through (pending).
+- Next: commit fixes (on approval) → user re-verifies → merge only on approval.
+
+## 2026-10-10T17:30:00+05:30 — Login-lesson fixes: status-aware errors + run-local.sh
+- What: `api.ts` HttpError (401 vs 5xx split) + Dashboard/Housekeeping branch LoginHint vs server Alert;
+  `ERP_DEV/run-local.sh` (postgres|h2, always sets issuer, fail-fast Keycloak check); DAY-ONE points at it.
+- Verification: `npm run build` green; script booted backend → health UP, no issuer warning, real-token
+  categories 200. Full suite untouched by these files (web-only + script); backend suite stands at 50/50.
+- Next: commit fixes → user re-tests Live booking → merge (only on approval).
+
+## 2026-10-10T17:15:00+05:30 — Lesson: backend without issuer rejects logins (user caught it)
+- What happened: user logged in fine (sidebar showed reception-staff) but Live screens showed only the
+  login hint — booking impossible. Read-only diagnosis: the running backend (PID 93398) had NO
+  `KEYCLOAK_ISSUER_URL` in its environment (verified via /proc environ + a valid-token probe returning
+  500 instead of data). Without the issuer, the JWT decoder rejects every authenticated call.
+- Why it happened (our fault, two layers): (1) start instructions offered several backend variants and
+  the issuer var was easy to drop — nothing forced it; (2) the UI shows "needs sign-in" for ANY fetch
+  failure, so a server 500 looked exactly like "not logged in" and sent the user down the wrong path.
+- Fixes to prevent recurrence (user-ordered documentation of the mistake itself is this entry):
+  1. UI must distinguish 401 (show login hint) from 5xx/network (show "server error — likely missing
+     issuer config, see runbook") — planned code fix, not yet implemented.
+  2. A single `run-local.sh` that always sets issuer + DB vars (no hand-typed env) — planned, not yet
+     implemented. Until then: runbook prerequisite check below is MANDATORY before any login test.
+- Standing rule added: before presenting any login-dependent test, verify the backend environment
+  (`/proc/<pid>/environ` or startup log) contains KEYCLOAK_ISSUER_URL, and probe one authed endpoint
+  with a fresh token. Never assume the running backend matches the docs.
 - User interaction: hosting choice (a) + plan approved; commit requested at presentation. EXPLICIT: no merge without separate approval.
 - Next: commit auth → user click-through (login as demo staff, all views live) → then merge (on approval) → 3.7 or 3.6.
 

@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import {
-  apiHealth, availability, board, bookRoom, checkIn, checkOut, confirmPayment, createGuest,
-  dashboard, enrollMember, folioByStay, initiatePayment, listCategories, redeemPoints, requestRefund,
-  rupees, searchGuests, transferStay, walkIn,
-  type CategoryDto, type DashboardDto, type FolioDto, type GuestDto, type MemberDto, type RoomBoard,
+  HttpError, apiHealth, availability, board, bookRoom, checkIn, checkOut, confirmPayment,
+  createGuest, dashboard, enrollMember, folioByStay, guestById, initiatePayment, isAuthError,
+  listCategories, listReservations, redeemPoints, requestRefund, rupees, searchGuests, transferStay,
+  walkIn,
+  type CategoryDto, type DashboardDto, type FolioDto, type GuestDto, type MemberDto,
+  type ReservationSummary, type RoomBoard,
 } from './api';
 import { demoBoard, demoCategories, demoDashboard, demoFolio, demoGuests, demoMember } from './demo';
 import { Alert, Badge, Btn, Card, Field, Stat, statusTone } from './ui';
@@ -107,18 +109,23 @@ function LoginHint() {
 /* ---------------- Dashboard ---------------- */
 function DashboardView({ mode }: { mode: Mode }) {
   const [dash, setDash] = useState<DashboardDto | null>(mode === 'preview' ? demoDashboard : null);
+  const [denied, setDenied] = useState(false);
   const [msg, setMsg] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
 
   async function load(d: string) {
     if (mode === 'preview') { setDash({ ...demoDashboard, date: d }); return; }
-    try { setDash(await dashboard(d)); setMsg(''); }
-    catch { setMsg('login'); }
+    try { setDash(await dashboard(d)); setMsg(''); setDenied(false); }
+    catch (err) {
+      if (isAuthError(err)) { setDenied(true); setMsg(''); }
+      else setMsg(err instanceof Error ? err.message : 'Dashboard failed.');
+    }
   }
 
   useEffect(() => { load(date); /* eslint-disable-next-line */ }, [mode]);
 
-  if (mode === 'live' && !dash && msg) return <LoginHint />;
+  if (mode === 'live' && !dash && denied) return <LoginHint />;
+  if (mode === 'live' && !dash && msg) return <Alert kind="err">{msg}</Alert>;
   return (
     <>
       <div className="row" style={{ marginBottom: '1rem' }}>
@@ -221,14 +228,28 @@ function FrontView({ mode }: { mode: Mode }) {
   const [stayId, setStayId] = useState('');
   const [roomId, setRoomId] = useState('');
   const [msg, setMsg] = useState(''); const [ok, setOk] = useState('');
+  const [bookings, setBookings] = useState<ReservationSummary[]>([]);
+  const [bdate, setBdate] = useState(new Date().toISOString().slice(0, 10));
 
   async function act(label: string, fn: () => Promise<{ id: string; status: string }>) {
     setMsg(''); setOk('');
     if (mode === 'preview') { setOk(`Preview: “${label}” is not saved.`); return; }
     try {
       const s = await fn();
-      setOk(`${label}: stay ${s.id.slice(0, 8)}… is now ${s.status}.`);
+      setOk(`${label}: stay ${s.id.slice(0, 8)}… is now ${s.status}. Full stay id: ${s.id}`);
+      setStayId(s.id);
     } catch (err) { setMsg(err instanceof Error ? err.message : `${label} failed — log in first.`); }
+  }
+
+  async function loadBookings() {
+    setMsg('');
+    if (mode === 'preview') return;
+    try { setBookings(await listReservations(bdate)); }
+    catch (err) { setMsg(err instanceof Error ? err.message : 'Bookings need login.'); }
+  }
+
+  function copy(text: string) {
+    void navigator.clipboard?.writeText(text).catch(() => {});
   }
 
   async function doWalkIn() {
@@ -259,6 +280,26 @@ function FrontView({ mode }: { mode: Mode }) {
         <p className="muted">Books tonight, collects advance, checks in — one step.</p>
         <p><Btn onClick={doWalkIn}>Walk in guest</Btn></p>
       </Card>
+      <Card title="Bookings on date — pick an id, no memorising">
+        <div className="row">
+          <Field label="Date"><input type="date" value={bdate} onChange={(e) => setBdate(e.target.value)} /></Field>
+          <Btn ghost onClick={loadBookings}>Load bookings</Btn>
+        </div>
+        <table className="tbl">
+          <thead><tr><th>Booking ref</th><th>Dates</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {bookings.map((b) => (
+              <tr key={b.id}>
+                <td><code>{b.id.slice(0, 8)}…</code></td>
+                <td>{b.checkinDate} → {b.checkoutDate}</td>
+                <td><Badge tone={statusTone(b.status)}>{b.status}</Badge></td>
+                <td><Btn ghost onClick={() => { setReservationId(b.id); copy(b.id); }}>Use</Btn></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {bookings.length === 0 && <p className="muted">No bookings loaded yet — pick a date and Load.</p>}
+      </Card>
       {ok && <Alert kind="ok">{ok}</Alert>}
       {msg && <Alert kind="err">{msg}</Alert>}
     </div>
@@ -271,6 +312,8 @@ function GuestsView({ mode }: { mode: Mode }) {
   const [guests, setGuests] = useState<GuestDto[]>(mode === 'preview' ? demoGuests : []);
   const [name, setName] = useState(''); const [phone, setPhone] = useState('');
   const [msg, setMsg] = useState(''); const [ok, setOk] = useState('');
+  const [cerr, setCerr] = useState('');
+  const [dupId, setDupId] = useState<string | null>(null);
 
   async function runSearch(e?: React.FormEvent) {
     e?.preventDefault(); setMsg('');
@@ -283,13 +326,29 @@ function GuestsView({ mode }: { mode: Mode }) {
   }
 
   async function runCreate(e: React.FormEvent) {
-    e.preventDefault(); setMsg(''); setOk('');
+    e.preventDefault(); setCerr(''); setOk(''); setDupId(null);
     if (mode === 'preview') { setOk('Preview: guest is not saved.'); return; }
     try {
       const g = await createGuest(name, phone);
       setOk(`Created ${g.name}.`); setName(''); setPhone('');
       setGuests((await searchGuests(g.phone)).items);
-    } catch (err) { setMsg(err instanceof Error ? err.message : 'Create failed.'); }
+    } catch (err) {
+      // GUEST_EXISTS carries the existing profile id in details (no raw UUID in text).
+      if (err instanceof HttpError && err.code === 'GUEST_EXISTS' && err.details?.existingGuestId) {
+        setCerr('This phone number is already registered to a guest.');
+        setDupId(err.details.existingGuestId);
+      } else {
+        setCerr(err instanceof Error ? err.message : 'Create failed.');
+      }
+    }
+  }
+
+  async function showDuplicate() {
+    setCerr('');
+    try {
+      const g = await guestById(dupId!);
+      setQ(g.phone); setGuests([g]);
+    } catch { setCerr('Could not load the existing profile.'); }
   }
 
   return (
@@ -324,6 +383,8 @@ function GuestsView({ mode }: { mode: Mode }) {
           </div>
         </form>
         {ok && <Alert kind="ok">{ok}</Alert>}
+        {cerr && <Alert kind="err">{cerr}</Alert>}
+        {dupId && <p><Btn ghost onClick={showDuplicate}>Show the existing guest</Btn></p>}
       </Card>
     </>
   );
@@ -454,15 +515,22 @@ function BillingView({ mode }: { mode: Mode }) {
 /* ---------------- Housekeeping ---------------- */
 function HousekeepingView({ mode }: { mode: Mode }) {
   const [rooms, setRooms] = useState<RoomBoard[]>(mode === 'preview' ? demoBoard : []);
+  const [denied, setDenied] = useState(false);
   const [msg, setMsg] = useState('');
 
   async function load() {
     if (mode === 'preview') { setRooms(demoBoard); return; }
-    try { setRooms(await board()); }
-    catch { setMsg('Board needs login.'); }
+    try { setRooms(await board()); setDenied(false); }
+    catch (err) {
+      if (isAuthError(err)) setDenied(true);
+      else setMsg(err instanceof Error ? err.message : 'Board failed.');
+    }
   }
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [mode]);
+
+  if (mode === 'live' && rooms.length === 0 && denied) return <LoginHint />;
+  if (mode === 'live' && rooms.length === 0 && msg) return <Alert kind="err">{msg}</Alert>;
 
   return (
     <Card title="Room readiness">

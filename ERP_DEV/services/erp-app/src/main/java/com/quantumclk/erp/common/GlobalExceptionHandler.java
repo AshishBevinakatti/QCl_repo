@@ -25,6 +25,13 @@ public class GlobalExceptionHandler {
         .body(new ApiError("VALIDATION_FAILED", message, requestId(req), Map.of()));
   }
 
+  @ExceptionHandler(ApiException.class)
+  public ResponseEntity<ApiError> handleApi(ApiException ex, HttpServletRequest req) {
+    int status = ex.getStatusCode().value();
+    return ResponseEntity.status(status)
+        .body(new ApiError(ex.getCode(), ex.getReason(), requestId(req), ex.getDetails()));
+  }
+
   @ExceptionHandler(ResponseStatusException.class)
   public ResponseEntity<ApiError> handleStatus(ResponseStatusException ex, HttpServletRequest req) {    HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
     if (status == null) {
