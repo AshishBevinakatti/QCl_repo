@@ -43,6 +43,17 @@ KEYCLOAK_ISSUER_URL=http://localhost:8081/realms/resort
 ```
 Roles arrive via `realm_access.roles` (mapped to authorities — see JwtRolesMappingTest). Gotcha found 2026-10-10: Keycloak 24's user profile REQUIRES an email, so realm users carry `@goldenhills.local` addresses — direct-grant fails with "Account is not fully set up" without them.
 
+## Mandatory pre-login check (lesson 2026-10-10 — a full user session was lost to this)
+A backend started WITHOUT `KEYCLOAK_ISSUER_URL` rejects every login with a server error that the UI
+mislabels as "needs sign-in". Before any login test, prove the running backend has it:
+```
+PID=$(pgrep -f "com.quantumclk.erp.ErpApplication" | head -1)
+tr '\0' '\n' < /proc/$PID/environ | grep KEYCLOAK_ISSUER_URL   # must print the realm URL
+# plus one authed probe with a fresh token (expect 200, never 500):
+```
+If the var is missing: stop the backend and restart it WITH the issuer (see DAY-ONE §5 variants).
+Do not debug the frontend until this check passes.
+
 ## Frontend wiring
 `web/src/auth.ts` (PKCE, `check-sso`), token attaches in `api.ts:apiFetch`, login state in the sidebar (`App.tsx`). Env: `VITE_KEYCLOAK_URL` (default http://localhost:8081), `VITE_KEYCLOAK_REALM=resort`, `VITE_KEYCLOAK_CLIENT_ID=erp-web`.
 

@@ -195,6 +195,7 @@
   Use fills check-in + copies full id); check-in success auto-fills the stay field; GUEST_EXISTS test.
 - Verification: `mvn verify` 50/0/0; `npm run build` green. NOT verified: user click-through (pending).
 - Next: commit fixes (on approval) → user re-verifies → merge only on approval.
+- Commit `c66e8e6` (user-approved): review fixes on `feature/auth-keycloak-sso` (7 files, +223/−16). NOT merged. Still uncommitted: DAY-ONE/runbook login-lesson docs + `run-local.sh` (held from the earlier verify pause — will ride with the next approved commit).
 
 ## 2026-10-10T17:30:00+05:30 — Login-lesson fixes: status-aware errors + run-local.sh
 - What: `api.ts` HttpError (401 vs 5xx split) + Dashboard/Housekeeping branch LoginHint vs server Alert;
