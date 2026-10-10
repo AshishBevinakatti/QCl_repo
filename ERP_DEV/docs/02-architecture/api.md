@@ -4,10 +4,12 @@
 - Sources: module docs `04-modules/*` (endpoint lists), data-model.md (resources), ADR-001 (Spring Boot + React, OpenAPI codegen). OpenAPI file itself is generated in the hello-world slice (springdoc) and kept at `services/.../openapi.yaml` + published copy in `docs/02-architecture/openapi/` — this doc is the human-readable contract the generator must match.
 - Slice proof (2026-10-09, verified live): generated spec saved at `docs/02-architecture/openapi/erp-app.json`
   (paths: `/api/v1/health`, `/api/v1/room-categories`, `/api/v1/room-categories/{id}`); runtime UI at `/v3/api-docs`.
-- Known gap (3.3, 2026-10-09): the runtime spec still lists only the 14 pre-3.3 paths although the 9 new
-  stay/housekeeping/dashboard endpoints are live and green through MockMvc full-stack tests. Cause not yet
-  isolated (suspected springdoc introspection skip, not a mapping problem — tests return 200/409/422, never
-  404). Single source of truth until fixed: the controllers + tests. Revisit in 3.4 (springdoc config/version).
+- Known gap (3.3–3.4, 2026-10-09): the runtime spec still lists only the 14 pre-3.3 paths although the
+  stay/housekeeping/payment endpoints are live and green through MockMvc full-stack tests (200/409/422,
+  never 404). Tried: `springdoc.packages-to-scan` (no effect) + DEBUG logging (no springdoc output —
+  suspicious in itself). Next leads: version bump with Boot upgrade, or explicit GroupedOpenApi per
+  module. Single source of truth until fixed: the controllers + tests + this doc. NOT release-blocking
+  (consumers use this contract + typed clients), but must be fixed before UAT (Phase 6).
 
 ## Global conventions (no exceptions)
 - Base: `/api/v1/...`; version in path; breaking change → `/api/v2` + `BREAKING CHANGE` footer + ADR line.

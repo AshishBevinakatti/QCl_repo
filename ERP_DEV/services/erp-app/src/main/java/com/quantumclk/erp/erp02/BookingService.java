@@ -4,6 +4,9 @@ import com.quantumclk.erp.audit.AuditLog;
 import com.quantumclk.erp.config.Configs;
 import com.quantumclk.erp.erp04.Guest;
 import com.quantumclk.erp.erp04.GuestRepository;
+import com.quantumclk.erp.erp07.Folio;
+import com.quantumclk.erp.erp07.FolioService;
+import com.quantumclk.erp.erp07.PaymentService;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -35,6 +38,8 @@ public class BookingService {
   private final ReservationHoldRepository holds;
   private final GuestRepository guests;
   private final PricingService pricing;
+  private final PaymentService payments;
+  private final FolioService folio;
   private final AuditLog auditLog;
   private final Configs configs;
 
@@ -45,6 +50,8 @@ public class BookingService {
       ReservationHoldRepository holds,
       GuestRepository guests,
       PricingService pricing,
+      PaymentService payments,
+      FolioService folio,
       AuditLog auditLog,
       Configs configs) {
     this.categories = categories;
@@ -53,6 +60,8 @@ public class BookingService {
     this.holds = holds;
     this.guests = guests;
     this.pricing = pricing;
+    this.payments = payments;
+    this.folio = folio;
     this.auditLog = auditLog;
     this.configs = configs;
   }
@@ -110,7 +119,8 @@ public class BookingService {
   }
 
   @Transactional
-  public Reservation confirm(UUID propertyId, UUID id, String actor, String ip) {
+  public Reservation confirm(UUID propertyId, UUID id, boolean managerOverride, String actor,
+      String ip) {
     Reservation reservation = orOwned(propertyId, id);
     if (!Reservation.HOLD.equals(reservation.getStatus())) {
       throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "only holds can be confirmed");
@@ -121,11 +131,18 @@ public class BookingService {
       expireOne(propertyId, reservation, hold, ip);
       throw new ResponseStatusException(HttpStatus.GONE, "hold expired");
     }
+    // Advance gate (3.4): captured advance must cover advance_due, unless a manager overrides.
+    long captured = payments.capturedForBooking(reservation.getId());
+    if (captured < reservation.getAdvanceDuePaise() && !managerOverride) {
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          "advance not collected: due " + reservation.getAdvanceDuePaise() + ", captured " + captured);
+    }
     reservation.confirm();
     holds.deleteByReservationId(id);
     reservations.save(reservation);
-    // TODO(3.4): gate on advance PAYMENT capture here; advance_due is recorded only.
-    audit(propertyId, actor, "booking.confirmed", id.toString(), Reservation.HOLD, Reservation.CONFIRMED, null, ip);
+    audit(propertyId, actor, "booking.confirmed", id.toString(), Reservation.HOLD, Reservation.CONFIRMED,
+        managerOverride ? "manager override" : null, ip);
     return reservation;
   }
 
@@ -169,7 +186,12 @@ public class BookingService {
     reservation.cancel(fee);
     holds.deleteByReservationId(id);
     reservations.save(reservation);
-    // TODO(3.4): post fee + refund advance_due to the folio here.
+    if (fee > 0) {
+      // Late-cancel fee posts to the guest folio so settlement collects it.
+      Folio folioAccount = folio.ensureForGuest(propertyId, reservation.getGuestId());
+      folio.postEntry(folioAccount.getId(), "cancellation-fee", reservation.getId().toString(),
+          fee, actor);
+    }
     audit(propertyId, actor, "booking.cancelled", id.toString(), null, "fee=" + fee, reason, ip);
     return reservation;
   }
@@ -242,7 +264,7 @@ public class BookingService {
             () -> guests.save(new Guest(propertyId, newGuest.name(), newGuest.phone(), null, "{}")));
   }
 
-  Reservation orOwned(UUID propertyId, UUID id) {
+  public Reservation orOwned(UUID propertyId, UUID id) {
     return reservations
         .findById(id)
         .filter(r -> propertyId.equals(r.getPropertyId()))

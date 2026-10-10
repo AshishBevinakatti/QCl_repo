@@ -3,6 +3,7 @@ package com.quantumclk.erp.erp02;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.quantumclk.erp.erp02.BookingService.NewGuest;
+import com.quantumclk.erp.erp07.PaymentService;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -32,17 +33,20 @@ class BookingRaceTest {
   static final LocalDate TO = LocalDate.of(2026, 11, 18); // Wed
 
   @Autowired private BookingService bookings;
+  @Autowired private PaymentService payments;
   @Autowired private ReservationRepository reservations;
   @Autowired private ReservationHoldRepository holds;
 
   @Test
   void lastRoomGoesToExactlyOneGuest() throws Exception {
-    // Occupy 9 of 10 Villas with confirmed holds.
+    // Occupy 9 of 10 Villas with confirmed holds (advance settled via sandbox).
     for (int i = 0; i < 9; i++) {
       Reservation reservation =
           bookings.book(PROPERTY, null, new NewGuest("Pre Guest " + i, "+91-9822001" + String.format("%03d", i)),
               VILLA, FROM, TO, null, "race-pre-" + i, "web", "race-test", "test");
-      bookings.confirm(PROPERTY, reservation.getId(), "race-test", "test");
+      payments.sandboxSettle(PROPERTY, null, reservation.getId(), reservation.getAdvanceDuePaise(),
+          "race-test", "test");
+      bookings.confirm(PROPERTY, reservation.getId(), false, "race-test", "test");
     }
     // 4 guests race for the last Villa at the same instant.
     ExecutorService pool = Executors.newFixedThreadPool(4);

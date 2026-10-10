@@ -147,6 +147,17 @@
 - Commit `d4874af` (user-approved): 3.2 on `feature/3.2-booking-engine` (29 files, +2509/−26). Tree clean.
 - Merge 3.2 → develop (user-approved 2026-10-09, `--no-ff`). Post-merge `mvn verify` on `develop` → 31/0/0 BUILD SUCCESS. Unit 3.2 complete. No tags/pushes.
 
+## 2026-10-10T00:00:00+05:30 — Unit 3.4 Payment & billing built + verified (folio, gateway, refunds)
+- Phase/unit: 3.4 – Payment & billing        Branch: feature/3.4-payment-billing (from develop, plan-approved)
+- What: V6 migration (folio/folio_entry/payment/invoice/refund + gateway config); PaymentGateway interface + SandboxGateway (HMAC callbacks, failure injection); FolioService (derived balances, advance linking at check-in — caught the unlinked-advance gap while testing); PaymentService (idempotent initiate, webhook-first confirm, approve/process refunds with row lock, reconcile); InvoiceService (GST 12% half-up on subtotal, immutable); confirm advance gate + walk-in desk settle; cancel-fee folio posting; FolioBalance retired to a facade; shell billing screens (folio/pay/refund); module doc + traceability ERP07/XCUT-001.
+- Files changed: V6 SQL, `erp07/` (11 main files), `BookingService` (gate + folio fee), `StayService` (walk-in settle + folio link), `ReservationController` (override), `FolioBalance` (facade), `SecurityConfig` (webhook permit), 5 updated test files, `BillingApiTest` + `RefundRaceTest`, `web/src/{App.tsx, api.ts}`, docs (erp-07, TRACEABILITY, api.md gap note)
+- Commands that changed state: `git checkout -b feature/3.4-payment-billing develop`; `mvn -B verify` iterations; `npm run build`
+- Verification: `mvn -B verify` → Tests run: 44, Failures: 0, Errors: 0, BUILD SUCCESS; `npm run build` green; live boot → V1→V6 clean, `/health` UP, anon initiate/recon → 401. Springdoc lag NOT fixed (packages-to-scan + DEBUG tried, reverted; recorded, pre-UAT must-fix). NOT verified: real provider (sandbox only); browser click-through.
+- Problems & fixes: (1) CHAR(3) vs VARCHAR validation → VARCHAR; (2) AuditLog 8-vs-9-arg calls → added objectType; (3) package-visible orOwned → public; (4) old-test fallout from the new gate (config count, checkout-with-balance → settle-first, confirms need payment) — all updated faithfully, none weakened; (5) advance-folio link gap (folio ignored paid advances) → linkBookingPayments at check-in + invoice test proving 700000 outstanding / 820000 total.
+- User interaction: 3.4 PLAN approved; commit requested at presentation.
+- Next: commit 3.4 → merge to develop (separate approval) → 3.5 Membership & loyalty (PLAN first).
+- Commit `edded7b` (user-approved): 3.4 on `feature/3.4-payment-billing` (37 files, +2008/−46). Tree clean.
+
 ## 2026-10-09T23:15:00+05:30 — Unit 3.3 Front-office + housekeeping built + verified
 - Phase/unit: 3.3 – Front-office + Housekeeping        Branch: feature/3.3-front-office (from develop, plan-approved)
 - What: V5 migration (stay/room_transfer/housekeeping_task); StayService (gated check-in + auto-assign, settlement-gated check-out + auto task, transfer with folio stub, walk-in chain); room-level overlap guard + pessimistic lock + race test; HousekeepingService (forward-only advance, done→ready) + role-gated controller; dashboard/arrivals/occupancy; FolioBalance stub (3.4 fills, no API change); shell reception + board + walk-in screens; module docs + traceability ERP03/HSK-001.
@@ -157,6 +168,7 @@
 - User interaction: 3.3 PLAN approved; commit requested at presentation.
 - Next: commit 3.3 → merge to develop (separate approval) → 3.4 Payment & billing (PLAN first).
 - Commit `399b305` (user-approved): 3.3 on `feature/3.3-front-office` (27 files, +1451/−12). Tree clean.
+- Merge `ba51425` (user-approved 2026-10-09): `feature/3.3-front-office` → `develop` (`--no-ff`). Post-merge `mvn verify` on `develop` → 40/0/0 BUILD SUCCESS. Unit 3.3 complete. No tags/pushes.
 
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);

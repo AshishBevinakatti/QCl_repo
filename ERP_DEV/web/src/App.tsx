@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiHealth, availability, board, bookRoom, checkIn, checkOut, createGuest, dashboard, listCategories, rupees, searchGuests, transferStay, walkIn, type CategoryDto, type DashboardDto, type GuestDto, type RoomBoard } from './api';
+import { apiHealth, availability, board, bookRoom, checkIn, checkOut, confirmPayment, createGuest, dashboard, folioByStay, initiatePayment, listCategories, requestRefund, rupees, searchGuests, transferStay, walkIn, type CategoryDto, type DashboardDto, type FolioDto, type GuestDto, type RoomBoard } from './api';
 
 /**
  * 3.0 base shell: nav skeleton + live API status + room categories.
@@ -46,6 +46,7 @@ export default function App() {
       <Booking cats={cats} />
       <FrontOffice />
       <Housekeeping />
+      <Billing />
     </div>
   );
 }
@@ -274,5 +275,75 @@ function WalkIn() {
       <button type="submit">Walk in</button>
       {msg && <p>{msg}</p>}
     </form>
+  );
+}
+
+/** 3.4 Billing: folio by stay, sandbox pay, refund request (approve/process = manager desk). */
+function Billing() {
+  const [stayId, setStayId] = useState('');
+  const [folio, setFolio] = useState<FolioDto | null>(null);
+  const [paymentId, setPaymentId] = useState('');
+  const [msg, setMsg] = useState('');
+
+  async function load() {
+    setMsg('');
+    try {
+      setFolio(await folioByStay(stayId));
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'folio failed (login required)');
+    }
+  }
+
+  async function pay(amount: number, reservationId?: string) {
+    setMsg('');
+    try {
+      const init = await initiatePayment(
+        reservationId ? { reservationId } : { folioId: folio!.id, amount });
+      await confirmPayment(init.gatewayRef, init.signature);
+      setMsg(`captured ${rupees(init.amountPaise)} (sandbox)`);
+      await load();
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'pay failed');
+    }
+  }
+
+  return (
+    <section>
+      <h2>Billing</h2>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+        <input value={stayId} onChange={(e) => setStayId(e.target.value)} placeholder="stay id" aria-label="stay id" />
+        <button type="button" onClick={load}>Load folio</button>
+      </div>
+      {folio && (
+        <>
+          <ul>
+            {folio.entries.map((e, i) => (
+              <li key={i}>{e.sourceType}: {rupees(e.amountPaise)}</li>
+            ))}
+          </ul>
+          <p>Outstanding: {rupees(folio.outstandingPaise)}</p>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button type="button" onClick={() => pay(folio.outstandingPaise)}>Pay balance (sandbox)</button>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+            <input value={paymentId} onChange={(e) => setPaymentId(e.target.value)} placeholder="payment id" aria-label="payment id" />
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await requestRefund(paymentId, 10000, 'desk goodwill');
+                  setMsg('refund requested (manager approves in admin desk)');
+                } catch (err) {
+                  setMsg(err instanceof Error ? err.message : 'refund failed');
+                }
+              }}
+            >
+              Refund ₹100
+            </button>
+          </div>
+        </>
+      )}
+      {msg && <p>{msg}</p>}
+    </section>
   );
 }

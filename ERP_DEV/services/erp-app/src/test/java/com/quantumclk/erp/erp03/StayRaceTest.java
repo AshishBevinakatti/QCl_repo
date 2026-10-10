@@ -6,6 +6,7 @@ import com.quantumclk.erp.erp02.BookingService;
 import com.quantumclk.erp.erp02.BookingService.NewGuest;
 import com.quantumclk.erp.erp02.Reservation;
 import com.quantumclk.erp.erp02.RoomCategoryController;
+import com.quantumclk.erp.erp07.PaymentService;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,7 @@ class StayRaceTest {
   static final LocalDate TO = LocalDate.of(2027, 7, 3);
 
   @Autowired private BookingService bookings;
+  @Autowired private PaymentService payments;
   @Autowired private StayService stays;
 
   @Test
@@ -43,8 +45,12 @@ class StayRaceTest {
     Reservation second =
         bookings.book(PROPERTY, null, new NewGuest("Race B", "+91-9822000502"), DELUXE, FROM, TO,
             null, "stay-race-b", "web", "race-test", "test");
-    bookings.confirm(PROPERTY, first.getId(), "race-test", "test");
-    bookings.confirm(PROPERTY, second.getId(), "race-test", "test");
+    payments.sandboxSettle(PROPERTY, null, first.getId(), first.getAdvanceDuePaise(),
+        "race-test", "test");
+    payments.sandboxSettle(PROPERTY, null, second.getId(), second.getAdvanceDuePaise(),
+        "race-test", "test");
+    bookings.confirm(PROPERTY, first.getId(), false, "race-test", "test");
+    bookings.confirm(PROPERTY, second.getId(), false, "race-test", "test");
 
     ExecutorService pool = Executors.newFixedThreadPool(2);
     List<Future<Boolean>> futures = new ArrayList<>();

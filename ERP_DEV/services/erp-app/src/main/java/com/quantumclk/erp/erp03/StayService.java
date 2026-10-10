@@ -7,6 +7,9 @@ import com.quantumclk.erp.erp02.Reservation;
 import com.quantumclk.erp.erp02.ReservationRepository;
 import com.quantumclk.erp.erp02.Room;
 import com.quantumclk.erp.erp02.RoomRepository;
+import com.quantumclk.erp.erp07.Folio;
+import com.quantumclk.erp.erp07.FolioService;
+import com.quantumclk.erp.erp07.PaymentService;
 import com.quantumclk.erp.hsk.HousekeepingService;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -28,6 +31,8 @@ public class StayService {
   private final ReservationRepository reservations;
   private final RoomRepository rooms;
   private final BookingService bookings;
+  private final PaymentService payments;
+  private final FolioService folioService;
   private final HousekeepingService housekeeping;
   private final FolioBalance folio;
   private final AuditLog auditLog;
@@ -38,6 +43,8 @@ public class StayService {
       ReservationRepository reservations,
       RoomRepository rooms,
       BookingService bookings,
+      PaymentService payments,
+      FolioService folioService,
       HousekeepingService housekeeping,
       FolioBalance folio,
       AuditLog auditLog) {
@@ -46,6 +53,8 @@ public class StayService {
     this.reservations = reservations;
     this.rooms = rooms;
     this.bookings = bookings;
+    this.payments = payments;
+    this.folioService = folioService;
     this.housekeeping = housekeeping;
     this.folio = folio;
     this.auditLog = auditLog;
@@ -68,6 +77,13 @@ public class StayService {
     rooms.save(room);
     Stay stay = new Stay(propertyId, reservationId, room.getId());
     stays.save(stay);
+    // Room charge posts to the folio at check-in (single source for settlement).
+    Folio folioAccount =
+        folioService.ensureForStay(propertyId, reservation.getGuestId(), stay.getId());
+    folioService.postEntry(folioAccount.getId(), "room", reservation.getId().toString(),
+        reservation.getQuotedTotalPaise(), actor);
+    // Advances collected at booking time now count against the stay.
+    payments.linkBookingPayments(folioAccount.getId(), reservation.getId(), actor);
     audit(propertyId, actor, "stay.checked-in", stay.getId().toString(), null,
         room.getRoomNo(), null, ip);
     return stay;
@@ -126,13 +142,13 @@ public class StayService {
     stay.setRoomId(to.getId());
     stays.save(stay);
     transfers.save(new RoomTransfer(stay.getId(), from.getId(), to.getId(), actor, reason));
-    folio.noteTransfer(stay.getId(), from.getId(), to.getId());
+    folio.noteTransfer(stay.getId(), from.getId(), to.getId(), actor, ip);
     audit(propertyId, actor, "stay.transferred", stay.getId().toString(), from.getRoomNo(),
         to.getRoomNo(), reason, ip);
     return stay;
   }
 
-  /** Walk-in: book (today→tomorrow) + confirm + check-in as one audited chain. */
+  /** Walk-in: book (today→tomorrow) + desk-collected advance + confirm + check-in. */
   @Transactional
   public Stay walkIn(UUID propertyId, String name, String phone, UUID categoryId, UUID roomId,
       String actor, String ip) {
@@ -140,7 +156,10 @@ public class StayService {
     Reservation reservation =
         bookings.book(propertyId, null, new NewGuest(name, phone), categoryId, today,
             today.plusDays(1), null, null, "walk-in", actor, ip);
-    bookings.confirm(propertyId, reservation.getId(), actor, ip);
+    // Desk collects the advance in person (sandbox-settled, fully audited).
+    payments.sandboxSettle(propertyId, null, reservation.getId(), reservation.getAdvanceDuePaise(),
+        actor, ip);
+    bookings.confirm(propertyId, reservation.getId(), false, actor, ip);
     return checkIn(propertyId, reservation.getId(), roomId, actor, ip);
   }
 

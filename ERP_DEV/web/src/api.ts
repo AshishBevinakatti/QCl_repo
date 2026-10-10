@@ -156,12 +156,71 @@ export async function board(): Promise<RoomBoard[]> {
   if (!res.ok) throw new Error(`board failed: ${res.status}`);
   return res.json();
 }
-
 export async function advanceTask(id: string): Promise<TaskDto> {
   const res = await fetch(`/api/v1/housekeeping/tasks/${id}/advance`, { method: 'PATCH' });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message ?? `advance failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export interface FolioDto {
+  id: string;
+  entries: { sourceType: string; sourceId: string; amountPaise: number }[];
+  outstandingPaise: number;
+}
+
+export async function folioByStay(stayId: string): Promise<FolioDto> {
+  const res = await fetch(`/api/v1/folios?stayId=${stayId}`);
+  if (!res.ok) throw new Error(`folio failed: ${res.status}`);
+  return res.json();
+}
+
+export interface InitiateDto {
+  paymentId: string;
+  gatewayRef: string;
+  amountPaise: number;
+  signature: string;
+  replayed: boolean;
+}
+
+export async function initiatePayment(body: {
+  reservationId?: string; folioId?: string; amount?: number;
+}): Promise<InitiateDto> {
+  const res = await fetch('/api/v1/payments/initiate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? `initiate failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function confirmPayment(gatewayRef: string, signature: string): Promise<void> {
+  const res = await fetch('/api/v1/payments/confirm', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ gatewayRef, signature }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? `confirm failed: ${res.status}`);
+  }
+}
+
+export async function requestRefund(paymentId: string, amountPaise: number, reason: string) {
+  const res = await fetch('/api/v1/refunds', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ paymentId, amountPaise, reason }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? `refund failed: ${res.status}`);
   }
   return res.json();
 }

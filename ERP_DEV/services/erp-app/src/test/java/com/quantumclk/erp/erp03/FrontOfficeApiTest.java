@@ -82,6 +82,29 @@ class FrontOfficeApiTest {
             .andReturn();
     String stayId = json(stay, "id");
     String roomId = json(stay, "roomId");
+    // Settle the folio first (real balances since 3.4): room charge minus advance.
+    MvcResult folioLookup =
+        mvc.perform(get("/api/v1/folios").param("stayId", stayId))
+            .andExpect(status().isOk())
+            .andReturn();
+    String folioBody = folioLookup.getResponse().getContentAsString();
+    String folioId = folioBody.split("\"id\":\"")[1].split("\"")[0];
+    int outstanding =
+        Integer.parseInt(folioBody.split("\"outstandingPaise\":")[1].split("[,}]")[0]);
+    MvcResult initiated =
+        mvc.perform(
+                post("/api/v1/payments/initiate")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"folioId\":\"" + folioId + "\",\"amount\":" + outstanding + "}"))
+            .andExpect(status().isCreated())
+            .andReturn();
+    String payBody = initiated.getResponse().getContentAsString();
+    mvc.perform(
+            post("/api/v1/payments/confirm")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"gatewayRef\":\"" + payBody.split("\"gatewayRef\":\"")[1].split("\"")[0]
+                    + "\",\"signature\":\"" + payBody.split("\"signature\":\"")[1].split("\"")[0] + "\"}"))
+        .andExpect(status().isOk());
     // Check out: room goes dirty + cleaning task appears.
     mvc.perform(post("/api/v1/stays/" + stayId + "/check-out")
             .contentType(MediaType.APPLICATION_JSON).content("{}"))
@@ -189,9 +212,30 @@ class FrontOfficeApiTest {
 
   String bookAndConfirm(String phone, String key, String from, String to) throws Exception {
     String reservation = book(phone, key, from, to);
-    mvc.perform(post("/api/v1/reservations/" + reservation + "/confirm"))
+    payAdvance(reservation);
+    mvc.perform(post("/api/v1/reservations/" + reservation + "/confirm")
+            .contentType(MediaType.APPLICATION_JSON).content("{}"))
         .andExpect(status().isOk());
     return reservation;
+  }
+
+  /** Settle the advance through the sandbox gateway (initiate + signed confirm). */
+  void payAdvance(String reservationId) throws Exception {
+    MvcResult initiated =
+        mvc.perform(
+                post("/api/v1/payments/initiate")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"reservationId\":\"" + reservationId + "\"}"))
+            .andExpect(status().isCreated())
+            .andReturn();
+    String body = initiated.getResponse().getContentAsString();
+    String ref = body.split("\"gatewayRef\":\"")[1].split("\"")[0];
+    String sig = body.split("\"signature\":\"")[1].split("\"")[0];
+    mvc.perform(
+            post("/api/v1/payments/confirm")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"gatewayRef\":\"" + ref + "\",\"signature\":\"" + sig + "\"}"))
+        .andExpect(status().isOk());
   }
 
   static String json(MvcResult result, String field) throws Exception {

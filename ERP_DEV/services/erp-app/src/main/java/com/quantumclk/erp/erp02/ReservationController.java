@@ -120,10 +120,18 @@ public class ReservationController {
   }
 
   @PostMapping("/reservations/{id}/confirm")
-  public ReservationDto confirm(@PathVariable UUID id, HttpServletRequest req) {
+  public ReservationDto confirm(
+      @PathVariable UUID id, @RequestBody(required = false) OverrideBody body,
+      HttpServletRequest req) {
+    boolean requested = body != null && body.managerOverride();
+    boolean manager =
+        org.springframework.security.core.context.SecurityContextHolder.getContext()
+            .getAuthentication().getAuthorities().stream()
+            .anyMatch(a -> "MANAGER".equals(a.getAuthority()) || "SUPERADMIN".equals(a.getAuthority()));
     return toDto(
         bookings.confirm(
-            RoomCategoryController.GOLDEN_HILLS_PROPERTY_ID, id, actor(req), req.getRemoteAddr()));
+            RoomCategoryController.GOLDEN_HILLS_PROPERTY_ID, id, requested && manager,
+            actor(req), req.getRemoteAddr()));
   }
 
   @PostMapping("/reservations/{id}/cancel")
@@ -163,6 +171,8 @@ public class ReservationController {
   public record NewGuestBody(String name, String phone) {}
 
   public record ModifyBody(LocalDate checkinDate, LocalDate checkoutDate) {}
+
+  public record OverrideBody(boolean managerOverride) {}
 
   public record CancelBody(String reason) {}
 

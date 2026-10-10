@@ -49,7 +49,7 @@ class SecurityTest {
   void receptionCanReadButCannotChangeConfig() throws Exception {
     mvc.perform(get("/api/v1/config"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()", is(15)));
+        .andExpect(jsonPath("$.length()", is(17)));
     mvc.perform(
             patch("/api/v1/config/tax.gst_pct")
                 .contentType(MediaType.APPLICATION_JSON)

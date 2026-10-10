@@ -83,8 +83,11 @@ class BookingApiTest {
         .andExpect(status().isOk())
         .andExpect(header().string("X-Idempotent-Replayed", "true"))
         .andExpect(jsonPath("$.id", is(id)));
+    // Confirm the hold (advance must be captured first — the 3.4 gate).
+    payAdvance(id);
     // Confirm the hold.
-    mvc.perform(post("/api/v1/reservations/" + id + "/confirm"))
+    mvc.perform(post("/api/v1/reservations/" + id + "/confirm")
+            .contentType(MediaType.APPLICATION_JSON).content("{}"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status", is("confirmed")));
   }
@@ -188,6 +191,41 @@ class BookingApiTest {
     mvc.perform(get("/api/v1/reservations").param("status", "confirmed"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.page", is(0)));
+  }
+
+  @Test
+  void confirmBlockedWithoutAdvance() throws Exception {
+    MvcResult result =
+        mvc.perform(
+                post("/api/v1/reservations")
+                    .header("Idempotency-Key", "test-key-noadvance-1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(bookingJson("+91-9822000308", WEEKDAY_FROM, WEEKDAY_TO, null)))
+            .andExpect(status().isCreated())
+            .andReturn();
+    mvc.perform(post("/api/v1/reservations/" + jsonId(result) + "/confirm")
+            .contentType(MediaType.APPLICATION_JSON).content("{}"))
+        .andExpect(status().isUnprocessableEntity());
+  }
+
+  /** Sandbox settle: initiate (returns provider ref + signature) then confirm. */
+  void payAdvance(String reservationId) throws Exception {
+    MvcResult initiated =
+        mvc.perform(
+                post("/api/v1/payments/initiate")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"reservationId\":\"" + reservationId + "\"}"))
+            .andExpect(status().isCreated())
+            .andReturn();
+    String body = initiated.getResponse().getContentAsString();
+    String ref = body.split("\"gatewayRef\":\"")[1].split("\"")[0];
+    String sig = body.split("\"signature\":\"")[1].split("\"")[0];
+    mvc.perform(
+            post("/api/v1/payments/confirm")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"gatewayRef\":\"" + ref + "\",\"signature\":\"" + sig + "\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status", is("captured")));
   }
 
   static String bookingJson(String phone, LocalDate from, LocalDate to, String promo) {
