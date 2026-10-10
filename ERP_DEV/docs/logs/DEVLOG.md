@@ -235,6 +235,13 @@
 - Commit `399b305` (user-approved): 3.3 on `feature/3.3-front-office` (27 files, +1451/−12). Tree clean.
 - Merge `ba51425` (user-approved 2026-10-09): `feature/3.3-front-office` → `develop` (`--no-ff`). Post-merge `mvn verify` on `develop` → 40/0/0 BUILD SUCCESS. Unit 3.3 complete. No tags/pushes.
 
+## 2026-10-10T18:27:16+05:30 — Auth leftovers committed; UI-dashboard PLAN approved
+- Phase/unit: auth + UI-dashboard planning        Branch: feature/auth-keycloak-sso
+- What: committed `cb512e8` `docs(auth): local run script, keycloak runbook, day-one login notes` (DAY-ONE +6, keycloak.md +11, DEVLOG +1, new `run-local.sh`; user-approved via question tool 2026-10-10). Wrote `docs/03-phases/phase-3/PLAN-ui-reception-dashboard.md` (UI-only, coming-soon cards, SF Pro stack + Google icons, gradient banner until photo lands) — user approved + "start coding".
+- Resources: `pexels-vince-32808733.jpg` supplied by user in resource folder (read-only; sha256 `5c7ac65d…41fe0cf78`, resort pool photo for dashboard banner; RESOURCES_LOG update rides with UI commit). No web fetching; Google Fonts icon CDN approved 2026-10-10.
+- User interaction: approved "merge auth, then UI" order (commit + merge approved).
+- Next: merge auth → develop (`--no-ff`), branch `feature/ui-reception-dashboard`, implement.
+
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);
   facilities depth TBD in requirements analysis; tax/posting treatment TBD; RFID 1 terminal + 100 cards;
