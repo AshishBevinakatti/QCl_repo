@@ -251,6 +251,7 @@
 - Problems & fixes: (1) `tsc noUnusedLocals` on unused cats state → removed; (2) no guest-name seeds allowed in Preview (standing rule) → preview tables show structure/empty states, never invented names; (3) `GET /departures` assumed by old module doc — does not exist, corrected in doc + coming-soon cards.
 - User interaction: PLAN approved + start coding; banner photo supplied; Google icons CDN approved.
 - Next: present + ask to commit (merge separate).
+- Commit `3a720eb` (user-approved): UI dashboard on `feature/ui-reception-dashboard` (14 files, +855/−149). Tree clean except untracked `.vscode/` (never committed). No merge/push.
 
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);
