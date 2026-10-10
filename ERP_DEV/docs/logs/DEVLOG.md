@@ -169,6 +169,14 @@
 - User interaction: 3.5 PLAN approved; commit requested at presentation.
 - Next: commit 3.5 → merge to develop (separate approval) → 3.6 Website CMS (PLAN first) — or 3.7 admin/reporting; website integration pending Q-008.
 - Commit `0ad2a26` (user-approved): 3.5 on `feature/3.5-membership` (22 files, +1275/−15). Tree clean.
+- Merge 3.5 → develop (user-approved 2026-10-10, `--no-ff`). Post-merge `mvn verify` on `develop` → 50/0/0 BUILD SUCCESS. Unit 3.5 complete. No tags/pushes.
+
+## 2026-10-10T02:00:00+05:30 — UI friendly workspace (sidebar, dashboard, preview mode)
+- Phase/unit: 3.x – UI polish (user asked before moving on)        Branch: feature/ui-friendly-erp
+- What: resort-themed workspace (`index.css` brand theme + responsive sidebar); shared `ui.tsx` (Card/Stat/Badge/Alert/Field/Btn); 7 views (Dashboard with stat cards + room table, booking, front-office, guests, members, billing, housekeeping); Live/Preview toggle + `demo.ts` labeled sample data (local only, server untouched); login-hint panel (SSO wiring pending); fixed frontend GuestDto (memberId was missing); `vite preview` serves 200.
+- Verification: `npm run build` green (tsc + vite); `npm run lint` warnings only (data-load effects, fast-refresh note — non-blocking); preview serves the branded shell. Backend untouched (50/50 suite stands). NOT verified: real-browser click-through (no browser here — user reviews); Keycloak login (realm pending).
+- User rule 2026-10-10: NO customer/guest seed data anywhere. Applied on this branch: `V8__remove_demo_guests.sql` deletes the 3 V3 demo guests (forward-only — V3 untouched); all GuestApiTest cases rewritten to create their own data; preview sample guests removed from `web/src/demo.ts` (empty state shown). Verified: `mvn verify` 50/0/0 + `npm run build` green after removal. Kept (not customer data): room catalogue (30 rooms), rate/promo/tier/config reference rows, demo staff users, one preview-only member card clearly labeled as sample.
+- Next: commit UI + seed removal → merge to develop (separate approval) → resume 3.6/3.7 planning.
 
 ## 2026-10-09T23:15:00+05:30 — Unit 3.3 Front-office + housekeeping built + verified
 - Phase/unit: 3.3 – Front-office + Housekeeping        Branch: feature/3.3-front-office (from develop, plan-approved)

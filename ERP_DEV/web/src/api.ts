@@ -43,6 +43,7 @@ export interface GuestDto {
   preferences: string;
   status: string;
   mergedIntoId: string | null;
+  memberId: string | null;
 }
 
 export interface GuestPage {

@@ -1,406 +1,471 @@
 import { useEffect, useState } from 'react';
-import { apiHealth, availability, board, bookRoom, checkIn, checkOut, confirmPayment, createGuest, dashboard, enrollMember, folioByStay, initiatePayment, listCategories, memberDashboard, redeemPoints, requestRefund, rupees, searchGuests, transferStay, walkIn, type CategoryDto, type DashboardDto, type FolioDto, type GuestDto, type MemberDto, type RoomBoard } from './api';
+import {
+  apiHealth, availability, board, bookRoom, checkIn, checkOut, confirmPayment, createGuest,
+  dashboard, enrollMember, folioByStay, initiatePayment, listCategories, redeemPoints, requestRefund,
+  rupees, searchGuests, transferStay, walkIn,
+  type CategoryDto, type DashboardDto, type FolioDto, type GuestDto, type MemberDto, type RoomBoard,
+} from './api';
+import { demoBoard, demoCategories, demoDashboard, demoFolio, demoGuests, demoMember } from './demo';
+import { Alert, Badge, Btn, Card, Field, Stat, statusTone } from './ui';
+
+type View = 'dashboard' | 'book' | 'front' | 'guests' | 'members' | 'billing' | 'housekeeping';
+type Mode = 'live' | 'preview';
+
+const NAV: { id: View; label: string }[] = [
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'book', label: 'Book a room' },
+  { id: 'front', label: 'Front office' },
+  { id: 'guests', label: 'Guests' },
+  { id: 'members', label: 'Members' },
+  { id: 'billing', label: 'Billing' },
+  { id: 'housekeeping', label: 'Housekeeping' },
+];
 
 /**
- * 3.0 base shell: nav skeleton + live API status + room categories.
- * Screens per module land in units 3.1+; Keycloak login lands with 3.0-backend
- * realm wiring (until then the shell calls public endpoints only).
+ * Golden Hills ERP workspace. Live mode talks to erp-app (login via Keycloak
+ * SSO once the realm lands — until then data views ask you to log in).
+ * Preview mode runs on labeled sample data so every screen is clickable today.
  */
-const NAV = ['Dashboard', 'Bookings', 'Front Office', 'Guests', 'Members', 'Billing', 'Reports'];
-
 export default function App() {
-  const [health, setHealth] = useState('checking…');
-  const [cats, setCats] = useState<CategoryDto[]>([]);
-  const [error, setError] = useState('');
+  const [view, setView] = useState<View>('dashboard');
+  const [mode, setMode] = useState<Mode>('preview');
+  const [api, setApi] = useState('checking…');
+  const [apiUp, setApiUp] = useState(false);
 
   useEffect(() => {
     apiHealth()
-      .then((h) => setHealth(`${h.status} (${h.service})`))
-      .catch((e: Error) => setError(`API unreachable — is erp-app running? (${e.message})`));
-    listCategories()
-      .then((p) => setCats(p.items))
-      .catch(() => {});
+      .then((h) => { setApi(`${h.status} (${h.service})`); setApiUp(true); })
+      .catch(() => { setApi('unreachable — start erp-app (DAY-ONE §5)'); setApiUp(false); });
   }, []);
 
   return (
-    <div style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 720, margin: '2rem auto', padding: '0 1rem' }}>
-      <h1>Golden Hills ERP</h1>
-      <nav style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-        {NAV.map((n) => (
-          <span key={n} style={{ border: '1px solid #ccc', borderRadius: 6, padding: '0.25rem 0.6rem' }}>
-            {n}
-          </span>
-        ))}
-      </nav>
-      <p>API status: {health}</p>
-      {error && <p style={{ color: 'crimson' }}>{error}</p>}
-      <h2>Room categories</h2>
-      <ul>
-        {cats.map((c) => (
-          <li key={c.id}>
-            {c.name} — {rupees(c.basePricePaise)} / night, sleeps {c.capacity}
-          </li>
-        ))}
-      </ul>
-      <Guests />
-      <Booking cats={cats} />
-      <FrontOffice />
-      <Housekeeping />
-      <Billing />
-      <Members />
+    <div className="erp">
+      <aside className="sidebar">
+        <div className="brand">Golden Hills<small>Resort ERP</small></div>
+        <div className="mode-toggle" role="group" aria-label="data mode">
+          <button className={mode === 'live' ? 'active' : ''} onClick={() => setMode('live')}>Live</button>
+          <button className={mode === 'preview' ? 'active' : ''} onClick={() => setMode('preview')}>Preview</button>
+        </div>
+        <nav className="nav">
+          {NAV.map((n) => (
+            <button key={n.id} className={view === n.id ? 'active' : ''} onClick={() => setView(n.id)}>
+              {n.label}
+            </button>
+          ))}
+        </nav>
+        <div className="side-foot">
+          {mode === 'preview'
+            ? 'Preview: sample data, nothing is saved.'
+            : 'Live: signed in staff only (SSO).'}
+        </div>
+      </aside>
+      <main className="main">
+        <div className="topbar">
+          <h1>{NAV.find((n) => n.id === view)!.label}</h1>
+          <span className="sub">{mode === 'preview' ? 'Sample data' : 'Live server data'}</span>
+          <span className={apiUp ? 'status-pill' : 'status-pill down'}>API: {api}</span>
+        </div>
+        {mode === 'preview' && (
+          <Alert kind="info">Preview mode — sample data for review. Switch to Live when staff SSO is connected.</Alert>
+        )}
+        {view === 'dashboard' && <DashboardView mode={mode} />}
+        {view === 'book' && <BookView mode={mode} />}
+        {view === 'front' && <FrontView mode={mode} />}
+        {view === 'guests' && <GuestsView mode={mode} />}
+        {view === 'members' && <MembersView mode={mode} />}
+        {view === 'billing' && <BillingView mode={mode} />}
+        {view === 'housekeeping' && <HousekeepingView mode={mode} />}
+      </main>
     </div>
   );
 }
 
-/** 3.1 Guests screen: search + list + create (merge lives in the manager UI, unit 3.7). */
-function Guests() {
-  const [q, setQ] = useState('');
-  const [guests, setGuests] = useState<GuestDto[]>([]);
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [msg, setMsg] = useState('');
-
-  async function runSearch(e?: React.FormEvent) {
-    e?.preventDefault();
-    setMsg('');
-    try {
-      setGuests((await searchGuests(q)).items);
-    } catch (err) {
-      setMsg(err instanceof Error ? err.message : 'search failed (login required)');
-    }
-  }
-
-  async function runCreate(e: React.FormEvent) {
-    e.preventDefault();
-    setMsg('');
-    try {
-      const g = await createGuest(name, phone);
-      setMsg(`created ${g.name}`);
-      setName('');
-      setPhone('');
-      setGuests((await searchGuests(g.phone)).items);
-    } catch (err) {
-      setMsg(err instanceof Error ? err.message : 'create failed');
-    }
-  }
-
+function LoginHint() {
   return (
-    <section>
-      <h2>Guests</h2>
-      <form onSubmit={runSearch} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="search name or phone" aria-label="search guests" />
-        <button type="submit">Search</button>
-      </form>
-      <ul>
-        {guests.map((g) => (
-          <li key={g.id}>
-            {g.name} — {g.phone} ({g.status})
-          </li>
-        ))}
-      </ul>
-      <form onSubmit={runCreate} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="name" aria-label="guest name" />
-        <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="phone" aria-label="guest phone" />
-        <button type="submit">Add guest</button>
-      </form>
-      {msg && <p>{msg}</p>}
-    </section>
+    <Alert kind="info">
+      Staff login (Keycloak SSO) is being connected — this screen will show live data after sign-in.
+      Meanwhile, switch to Preview above to review the design.
+    </Alert>
   );
 }
 
-/** 3.2 Booking screen: pick category + dates → availability → guest → book. */
-function Booking({ cats }: { cats: CategoryDto[] }) {
-  const [cat, setCat] = useState('');
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [promo, setPromo] = useState('WELCOME10');
+/* ---------------- Dashboard ---------------- */
+function DashboardView({ mode }: { mode: Mode }) {
+  const [dash, setDash] = useState<DashboardDto | null>(mode === 'preview' ? demoDashboard : null);
   const [msg, setMsg] = useState('');
-
-  async function check(e: React.FormEvent) {
-    e.preventDefault();
-    setMsg('');
-    try {
-      const a = await availability(cat, from, to);
-      setMsg(`${a.available} of ${a.totalRooms} free`);
-    } catch (err) {
-      setMsg(err instanceof Error ? err.message : 'check failed (login required)');
-    }
-  }
-
-  async function book(e: React.FormEvent) {
-    e.preventDefault();
-    setMsg('');
-    try {
-      const r = await bookRoom(name, phone, cat, from, to, promo || undefined);
-      setMsg(`held ${r.nights} night(s), quote ${rupees(r.quotedTotalPaise)}, advance due ${rupees(r.advanceDuePaise)} (ref ${r.id.slice(0, 8)})`);
-    } catch (err) {
-      setMsg(err instanceof Error ? err.message : 'booking failed');
-    }
-  }
-
-  return (
-    <section>
-      <h2>Book a room</h2>
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-        <select value={cat} onChange={(e) => setCat(e.target.value)} aria-label="category">
-          <option value="">category…</option>
-          {cats.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
-        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="check-in" />
-        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="check-out" />
-        <button type="button" onClick={check}>Check</button>
-      </div>
-      <form onSubmit={book} style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="guest name" aria-label="guest name" />
-        <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="phone" aria-label="guest phone" />
-        <input value={promo} onChange={(e) => setPromo(e.target.value)} placeholder="promo (optional)" aria-label="promo" />
-        <button type="submit">Book</button>
-      </form>
-      {msg && <p>{msg}</p>}
-    </section>
-  );
-}
-
-/** 3.3 Reception dashboard: arrivals, in-house, room grid, check-in/out/transfer/walk-in. */
-function FrontOffice() {
-  const today = new Date().toISOString().slice(0, 10);
-  const [date, setDate] = useState(today);
-  const [dash, setDash] = useState<DashboardDto | null>(null);
-  const [reservationId, setReservationId] = useState('');
-  const [stayId, setStayId] = useState('');
-  const [roomId, setRoomId] = useState('');
-  const [msg, setMsg] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
 
   async function load(d: string) {
-    setMsg('');
-    try {
-      setDash(await dashboard(d));
-    } catch (err) {
-      setMsg(err instanceof Error ? err.message : 'dashboard failed (login required)');
-    }
+    if (mode === 'preview') { setDash({ ...demoDashboard, date: d }); return; }
+    try { setDash(await dashboard(d)); setMsg(''); }
+    catch { setMsg('login'); }
   }
 
-  async function act(label: string, fn: () => Promise<{ id: string; status: string; roomId: string }>) {
-    setMsg('');
-    try {
-      const s = await fn();
-      setMsg(`${label}: stay ${s.id.slice(0, 8)} ${s.status}`);
-      await load(date);
-    } catch (err) {
-      setMsg(err instanceof Error ? err.message : `${label} failed`);
-    }
-  }
+  useEffect(() => { load(date); /* eslint-disable-next-line */ }, [mode]);
 
+  if (mode === 'live' && !dash && msg) return <LoginHint />;
   return (
-    <section>
-      <h2>Front office</h2>
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-        <input type="date" value={date} onChange={(e) => { setDate(e.target.value); load(e.target.value); }} aria-label="business date" />
-        <button type="button" onClick={() => load(date)}>Refresh</button>
+    <>
+      <div className="row" style={{ marginBottom: '1rem' }}>
+        <Field label="Business date">
+          <input type="date" value={date} onChange={(e) => { setDate(e.target.value); load(e.target.value); }} />
+        </Field>
+        <Btn ghost onClick={() => load(date)}>Refresh</Btn>
       </div>
       {dash && (
         <>
-          <p>Arrivals: {dash.arrivals.length} · In-house: {dash.inHouse.length} · Outstanding: ₹0 (billing 3.4)</p>
-          <p>Rooms: {dash.rooms.map((r) => `${r.roomNo}:${r.status}`).join(' ')}</p>
-        </>
-      )}
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-        <input value={reservationId} onChange={(e) => setReservationId(e.target.value)} placeholder="reservation id" aria-label="reservation id" />
-        <input value={roomId} onChange={(e) => setRoomId(e.target.value)} placeholder="room id (optional)" aria-label="room id" />
-        <button type="button" onClick={() => act('checked in', () => checkIn(reservationId, roomId || undefined))}>Check in</button>
-      </div>
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-        <input value={stayId} onChange={(e) => setStayId(e.target.value)} placeholder="stay id" aria-label="stay id" />
-        <button type="button" onClick={() => act('checked out', () => checkOut(stayId))}>Check out</button>
-        <button type="button" onClick={() => act('transferred', () => transferStay(stayId, roomId, 'desk move'))}>Transfer</button>
-      </div>
-      {msg && <p>{msg}</p>}
-    </section>
-  );
-}
-
-/** 3.3 Housekeeping board: room readiness + task advance. */
-function Housekeeping() {
-  const [rooms, setRooms] = useState<RoomBoard[]>([]);
-  const [msg, setMsg] = useState('');
-
-  async function load() {
-    try {
-      setRooms(await board());
-    } catch {
-      setMsg('board failed (login required)');
-    }
-  }
-
-  useEffect(() => { load(); }, []);
-
-  return (
-    <section>
-      <h2>Housekeeping</h2>
-      <button type="button" onClick={load}>Refresh</button>
-      <ul>
-        {rooms.slice(0, 12).map((r) => (
-          <li key={r.roomId}>{r.roomNo}: {r.status} ({r.openTasks} open)</li>
-        ))}
-      </ul>
-      {msg && <p>{msg}</p>}
-      <WalkIn />
-    </section>
-  );
-}
-
-function WalkIn() {
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [msg, setMsg] = useState('');
-  return (
-    <form
-      onSubmit={async (e) => {
-        e.preventDefault();
-        try {
-          const cats = await listCategories();
-          const s = await walkIn(name, phone, cats.items[0].id);
-          setMsg(`walk-in checked in: ${s.id.slice(0, 8)}`);
-        } catch (err) {
-          setMsg(err instanceof Error ? err.message : 'walk-in failed');
-        }
-      }}
-      style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}
-    >
-      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="walk-in name" aria-label="walk-in name" />
-      <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="phone" aria-label="walk-in phone" />
-      <button type="submit">Walk in</button>
-      {msg && <p>{msg}</p>}
-    </form>
-  );
-}
-
-/** 3.4 Billing: folio by stay, sandbox pay, refund request (approve/process = manager desk). */
-function Billing() {
-  const [stayId, setStayId] = useState('');
-  const [folio, setFolio] = useState<FolioDto | null>(null);
-  const [paymentId, setPaymentId] = useState('');
-  const [msg, setMsg] = useState('');
-
-  async function load() {
-    setMsg('');
-    try {
-      setFolio(await folioByStay(stayId));
-    } catch (err) {
-      setMsg(err instanceof Error ? err.message : 'folio failed (login required)');
-    }
-  }
-
-  async function pay(amount: number, reservationId?: string) {
-    setMsg('');
-    try {
-      const init = await initiatePayment(
-        reservationId ? { reservationId } : { folioId: folio!.id, amount });
-      await confirmPayment(init.gatewayRef, init.signature);
-      setMsg(`captured ${rupees(init.amountPaise)} (sandbox)`);
-      await load();
-    } catch (err) {
-      setMsg(err instanceof Error ? err.message : 'pay failed');
-    }
-  }
-
-  return (
-    <section>
-      <h2>Billing</h2>
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-        <input value={stayId} onChange={(e) => setStayId(e.target.value)} placeholder="stay id" aria-label="stay id" />
-        <button type="button" onClick={load}>Load folio</button>
-      </div>
-      {folio && (
-        <>
-          <ul>
-            {folio.entries.map((e, i) => (
-              <li key={i}>{e.sourceType}: {rupees(e.amountPaise)}</li>
+          <div className="grid">
+            <Stat num={dash.arrivals.length} lbl="Arrivals today" />
+            <Stat num={dash.inHouse.length} lbl="In-house" />
+            {dash.occupancy.map((o) => (
+              <Stat key={o.categoryId} num={`${o.occupied}/${o.total}`} lbl={`${o.category} occupied`} />
             ))}
-          </ul>
-          <p>Outstanding: {rupees(folio.outstandingPaise)}</p>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button type="button" onClick={() => pay(folio.outstandingPaise)}>Pay balance (sandbox)</button>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-            <input value={paymentId} onChange={(e) => setPaymentId(e.target.value)} placeholder="payment id" aria-label="payment id" />
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  await requestRefund(paymentId, 10000, 'desk goodwill');
-                  setMsg('refund requested (manager approves in admin desk)');
-                } catch (err) {
-                  setMsg(err instanceof Error ? err.message : 'refund failed');
-                }
-              }}
-            >
-              Refund ₹100
-            </button>
-          </div>
+          <Card title="Rooms">
+            <table className="tbl">
+              <thead><tr><th>Room</th><th>Status</th></tr></thead>
+              <tbody>
+                {dash.rooms.map((r) => (
+                  <tr key={r.id}><td>{r.roomNo}</td><td><Badge tone={statusTone(r.status)}>{r.status}</Badge></td></tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
         </>
       )}
-      {msg && <p>{msg}</p>}
-    </section>
+    </>
   );
 }
 
-/** 3.5 Members: enroll by guest, dashboard, redeem to folio. */
-function Members() {
+/* ---------------- Book ---------------- */
+function BookView({ mode }: { mode: Mode }) {
+  const [cats, setCats] = useState<CategoryDto[]>(mode === 'preview' ? demoCategories : []);
+  const [cat, setCat] = useState(''); const [from, setFrom] = useState(''); const [to, setTo] = useState('');
+  const [name, setName] = useState(''); const [phone, setPhone] = useState(''); const [promo, setPromo] = useState('WELCOME10');
+  const [msg, setMsg] = useState(''); const [ok, setOk] = useState('');
+
+  useEffect(() => {
+    if (mode === 'live') listCategories().then((p) => setCats(p.items)).catch(() => setMsg('login'));
+    else setCats(demoCategories);
+  }, [mode]);
+
+  if (mode === 'live' && cats.length === 0 && msg) return <LoginHint />;
+
+  async function check() {
+    setMsg(''); setOk('');
+    if (mode === 'preview') { setOk('8 of 10 Deluxe free (sample)'); return; }
+    try {
+      const a = await availability(cat, from, to);
+      setOk(`${a.available} of ${a.totalRooms} free`);
+    } catch { setMsg('Could not check — log in first.'); }
+  }
+
+  async function book(e: React.FormEvent) {
+    e.preventDefault(); setMsg(''); setOk('');
+    if (mode === 'preview') { setOk('Preview: booking is not saved. Connect Live to book for real.'); return; }
+    try {
+      const r = await bookRoom(name, phone, cat, from, to, promo || undefined);
+      setOk(`Held ${r.nights} night(s) — quote ${rupees(r.quotedTotalPaise)}, advance due ${rupees(r.advanceDuePaise)} (ref ${r.id.slice(0, 8)}…)`);
+    } catch (err) { setMsg(err instanceof Error ? err.message : 'Booking failed.'); }
+  }
+
+  return (
+    <>
+      <Card title="Check availability">
+        <div className="row">
+          <Field label="Category">
+            <select value={cat} onChange={(e) => setCat(e.target.value)}>
+              <option value="">Choose…</option>
+              {cats.map((c) => <option key={c.id} value={c.id}>{c.name} — {rupees(c.basePricePaise)}</option>)}
+            </select>
+          </Field>
+          <Field label="Check-in"><input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></Field>
+          <Field label="Check-out"><input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></Field>
+          <Btn ghost onClick={check}>Check</Btn>
+        </div>
+      </Card>
+      <Card title="Guest & booking">
+        <form onSubmit={book}>
+          <div className="row">
+            <Field label="Guest name"><input value={name} onChange={(e) => setName(e.target.value)} required /></Field>
+            <Field label="Phone"><input value={phone} onChange={(e) => setPhone(e.target.value)} required /></Field>
+            <Field label="Promo (optional)"><input value={promo} onChange={(e) => setPromo(e.target.value)} /></Field>
+            <Btn type="submit">Book room</Btn>
+          </div>
+        </form>
+        {ok && <Alert kind="ok">{ok}</Alert>}
+        {msg && <Alert kind="err">{msg}</Alert>}
+      </Card>
+    </>
+  );
+}
+
+/* ---------------- Front office ---------------- */
+function FrontView({ mode }: { mode: Mode }) {
+  const [reservationId, setReservationId] = useState('');
+  const [stayId, setStayId] = useState('');
+  const [roomId, setRoomId] = useState('');
+  const [msg, setMsg] = useState(''); const [ok, setOk] = useState('');
+
+  async function act(label: string, fn: () => Promise<{ id: string; status: string }>) {
+    setMsg(''); setOk('');
+    if (mode === 'preview') { setOk(`Preview: “${label}” is not saved.`); return; }
+    try {
+      const s = await fn();
+      setOk(`${label}: stay ${s.id.slice(0, 8)}… is now ${s.status}.`);
+    } catch (err) { setMsg(err instanceof Error ? err.message : `${label} failed — log in first.`); }
+  }
+
+  async function doWalkIn() {
+    setMsg(''); setOk('');
+    if (mode === 'preview') { setOk('Preview: walk-in is not saved.'); return; }
+    try {
+      const cats = await listCategories();
+      const s = await walkIn('Walk-in Guest', '+91-9000000000', cats.items[0].id);
+      setOk(`Walk-in checked in: ${s.id.slice(0, 8)}…`);
+    } catch (err) { setMsg(err instanceof Error ? err.message : 'Walk-in failed.'); }
+  }
+
+  return (
+    <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
+      <Card title="Check in">
+        <Field label="Reservation id"><input value={reservationId} onChange={(e) => setReservationId(e.target.value)} /></Field>
+        <Field label="Room id (optional — auto-assigns)"><input value={roomId} onChange={(e) => setRoomId(e.target.value)} /></Field>
+        <p><Btn onClick={() => act('Checked in', () => checkIn(reservationId, roomId || undefined))}>Check in</Btn></p>
+      </Card>
+      <Card title="Check out / transfer">
+        <Field label="Stay id"><input value={stayId} onChange={(e) => setStayId(e.target.value)} /></Field>
+        <p className="row">
+          <Btn onClick={() => act('Checked out', () => checkOut(stayId))}>Check out</Btn>
+          <Btn ghost onClick={() => act('Transferred', () => transferStay(stayId, roomId, 'desk move'))}>Transfer</Btn>
+        </p>
+      </Card>
+      <Card title="Walk-in">
+        <p className="muted">Books tonight, collects advance, checks in — one step.</p>
+        <p><Btn onClick={doWalkIn}>Walk in guest</Btn></p>
+      </Card>
+      {ok && <Alert kind="ok">{ok}</Alert>}
+      {msg && <Alert kind="err">{msg}</Alert>}
+    </div>
+  );
+}
+
+/* ---------------- Guests ---------------- */
+function GuestsView({ mode }: { mode: Mode }) {
+  const [q, setQ] = useState('');
+  const [guests, setGuests] = useState<GuestDto[]>(mode === 'preview' ? demoGuests : []);
+  const [name, setName] = useState(''); const [phone, setPhone] = useState('');
+  const [msg, setMsg] = useState(''); const [ok, setOk] = useState('');
+
+  async function runSearch(e?: React.FormEvent) {
+    e?.preventDefault(); setMsg('');
+    if (mode === 'preview') {
+      setGuests(demoGuests.filter((g) => (g.name + g.phone).toLowerCase().includes(q.toLowerCase())));
+      return;
+    }
+    try { setGuests((await searchGuests(q)).items); }
+    catch { setMsg('Search needs login.'); }
+  }
+
+  async function runCreate(e: React.FormEvent) {
+    e.preventDefault(); setMsg(''); setOk('');
+    if (mode === 'preview') { setOk('Preview: guest is not saved.'); return; }
+    try {
+      const g = await createGuest(name, phone);
+      setOk(`Created ${g.name}.`); setName(''); setPhone('');
+      setGuests((await searchGuests(g.phone)).items);
+    } catch (err) { setMsg(err instanceof Error ? err.message : 'Create failed.'); }
+  }
+
+  return (
+    <>
+      <Card title="Find guests">
+        <form onSubmit={runSearch}>
+          <div className="row">
+            <Field label="Name or phone"><input value={q} onChange={(e) => setQ(e.target.value)} /></Field>
+            <Btn type="submit" ghost>Search</Btn>
+          </div>
+        </form>
+        {msg && <Alert kind="err">{msg}</Alert>}
+        <table className="tbl">
+          <thead><tr><th>Name</th><th>Phone</th><th>Status</th><th>Member</th></tr></thead>
+          <tbody>
+            {guests.map((g) => (
+              <tr key={g.id}>
+                <td>{g.name}</td><td>{g.phone}</td>
+                <td><Badge tone={statusTone(g.status)}>{g.status}</Badge></td>
+                <td>{g.memberId ? '★ member' : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+      <Card title="New guest">
+        <form onSubmit={runCreate}>
+          <div className="row">
+            <Field label="Name"><input value={name} onChange={(e) => setName(e.target.value)} required /></Field>
+            <Field label="Phone"><input value={phone} onChange={(e) => setPhone(e.target.value)} required /></Field>
+            <Btn type="submit">Add guest</Btn>
+          </div>
+        </form>
+        {ok && <Alert kind="ok">{ok}</Alert>}
+      </Card>
+    </>
+  );
+}
+
+/* ---------------- Members ---------------- */
+function MembersView({ mode }: { mode: Mode }) {
   const [guestId, setGuestId] = useState('');
-  const [member, setMember] = useState<MemberDto | null>(null);
-  const [folioId, setFolioId] = useState('');
-  const [points, setPoints] = useState('100');
+  const [member, setMember] = useState<MemberDto | null>(mode === 'preview' ? demoMember : null);
+  const [folioId, setFolioId] = useState(''); const [points, setPoints] = useState('100');
   const [msg, setMsg] = useState('');
 
   async function enroll(e: React.FormEvent) {
-    e.preventDefault();
-    setMsg('');
-    try {
-      setMember(await enrollMember(guestId));
-    } catch (err) {
-      setMsg(err instanceof Error ? err.message : 'enroll failed');
-    }
-  }
-
-  async function refresh() {
-    if (member) setMember(await memberDashboard(member.id));
+    e.preventDefault(); setMsg('');
+    if (mode === 'preview') { setMember(demoMember); return; }
+    try { setMember(await enrollMember(guestId)); }
+    catch (err) { setMsg(err instanceof Error ? err.message : 'Enroll needs login.'); }
   }
 
   async function redeem(e: React.FormEvent) {
-    e.preventDefault();
-    setMsg('');
-    try {
-      if (!member) return;
-      setMember(await redeemPoints(member.id, folioId, parseInt(points, 10)));
-    } catch (err) {
-      setMsg(err instanceof Error ? err.message : 'redeem failed');
-    }
+    e.preventDefault(); setMsg('');
+    if (!member) return;
+    if (mode === 'preview') { setMsg('Preview: points are not spent.'); return; }
+    try { setMember(await redeemPoints(member.id, folioId, parseInt(points, 10))); }
+    catch (err) { setMsg(err instanceof Error ? err.message : 'Redeem failed.'); }
   }
 
   return (
-    <section>
-      <h2>Members</h2>
-      <form onSubmit={enroll} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-        <input value={guestId} onChange={(e) => setGuestId(e.target.value)} placeholder="guest id" aria-label="guest id" />
-        <button type="submit">Enroll</button>
-      </form>
+    <>
+      <Card title="Enroll member">
+        <form onSubmit={enroll}>
+          <div className="row">
+            <Field label="Guest id"><input value={guestId} onChange={(e) => setGuestId(e.target.value)} required /></Field>
+            <Btn type="submit">Enroll</Btn>
+          </div>
+        </form>
+        {msg && <Alert kind="err">{msg}</Alert>}
+      </Card>
       {member && (
-        <>
-          <p>{member.membershipNo} · {member.tier} · {member.points} pts · {member.status} till {member.validTo}</p>
-          <form onSubmit={redeem} style={{ display: 'flex', gap: '0.5rem' }}>
-            <input value={folioId} onChange={(e) => setFolioId(e.target.value)} placeholder="folio id" aria-label="folio id" />
-            <input value={points} onChange={(e) => setPoints(e.target.value)} placeholder="points" aria-label="points" />
-            <button type="submit">Redeem</button>
-            <button type="button" onClick={refresh}>Refresh</button>
+        <Card title="Member dashboard">
+          <div className="grid">
+            <Stat num={member.membershipNo} lbl="Membership no." />
+            <Stat num={member.tier} lbl="Tier" />
+            <Stat num={member.points} lbl="Points" />
+            <Stat num={member.status} lbl={`Status (till ${member.validTo})`} />
+          </div>
+          <form onSubmit={redeem}>
+            <div className="row">
+              <Field label="Folio id"><input value={folioId} onChange={(e) => setFolioId(e.target.value)} required /></Field>
+              <Field label="Points"><input value={points} onChange={(e) => setPoints(e.target.value)} required /></Field>
+              <Btn type="submit" ghost>Redeem to folio</Btn>
+            </div>
           </form>
-        </>
+        </Card>
       )}
-      {msg && <p>{msg}</p>}
-    </section>
+    </>
+  );
+}
+
+/* ---------------- Billing ---------------- */
+function BillingView({ mode }: { mode: Mode }) {
+  const [stayId, setStayId] = useState('');
+  const [folio, setFolio] = useState<FolioDto | null>(mode === 'preview' ? demoFolio : null);
+  const [paymentId, setPaymentId] = useState('');
+  const [msg, setMsg] = useState(''); const [ok, setOk] = useState('');
+
+  async function load() {
+    setMsg('');
+    if (mode === 'preview') { setFolio(demoFolio); return; }
+    try { setFolio(await folioByStay(stayId)); }
+    catch { setMsg('Folio needs login.'); }
+  }
+
+  async function pay(amount: number, reservationId?: string) {
+    setMsg(''); setOk('');
+    if (mode === 'preview') { setOk('Preview: no money moves.'); return; }
+    try {
+      const init = await initiatePayment(reservationId ? { reservationId } : { folioId: folio!.id, amount });
+      await confirmPayment(init.gatewayRef, init.signature);
+      setOk(`Captured ${rupees(init.amountPaise)} (sandbox).`);
+      await load();
+    } catch (err) { setMsg(err instanceof Error ? err.message : 'Payment failed.'); }
+  }
+
+  return (
+    <>
+      <Card title="Guest folio">
+        <div className="row">
+          <Field label="Stay id"><input value={stayId} onChange={(e) => setStayId(e.target.value)} /></Field>
+          <Btn ghost onClick={load}>Load folio</Btn>
+        </div>
+        {msg && <Alert kind="err">{msg}</Alert>}
+        {folio && (
+          <>
+            <table className="tbl">
+              <thead><tr><th>Charge</th><th>Amount</th></tr></thead>
+              <tbody>
+                {folio.entries.map((e, i) => (
+                  <tr key={i}><td>{e.sourceType}</td><td>{rupees(e.amountPaise)}</td></tr>
+                ))}
+              </tbody>
+            </table>
+            <p><strong>Outstanding: {rupees(folio.outstandingPaise)}</strong></p>
+            <p><Btn onClick={() => pay(folio.outstandingPaise)}>Pay balance (sandbox)</Btn></p>
+          </>
+        )}
+        {ok && <Alert kind="ok">{ok}</Alert>}
+      </Card>
+      <Card title="Refund">
+        <div className="row">
+          <Field label="Payment id"><input value={paymentId} onChange={(e) => setPaymentId(e.target.value)} /></Field>
+          <Btn ghost onClick={async () => {
+            setMsg(''); setOk('');
+            if (mode === 'preview') { setOk('Preview: refund is not recorded.'); return; }
+            try {
+              await requestRefund(paymentId, 10000, 'desk goodwill');
+              setOk('Refund requested — a manager approves it.');
+            } catch (err) { setMsg(err instanceof Error ? err.message : 'Refund failed.'); }
+          }}>
+            Refund ₹100
+          </Btn>
+        </div>
+      </Card>
+    </>
+  );
+}
+
+/* ---------------- Housekeeping ---------------- */
+function HousekeepingView({ mode }: { mode: Mode }) {
+  const [rooms, setRooms] = useState<RoomBoard[]>(mode === 'preview' ? demoBoard : []);
+  const [msg, setMsg] = useState('');
+
+  async function load() {
+    if (mode === 'preview') { setRooms(demoBoard); return; }
+    try { setRooms(await board()); }
+    catch { setMsg('Board needs login.'); }
+  }
+
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [mode]);
+
+  return (
+    <Card title="Room readiness">
+      {msg && <Alert kind="err">{msg}</Alert>}
+      <p><Btn ghost onClick={load}>Refresh</Btn></p>
+      <table className="tbl">
+        <thead><tr><th>Room</th><th>Status</th><th>Open tasks</th></tr></thead>
+        <tbody>
+          {rooms.map((r) => (
+            <tr key={r.roomId}>
+              <td>{r.roomNo}</td>
+              <td><Badge tone={statusTone(r.status)}>{r.status}</Badge></td>
+              <td>{r.openTasks}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="muted">Cleaning advances a task todo → doing → inspect → done; done rooms turn ready for reception.</p>
+    </Card>
   );
 }
