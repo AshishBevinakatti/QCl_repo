@@ -263,6 +263,9 @@
 - User interaction: PLAN-3.6 approved; Slice B declined; merge-UI-then-branch order approved.
 - Next: present + ask to commit (merge separate).
 - Commit `bb5968f` (user-approved): 3.6 on `feature/frontoffice-lists` (11 files, +555/−25). Tree clean except untracked `.vscode/`. No merge/push.
+- Merge `5eab9de` (user-approved 2026-10-10, EOD instruction): `feature/frontoffice-lists` → `develop` (`--no-ff`). Post-merge on `develop`: `mvn verify` 56/0/0 BUILD SUCCESS; `npm run build` green. Unit 3.6 complete. No tags/pushes.
+- EOD audit: `git ls-files` shows no tracked artefacts/secrets/env (dist/target/node_modules ignored); `banner.jpg` is the only binary, user-supplied + hash-logged. Root `.vscode/` untracked (only `ERP_DEV/.vscode` is gitignored — left alone, never staged).
+- Servers left running: backend PID 145797 (`run-local.sh postgres`, 3.6 code), web dev on :5173 (3.6 code) — host may reap idle processes; restart via DAY-ONE §5 / run-local.sh. User's pending item: browser review of live Departures/In-house/Alerts cards (fresh tab, Live + login).
 
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);
