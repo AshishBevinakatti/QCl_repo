@@ -2,6 +2,7 @@ package com.quantumclk.erp.erp07;
 
 import com.quantumclk.erp.audit.AuditLog;
 import com.quantumclk.erp.config.Configs;
+import com.quantumclk.erp.erp05.LoyaltyService;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,7 @@ public class PaymentService {
   private final RefundRepository refunds;
   private final FolioService folio;
   private final PaymentGateway gateway;
+  private final LoyaltyService loyalty;
   private final AuditLog auditLog;
   private final Configs configs;
 
@@ -29,12 +31,14 @@ public class PaymentService {
       RefundRepository refunds,
       FolioService folio,
       PaymentGateway gateway,
+      LoyaltyService loyalty,
       AuditLog auditLog,
       Configs configs) {
     this.payments = payments;
     this.refunds = refunds;
     this.folio = folio;
     this.gateway = gateway;
+    this.loyalty = loyalty;
     this.auditLog = auditLog;
     this.configs = configs;
   }
@@ -70,8 +74,9 @@ public class PaymentService {
    */
   @Transactional
   public Payment confirmByRef(UUID propertyId, String gatewayRef, String signature, String ip) {
+    // Row lock: concurrent callbacks serialize; the loser sees CAPTURED and replays safely.
     Payment payment =
-        payments.findByPropertyIdAndGatewayRef(propertyId, gatewayRef)
+        payments.lockByGatewayRef(propertyId, gatewayRef)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "payment not found"));
     if (Payment.CAPTURED.equals(payment.getStatus())) {
       return payment; // provider redelivery: safe replay, no duplicate posting.
@@ -91,6 +96,11 @@ public class PaymentService {
     if (payment.getFolioId() != null) {
       folio.postEntry(payment.getFolioId(), "payment", payment.getId().toString(),
           -payment.getAmountPaise(), "gateway");
+    }
+    // Loyalty earn hook (no member / expired member → no earn, by design).
+    if (payment.getBookingId() != null) {
+      loyalty.earnForBooking(propertyId, payment.getBookingId(), payment.getId(),
+          payment.getAmountPaise(), "gateway");
     }
     audit(propertyId, "gateway", "payment.captured", payment.getId().toString(),
         Payment.PENDING, Payment.CAPTURED, null, ip);

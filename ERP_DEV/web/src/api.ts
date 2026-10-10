@@ -211,7 +211,6 @@ export async function confirmPayment(gatewayRef: string, signature: string): Pro
     throw new Error(err.message ?? `confirm failed: ${res.status}`);
   }
 }
-
 export async function requestRefund(paymentId: string, amountPaise: number, reason: string) {
   const res = await fetch('/api/v1/refunds', {
     method: 'POST',
@@ -221,6 +220,48 @@ export async function requestRefund(paymentId: string, amountPaise: number, reas
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message ?? `refund failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export interface MemberDto {
+  id: string;
+  guestId: string;
+  membershipNo: string;
+  tier: string;
+  status: string;
+  validTo: string;
+  points: number;
+}
+
+export async function enrollMember(guestId: string): Promise<MemberDto> {
+  const res = await fetch('/api/v1/members', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ guestId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? `enroll failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function memberDashboard(id: string): Promise<MemberDto> {
+  const res = await fetch(`/api/v1/members/${id}`);
+  if (!res.ok) throw new Error(`member failed: ${res.status}`);
+  return res.json();
+}
+
+export async function redeemPoints(memberId: string, folioId: string, points: number): Promise<MemberDto> {
+  const res = await fetch(`/api/v1/members/${memberId}/redeem`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ folioId, points }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? `redeem failed: ${res.status}`);
   }
   return res.json();
 }
