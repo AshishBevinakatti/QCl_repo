@@ -156,6 +156,7 @@
 - Problems & fixes: (1) CHAR(3) vs VARCHAR validation → VARCHAR; (2) AuditLog 8-vs-9-arg calls → added objectType; (3) package-visible orOwned → public; (4) old-test fallout from the new gate (config count, checkout-with-balance → settle-first, confirms need payment) — all updated faithfully, none weakened; (5) advance-folio link gap (folio ignored paid advances) → linkBookingPayments at check-in + invoice test proving 700000 outstanding / 820000 total.
 - User interaction: 3.4 PLAN approved; commit requested at presentation.
 - Next: commit 3.4 → merge to develop (separate approval) → 3.5 Membership & loyalty (PLAN first).
+- Commit `edded7b` (user-approved): 3.4 on `feature/3.4-payment-billing` (37 files, +2008/−46). Tree clean.
 
 ## 2026-10-09T23:15:00+05:30 — Unit 3.3 Front-office + housekeeping built + verified
 - Phase/unit: 3.3 – Front-office + Housekeeping        Branch: feature/3.3-front-office (from develop, plan-approved)
