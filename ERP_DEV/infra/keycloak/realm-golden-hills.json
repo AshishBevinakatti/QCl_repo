@@ -1,0 +1,177 @@
+{
+  "realm": "resort",
+  "enabled": true,
+  "displayName": "Golden Hills Resort",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "loginWithEmailAllowed": false,
+  "duplicateEmailsAllowed": false,
+  "roles": {
+    "realm": [
+      {
+        "name": "SUPERADMIN",
+        "description": "Full configuration, users, reports ([ASSUMED] matrix, security.md)"
+      },
+      {
+        "name": "MANAGER",
+        "description": "Dashboards, reports, reservations, approvals"
+      },
+      {
+        "name": "RECEPTION",
+        "description": "Bookings, guests, check-in/out, room allocation"
+      },
+      {
+        "name": "MEMBERSHIP",
+        "description": "Members, loyalty, RFID administration"
+      },
+      {
+        "name": "ACCOUNTS",
+        "description": "Payments, invoices, refunds, financial reports"
+      },
+      {
+        "name": "HOUSEKEEPING",
+        "description": "Room tasks and room readiness"
+      },
+      {
+        "name": "OPS",
+        "description": "Spa/facility operations where enabled"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "erp-web",
+      "name": "Resort ERP web shell",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "admin-staff",
+      "enabled": true,
+      "emailVerified": false,
+      "firstName": "Admin",
+      "lastName": "Staff",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "change-me-dev-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "SUPERADMIN"
+      ],
+      "requiredActions": [],
+      "email": "admin-staff@goldenhills.local"
+    },
+    {
+      "username": "manager-staff",
+      "enabled": true,
+      "emailVerified": false,
+      "firstName": "Manager",
+      "lastName": "Staff",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "change-me-dev-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "MANAGER"
+      ],
+      "requiredActions": [],
+      "email": "manager-staff@goldenhills.local"
+    },
+    {
+      "username": "reception-staff",
+      "enabled": true,
+      "emailVerified": false,
+      "firstName": "Reception",
+      "lastName": "Staff",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "change-me-dev-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "RECEPTION"
+      ],
+      "requiredActions": [],
+      "email": "reception-staff@goldenhills.local"
+    },
+    {
+      "username": "accounts-staff",
+      "enabled": true,
+      "emailVerified": false,
+      "firstName": "Accounts",
+      "lastName": "Staff",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "change-me-dev-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ACCOUNTS"
+      ],
+      "requiredActions": [],
+      "email": "accounts-staff@goldenhills.local"
+    },
+    {
+      "username": "membership-staff",
+      "enabled": true,
+      "emailVerified": false,
+      "firstName": "Membership",
+      "lastName": "Staff",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "change-me-dev-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "MEMBERSHIP"
+      ],
+      "requiredActions": [],
+      "email": "membership-staff@goldenhills.local"
+    },
+    {
+      "username": "housekeeping-staff",
+      "enabled": true,
+      "emailVerified": false,
+      "firstName": "Housekeeping",
+      "lastName": "Staff",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "change-me-dev-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "HOUSEKEEPING"
+      ],
+      "requiredActions": [],
+      "email": "housekeeping-staff@goldenhills.local"
+    }
+  ]
+}

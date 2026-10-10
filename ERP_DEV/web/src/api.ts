@@ -5,6 +5,59 @@
  */
 const BASE = import.meta.env.VITE_API_URL ?? '';
 
+/**
+ * Single fetch entry point: same-origin/dev-proxy path handling plus the
+ * staff JWT when logged in (Keycloak SSO). Server enforces roles; the token
+ * here only identifies the caller.
+ *
+ * Errors carry their HTTP status (HttpError) so screens can tell "log in"
+ * (401) apart from "server is misconfigured" (5xx) — lesson 2026-10-10.
+ */
+import { getToken } from './auth';
+
+export class HttpError extends Error {
+  status: number;
+  code?: string;
+  details?: Record<string, string>;
+  constructor(status: number, message: string, code?: string, details?: Record<string, string>) {
+    super(message);
+    this.status = status;
+    this.code = code;
+    this.details = details;
+  }
+}
+
+export function isAuthError(err: unknown): boolean {
+  return err instanceof HttpError && err.status === 401;
+}
+
+export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const url = path.startsWith('http') || (BASE && path.startsWith(BASE)) ? path : `${BASE}${path}`;
+  const headers = new Headers(init.headers ?? {});
+  if (!headers.has('Content-Type') && init.body !== undefined) {
+    headers.set('Content-Type', 'application/json');
+  }
+  const token = await getToken();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  const res = await globalThis.fetch(url, { ...init, headers });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as {
+      message?: string; code?: string; details?: Record<string, string>;
+    };
+    if (res.status === 401) {
+      throw new HttpError(401, 'Not signed in — use Staff log in.', body.code, body.details);
+    }
+    if (res.status >= 500) {
+      throw new HttpError(
+        res.status,
+        'Server error — your login is fine, but the backend may be missing its login config (runbook: docs/05-operations/keycloak.md).',
+      );
+    }
+    throw new HttpError(res.status, body.message ?? `Request failed: ${res.status}`, body.code, body.details);
+  }
+  return res;
+}
+
 export interface CategoryDto {
   id: string;
   name: string;
@@ -20,13 +73,13 @@ export interface CategoryPage {
 }
 
 export async function apiHealth(): Promise<{ status: string; service: string }> {
-  const res = await fetch(`${BASE}/api/v1/health`);
+  const res = await apiFetch(`${BASE}/api/v1/health`);
   if (!res.ok) throw new Error(`health failed: ${res.status}`);
   return res.json();
 }
 
 export async function listCategories(): Promise<CategoryPage> {
-  const res = await fetch(`${BASE}/api/v1/room-categories`);
+  const res = await apiFetch(`${BASE}/api/v1/room-categories`);
   if (!res.ok) throw new Error(`categories failed: ${res.status}`);
   return res.json();
 }
@@ -53,12 +106,38 @@ export interface GuestPage {
 }
 
 export async function searchGuests(q: string): Promise<GuestPage> {
-  const res = await fetch(`/api/v1/guests?search=${encodeURIComponent(q)}`);
+  const res = await apiFetch(`/api/v1/guests?search=${encodeURIComponent(q)}`);
   if (!res.ok) throw new Error(`guests failed: ${res.status}`);
   return res.json();
 }
+
+export async function guestById(id: string): Promise<GuestDto> {
+  const res = await apiFetch(`/api/v1/guests/${id}`);
+  if (!res.ok) throw new Error(`guest failed: ${res.status}`);
+  return res.json();
+}
+
+export interface ReservationSummary {
+  id: string;
+  guestId: string;
+  categoryId: string;
+  checkinDate: string;
+  checkoutDate: string;
+  status: string;
+}
+
+/** Desk aid: bookings overlapping a date, so ids are visible (no memorising). */
+export async function listReservations(date?: string, status?: string): Promise<ReservationSummary[]> {
+  const params = new URLSearchParams();
+  if (date) params.set('date', date);
+  if (status) params.set('status', status);
+  const res = await apiFetch(`/api/v1/reservations?${params}`);
+  if (!res.ok) throw new Error(`reservations failed: ${res.status}`);
+  const page = (await res.json()) as { items: ReservationSummary[] };
+  return page.items;
+}
 export async function createGuest(name: string, phone: string): Promise<GuestDto> {
-  const res = await fetch('/api/v1/guests', {
+  const res = await apiFetch('/api/v1/guests', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, phone }),
@@ -80,7 +159,7 @@ export interface AvailabilityDto {
 }
 
 export async function availability(categoryId: string, from: string, to: string): Promise<AvailabilityDto> {
-  const res = await fetch(`/api/v1/availability?categoryId=${categoryId}&from=${from}&to=${to}`);
+  const res = await apiFetch(`/api/v1/availability?categoryId=${categoryId}&from=${from}&to=${to}`);
   if (!res.ok) throw new Error(`availability failed: ${res.status}`);
   return res.json();
 }
@@ -105,7 +184,7 @@ export interface DashboardDto {
 }
 
 export async function dashboard(date: string): Promise<DashboardDto> {
-  const res = await fetch(`/api/v1/front-office/dashboard?date=${date}`);
+  const res = await apiFetch(`/api/v1/front-office/dashboard?date=${date}`);
   if (!res.ok) throw new Error(`dashboard failed: ${res.status}`);
   return res.json();
 }
@@ -118,7 +197,7 @@ export interface StayDto {
 }
 
 async function stayAction(url: string, body: unknown): Promise<StayDto> {
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -153,12 +232,12 @@ export interface RoomBoard {
 }
 
 export async function board(): Promise<RoomBoard[]> {
-  const res = await fetch('/api/v1/housekeeping/board');
+  const res = await apiFetch('/api/v1/housekeeping/board');
   if (!res.ok) throw new Error(`board failed: ${res.status}`);
   return res.json();
 }
 export async function advanceTask(id: string): Promise<TaskDto> {
-  const res = await fetch(`/api/v1/housekeeping/tasks/${id}/advance`, { method: 'PATCH' });
+  const res = await apiFetch(`/api/v1/housekeeping/tasks/${id}/advance`, { method: 'PATCH' });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message ?? `advance failed: ${res.status}`);
@@ -173,7 +252,7 @@ export interface FolioDto {
 }
 
 export async function folioByStay(stayId: string): Promise<FolioDto> {
-  const res = await fetch(`/api/v1/folios?stayId=${stayId}`);
+  const res = await apiFetch(`/api/v1/folios?stayId=${stayId}`);
   if (!res.ok) throw new Error(`folio failed: ${res.status}`);
   return res.json();
 }
@@ -189,7 +268,7 @@ export interface InitiateDto {
 export async function initiatePayment(body: {
   reservationId?: string; folioId?: string; amount?: number;
 }): Promise<InitiateDto> {
-  const res = await fetch('/api/v1/payments/initiate', {
+  const res = await apiFetch('/api/v1/payments/initiate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -202,7 +281,7 @@ export async function initiatePayment(body: {
 }
 
 export async function confirmPayment(gatewayRef: string, signature: string): Promise<void> {
-  const res = await fetch('/api/v1/payments/confirm', {
+  const res = await apiFetch('/api/v1/payments/confirm', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ gatewayRef, signature }),
@@ -213,7 +292,7 @@ export async function confirmPayment(gatewayRef: string, signature: string): Pro
   }
 }
 export async function requestRefund(paymentId: string, amountPaise: number, reason: string) {
-  const res = await fetch('/api/v1/refunds', {
+  const res = await apiFetch('/api/v1/refunds', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ paymentId, amountPaise, reason }),
@@ -236,7 +315,7 @@ export interface MemberDto {
 }
 
 export async function enrollMember(guestId: string): Promise<MemberDto> {
-  const res = await fetch('/api/v1/members', {
+  const res = await apiFetch('/api/v1/members', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ guestId }),
@@ -249,13 +328,13 @@ export async function enrollMember(guestId: string): Promise<MemberDto> {
 }
 
 export async function memberDashboard(id: string): Promise<MemberDto> {
-  const res = await fetch(`/api/v1/members/${id}`);
+  const res = await apiFetch(`/api/v1/members/${id}`);
   if (!res.ok) throw new Error(`member failed: ${res.status}`);
   return res.json();
 }
 
 export async function redeemPoints(memberId: string, folioId: string, points: number): Promise<MemberDto> {
-  const res = await fetch(`/api/v1/members/${memberId}/redeem`, {
+  const res = await apiFetch(`/api/v1/members/${memberId}/redeem`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ folioId, points }),
@@ -269,7 +348,7 @@ export async function redeemPoints(memberId: string, folioId: string, points: nu
 export async function bookRoom(
   name: string, phone: string, categoryId: string, from: string, to: string, promo?: string,
 ): Promise<ReservationDto> {
-  const res = await fetch('/api/v1/reservations', {
+  const res = await apiFetch('/api/v1/reservations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() },
     body: JSON.stringify({

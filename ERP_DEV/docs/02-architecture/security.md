@@ -6,6 +6,8 @@
 ## Auth
 Keycloak (OAuth2/OIDC, PKCE for SPA): one realm `golden-hills`, clients `erp-web` + `terminal-service` + `channel-service`. JWT access (short-lived) + refresh; logout revokes server-side. Failed-login throttling + lockout; MFA for SuperAdmin/Manager/Accounts.
 
+As-built 2026-10-10 (login unit, local dev): realm `resort` (file `infra/keycloak/realm-golden-hills.json`, auto-imported), Keycloak on host port **8081**, public PKCE client `erp-web`, 6 DEV-ONLY demo staff; backend issuer via `KEYCLOAK_ISSUER_URL`; `realm_access.roles` → authorities (unit-tested + proven live: reception 200/403, anon/garbage 401, SUPERADMIN 200). Runbook: `05-operations/keycloak.md`.
+
 ## RBAC matrix (deny-by-default, enforced server-side; `[ASSUMED]` until client confirms D-110)
 
 | Capability | SuperAdmin | Manager | Reception | Membership | Accounts | Housekeeping | Ops/Spa |

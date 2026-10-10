@@ -176,7 +176,52 @@
 - What: resort-themed workspace (`index.css` brand theme + responsive sidebar); shared `ui.tsx` (Card/Stat/Badge/Alert/Field/Btn); 7 views (Dashboard with stat cards + room table, booking, front-office, guests, members, billing, housekeeping); Live/Preview toggle + `demo.ts` labeled sample data (local only, server untouched); login-hint panel (SSO wiring pending); fixed frontend GuestDto (memberId was missing); `vite preview` serves 200.
 - Verification: `npm run build` green (tsc + vite); `npm run lint` warnings only (data-load effects, fast-refresh note — non-blocking); preview serves the branded shell. Backend untouched (50/50 suite stands). NOT verified: real-browser click-through (no browser here — user reviews); Keycloak login (realm pending).
 - User rule 2026-10-10: NO customer/guest seed data anywhere. Applied on this branch: `V8__remove_demo_guests.sql` deletes the 3 V3 demo guests (forward-only — V3 untouched); all GuestApiTest cases rewritten to create their own data; preview sample guests removed from `web/src/demo.ts` (empty state shown). Verified: `mvn verify` 50/0/0 + `npm run build` green after removal. Kept (not customer data): room catalogue (30 rooms), rate/promo/tier/config reference rows, demo staff users, one preview-only member card clearly labeled as sample.
-- Next: commit UI + seed removal → merge to develop (separate approval) → resume 3.6/3.7 planning.
+- Commit `79c9a9b` (user-approved): UI workspace + seed removal (10 files, +652/−430). Local Postgres installed globally (system service) + `resort_erp` migrated V1→V8 for the user's pgAdmin review (25 tables, 30 rooms, 0 guests).
+- Merge `15cf66e` (user-approved 2026-10-10): `feature/ui-friendly-erp` → `develop` (`--no-ff`). Post-merge: backend 50/0/0 + web build green. No tags/pushes.
+
+## 2026-10-10T11:00:00+05:30 — Staff login via Keycloak SSO (self-hosted, live-proven)
+- Phase/unit: 3.x – auth (user chose self-hosted Keycloak, plan-approved)        Branch: feature/auth-keycloak-sso
+- What: realm-as-code (`infra/keycloak/realm-golden-hills.json`: realm `resort`, 7 roles, PKCE public client `erp-web`, 6 DEV-ONLY demo users); compose Keycloak on host 8081 (8080 is erp-app's) with auto-import; frontend `auth.ts` (init/login/logout/token/roles) + `apiFetch` token attach (all 17 calls rewired) + sidebar login state + login-hint refresh; backend needed NO code change (issuer already env-driven); CI realm-contract job; runbook `05-operations/keycloak.md`; DAY-ONE §5c; security.md as-built; TRACEABILITY REQ-ERP08-002.
+- Verification: realm JSON valid; `npm run build` green; `mvn verify` 50/0/0; LIVE against real Keycloak tokens — reception `GET /room-categories` 200, reception `PATCH /config` 403, anon 401, forged 401, SUPERADMIN patch 200. Browser click-through left to user (checklist in runbook).
+- Problems & fixes: (1) compose keycloak port clashed with erp-app 8080 → host 8081; (2) direct-grant "Account is not fully set up" → Keycloak 24 user profile requires email — added `@goldenhills.local` via Admin API + realm file (lesson logged in runbook); (3) `sg docker` needed (shell predates docker-group membership); (4) stale erp-app squatting on 8080 from an old timed-out shell → pkill + verify before live runs (lesson: always ps-check port 8080 first).
+- Backend deps: +keycloak-js@24.0.1 (plan-named, pinned).
+- Commit `fc51e1a` (user-approved 2026-10-10): auth on `feature/auth-keycloak-sso` (17 files, +485/−45). NOT merged (explicit user instruction — awaiting click-through + separate approval).
+
+## 2026-10-10T17:45:00+05:30 — Review fixes: friendly duplicate + visible booking ids
+- What (on `feature/auth-keycloak-sso`, uncommitted): `common/ApiException` (stable code + details map)
+  + handler branch; guest duplicate → `GUEST_EXISTS` with human text, id travels in
+  `details.existingGuestId`; frontend HttpError carries code/details; Guests screen shows "already
+  registered" + Show-existing button; Front office gains a bookings-on-date table (short ref, status,
+  Use fills check-in + copies full id); check-in success auto-fills the stay field; GUEST_EXISTS test.
+- Verification: `mvn verify` 50/0/0; `npm run build` green. NOT verified: user click-through (pending).
+- Next: commit fixes (on approval) → user re-verifies → merge only on approval.
+- Commit `c66e8e6` (user-approved): review fixes on `feature/auth-keycloak-sso` (7 files, +223/−16). NOT merged. Still uncommitted: DAY-ONE/runbook login-lesson docs + `run-local.sh` (held from the earlier verify pause — will ride with the next approved commit).
+
+## 2026-10-10T17:30:00+05:30 — Login-lesson fixes: status-aware errors + run-local.sh
+- What: `api.ts` HttpError (401 vs 5xx split) + Dashboard/Housekeeping branch LoginHint vs server Alert;
+  `ERP_DEV/run-local.sh` (postgres|h2, always sets issuer, fail-fast Keycloak check); DAY-ONE points at it.
+- Verification: `npm run build` green; script booted backend → health UP, no issuer warning, real-token
+  categories 200. Full suite untouched by these files (web-only + script); backend suite stands at 50/50.
+- Next: commit fixes → user re-tests Live booking → merge (only on approval).
+
+## 2026-10-10T17:15:00+05:30 — Lesson: backend without issuer rejects logins (user caught it)
+- What happened: user logged in fine (sidebar showed reception-staff) but Live screens showed only the
+  login hint — booking impossible. Read-only diagnosis: the running backend (PID 93398) had NO
+  `KEYCLOAK_ISSUER_URL` in its environment (verified via /proc environ + a valid-token probe returning
+  500 instead of data). Without the issuer, the JWT decoder rejects every authenticated call.
+- Why it happened (our fault, two layers): (1) start instructions offered several backend variants and
+  the issuer var was easy to drop — nothing forced it; (2) the UI shows "needs sign-in" for ANY fetch
+  failure, so a server 500 looked exactly like "not logged in" and sent the user down the wrong path.
+- Fixes to prevent recurrence (user-ordered documentation of the mistake itself is this entry):
+  1. UI must distinguish 401 (show login hint) from 5xx/network (show "server error — likely missing
+     issuer config, see runbook") — planned code fix, not yet implemented.
+  2. A single `run-local.sh` that always sets issuer + DB vars (no hand-typed env) — planned, not yet
+     implemented. Until then: runbook prerequisite check below is MANDATORY before any login test.
+- Standing rule added: before presenting any login-dependent test, verify the backend environment
+  (`/proc/<pid>/environ` or startup log) contains KEYCLOAK_ISSUER_URL, and probe one authed endpoint
+  with a fresh token. Never assume the running backend matches the docs.
+- User interaction: hosting choice (a) + plan approved; commit requested at presentation. EXPLICIT: no merge without separate approval.
+- Next: commit auth → user click-through (login as demo staff, all views live) → then merge (on approval) → 3.7 or 3.6.
 
 ## 2026-10-09T23:15:00+05:30 — Unit 3.3 Front-office + housekeeping built + verified
 - Phase/unit: 3.3 – Front-office + Housekeeping        Branch: feature/3.3-front-office (from develop, plan-approved)
@@ -189,6 +234,13 @@
 - Next: commit 3.3 → merge to develop (separate approval) → 3.4 Payment & billing (PLAN first).
 - Commit `399b305` (user-approved): 3.3 on `feature/3.3-front-office` (27 files, +1451/−12). Tree clean.
 - Merge `ba51425` (user-approved 2026-10-09): `feature/3.3-front-office` → `develop` (`--no-ff`). Post-merge `mvn verify` on `develop` → 40/0/0 BUILD SUCCESS. Unit 3.3 complete. No tags/pushes.
+
+## 2026-10-10T18:27:16+05:30 — Auth leftovers committed; UI-dashboard PLAN approved
+- Phase/unit: auth + UI-dashboard planning        Branch: feature/auth-keycloak-sso
+- What: committed `cb512e8` `docs(auth): local run script, keycloak runbook, day-one login notes` (DAY-ONE +6, keycloak.md +11, DEVLOG +1, new `run-local.sh`; user-approved via question tool 2026-10-10). Wrote `docs/03-phases/phase-3/PLAN-ui-reception-dashboard.md` (UI-only, coming-soon cards, SF Pro stack + Google icons, gradient banner until photo lands) — user approved + "start coding".
+- Resources: `pexels-vince-32808733.jpg` supplied by user in resource folder (read-only; sha256 `5c7ac65d…41fe0cf78`, resort pool photo for dashboard banner; RESOURCES_LOG update rides with UI commit). No web fetching; Google Fonts icon CDN approved 2026-10-10.
+- User interaction: approved "merge auth, then UI" order (commit + merge approved).
+- Next: merge auth → develop (`--no-ff`), branch `feature/ui-reception-dashboard`, implement.
 
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);

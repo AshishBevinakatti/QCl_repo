@@ -53,6 +53,9 @@ mvn -B verify
 ```
 
 ## 5. Run the slice live (test-classpath H2 mode — no Docker needed)
+PREFERRED: `./run-local.sh [postgres|h2]` (default postgres) — one command that
+always sets the DB + issuer vars (lesson 2026-10-10: hand-typed env drops the
+issuer and breaks every login). Keycloak must be up first (see §5c).
 ```
 cd ERP_DEV/services/erp-app
 export JAVA_HOME=$(echo ~/.local/java/*/ | head -1) && export PATH=$JAVA_HOME/bin:$PATH
@@ -70,6 +73,19 @@ curl -s http://localhost:8080/api/v1/room-categories | head -c 300
 ```
 With Docker: `docker compose -f ERP_DEV/infra/docker-compose.local.yml up` (Postgres etc.), then run the jar with
 `DB_URL=jdbc:postgresql://localhost:5432/resort_erp DB_USER=resort_user DB_PASSWORD=... java -jar target/*.jar`.
+Note: the global system Postgres already uses 5432 on this machine — start only
+what you need (e.g. `up -d keycloak`), never the compose `postgres` alongside it.
+
+## 5c. Staff login (Keycloak SSO)
+```
+sg docker -c "docker compose -f ERP_DEV/infra/docker-compose.local.yml up -d keycloak"
+# wait ~60s, then expect 200:
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8081/realms/resort/.well-known/openid-configuration
+# backend with issuer (H2 example; use DB_URL for Postgres):
+KEYCLOAK_ISSUER_URL=http://localhost:8081/realms/resort java -jar target/*.jar
+# web: npm run dev → Staff log in → reception-staff / change-me-dev-only (DEV-ONLY).
+# Full runbook + live proof table: docs/05-operations/keycloak.md
+```
 
 ## 5b. Run the web shell
 ```
@@ -108,6 +124,9 @@ Questions: `logs/OPEN_QUESTIONS.md`. Resources used: `logs/RESOURCES_LOG.md`. Ri
 - `mvn` needs Maven Central access on first run (~100MB downloads to `~/.m2`); offline builds fail before that.
 - Live run without Postgres → use the H2 test-classpath command above, or start compose first.
 - Flyway "newer H2 than tested" warning in tests → harmless (test scope only).
+- Logged in but Live screens show only the login hint (or valid tokens get 500) → backend is missing
+  `KEYCLOAK_ISSUER_URL` (lesson 2026-10-10). Run the mandatory pre-login check in
+  `docs/05-operations/keycloak.md` before debugging anything else.
 
 ## 11. When stuck
 Read `STATE.md` (next action), `OPEN_QUESTIONS.md` (known unknowns), `WORKING-AGREEMENT.md` (process).

@@ -20,6 +20,18 @@ jobs:
       - name: Build + test (ERP_DEV monorepo)
         run: mvn -B verify
         working-directory: ERP_DEV
+  realm-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Keycloak realm file (structure, roles, client, users)
+        run: >-
+          python3 -c "import json;d=json.load(open('ERP_DEV/infra/keycloak/realm-golden-hills.json'));
+          assert d['realm']=='resort';
+          assert {r['name'] for r in d['roles']['realm']}>={'SUPERADMIN','MANAGER','RECEPTION','MEMBERSHIP','ACCOUNTS','HOUSEKEEPING','OPS'};
+          c=d['clients'][0];assert c['clientId']=='erp-web' and c['publicClient'] and c['standardFlowEnabled'];
+          assert all(u.get('email') and u.get('realmRoles') for u in d['users']);
+          print('realm OK:', d['realm'])"
   dependency-review:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest

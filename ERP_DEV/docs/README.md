@@ -18,7 +18,7 @@ Golden Hills Resort ERP (QuantumCLK Technologies). Project root: `ERP_DEV/` (git
 | `02-architecture/` | data-model, api, security, integrations, environments, screens (Phase 2 baseline) |
 | `03-phases/phase-N/` | PLAN + PHASE-REPORT per phase |
 | `04-modules/` | one doc per module (from Phase 3) |
-| `05-operations/` | runbook, backup/restore, deployment, troubleshooting, releases |
+| `05-operations/` | runbook, backup/restore, deployment, troubleshooting, releases, keycloak SSO |
 | `06-user-guides/` | user/admin guides, training (client-facing, drafted progressively) |
 | `07-testing/` | test plan, reports, UAT scripts, defect log (from Phase 5) |
 | `logs/STATE.md` | current state (overwritten each session) |

@@ -52,8 +52,11 @@ public class GuestController {
         guests.findByPropertyIdAndPhoneAndMergedIntoIsNull(
             RoomCategoryController.GOLDEN_HILLS_PROPERTY_ID, body.phone());
     if (existing.isPresent()) {
-      throw new ResponseStatusException(
-          HttpStatus.CONFLICT, "guest exists for this phone: " + existing.get().getId());
+      throw new com.quantumclk.erp.common.ApiException(
+          HttpStatus.CONFLICT,
+          "GUEST_EXISTS",
+          "A guest with this phone number is already registered.",
+          Map.<String, Object>of("existingGuestId", existing.get().getId().toString()));
     }
     Guest g =
         new Guest(
