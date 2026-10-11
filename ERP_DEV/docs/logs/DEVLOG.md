@@ -274,6 +274,7 @@
 - Commands that changed state: `git checkout -b fix/dashboard-table-overflow develop`
 - Verification: `npm run build` green. NOT verified: browser visual (no browser here — user confirms).
 - Next: present + ask to commit (merge separate).
+- Commit `ca47186` (user-approved): fix on `fix/dashboard-table-overflow` (5 files). Tree clean except untracked `.vscode/`. No merge/push.
 
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);
