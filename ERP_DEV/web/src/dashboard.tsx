@@ -295,7 +295,7 @@ export function DashboardView({ mode, go, viewFolio }: {
           ) : arrivals.length === 0 ? (
             <p className="muted">No arrivals expected today.</p>
           ) : (
-            <table className="dtbl">
+            <div className="tbl-wrap"><table className="dtbl">
               <thead><tr><th>Time</th><th>Guest Name</th><th>Booking ID</th><th>Room Type</th><th>Guests</th><th>Status</th><th>Action</th></tr></thead>
               <tbody>
                 {arrivals.map((a) => (
@@ -315,7 +315,7 @@ export function DashboardView({ mode, go, viewFolio }: {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           )}
         </div>
 
@@ -354,7 +354,7 @@ export function DashboardView({ mode, go, viewFolio }: {
           ) : departuresList.length === 0 ? (
             <p className="muted">No departures expected today.</p>
           ) : (
-            <table className="dtbl">
+            <div className="tbl-wrap"><table className="dtbl">
               <thead><tr><th>Time</th><th>Guest Name</th><th>Room</th><th>Stay Duration</th><th>Outstanding</th><th>Status</th><th>Action</th></tr></thead>
               <tbody>
                 {departuresList.map((d) => (
@@ -378,7 +378,7 @@ export function DashboardView({ mode, go, viewFolio }: {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           )}
         </div>
         <div className="panel">
@@ -407,7 +407,7 @@ export function DashboardView({ mode, go, viewFolio }: {
           {mode === 'preview' || bookings.length === 0 ? (
             <p className="muted">{mode === 'preview' ? 'Preview shows the layout only — log in for live bookings.' : 'No bookings on this date.'}</p>
           ) : (
-            <table className="dtbl">
+            <div className="tbl-wrap"><table className="dtbl">
               <thead><tr><th>Guest Name</th><th>Booking ID</th><th>Check-in</th><th>Check-out</th><th>Status</th></tr></thead>
               <tbody>
                 {bookings.map((b) => (
@@ -418,7 +418,7 @@ export function DashboardView({ mode, go, viewFolio }: {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           )}
         </div>
         <div className="panel">
@@ -428,7 +428,7 @@ export function DashboardView({ mode, go, viewFolio }: {
           ) : inhouseList.length === 0 ? (
             <p className="muted">No guests currently staying.</p>
           ) : (
-            <table className="dtbl">
+            <div className="tbl-wrap"><table className="dtbl">
               <thead><tr><th>Guest Name</th><th>Room</th><th>Check-out</th><th>Status</th></tr></thead>
               <tbody>
                 {inhouseList.map((s) => (
@@ -439,7 +439,7 @@ export function DashboardView({ mode, go, viewFolio }: {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           )}
         </div>
         <div className="promo">

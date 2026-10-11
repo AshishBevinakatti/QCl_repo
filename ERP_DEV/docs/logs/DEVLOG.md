@@ -267,6 +267,14 @@
 - EOD audit: `git ls-files` shows no tracked artefacts/secrets/env (dist/target/node_modules ignored); `banner.jpg` is the only binary, user-supplied + hash-logged. Root `.vscode/` untracked (only `ERP_DEV/.vscode` is gitignored — left alone, never staged).
 - Servers left running: backend PID 145797 (`run-local.sh postgres`, 3.6 code), web dev on :5173 (3.6 code) — host may reap idle processes; restart via DAY-ONE §5 / run-local.sh. User's pending item: browser review of live Departures/In-house/Alerts cards (fresh tab, Live + login).
 
+## 2026-10-11T09:35:00+05:30 — Fix: table overflow into neighbouring panels
+- Phase/unit: fix (user-reported, screenshot)        Branch: fix/dashboard-table-overflow (from develop @ ca6f4df)
+- What: Recent Bookings STATUS badge clipped under the In-House panel — grid children + nowrap tables bled across panels. Fix everywhere, not just the spot: `.panel`/`.card` get `overflow: hidden`, new `.tbl-wrap` scrolls wide tables inside their own card; wrapped all 8 tables (dashboard arrivals/departures/bookings/in-house + front bookings/guests/folio/housekeeping). No backend change.
+- Files changed: `web/src/{index.css, dashboard.tsx, App.tsx}`
+- Commands that changed state: `git checkout -b fix/dashboard-table-overflow develop`
+- Verification: `npm run build` green. NOT verified: browser visual (no browser here — user confirms).
+- Next: present + ask to commit (merge separate).
+
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);
   facilities depth TBD in requirements analysis; tax/posting treatment TBD; RFID 1 terminal + 100 cards;

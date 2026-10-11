@@ -225,7 +225,7 @@ function FrontView({ mode, initialReservationId, jumpNonce }: {
           <Field label="Date"><input type="date" value={bdate} onChange={(e) => setBdate(e.target.value)} /></Field>
           <Btn ghost onClick={loadBookings}>Load bookings</Btn>
         </div>
-        <table className="tbl">
+        <div className="tbl-wrap"><table className="tbl">
           <thead><tr><th>Booking ref</th><th>Dates</th><th>Status</th><th></th></tr></thead>
           <tbody>
             {bookings.map((b) => (
@@ -237,7 +237,7 @@ function FrontView({ mode, initialReservationId, jumpNonce }: {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
         {bookings.length === 0 && <p className="muted">No bookings loaded yet — pick a date and Load.</p>}
       </Card>
       {ok && <Alert kind="ok">{ok}</Alert>}
@@ -312,7 +312,7 @@ function GuestsView({ mode, initialQ, jumpNonce }: {
           </div>
         </form>
         {msg && <Alert kind="err">{msg}</Alert>}
-        <table className="tbl">
+        <div className="tbl-wrap"><table className="tbl">
           <thead><tr><th>Name</th><th>Phone</th><th>Status</th><th>Member</th></tr></thead>
           <tbody>
             {guests.map((g) => (
@@ -323,7 +323,7 @@ function GuestsView({ mode, initialQ, jumpNonce }: {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </Card>
       <Card title="New guest">
         <form onSubmit={runCreate}>
@@ -441,14 +441,14 @@ function BillingView({ mode, initialStayId, folioNonce }: {
         {msg && <Alert kind="err">{msg}</Alert>}
         {folio && (
           <>
-            <table className="tbl">
+            <div className="tbl-wrap"><table className="tbl">
               <thead><tr><th>Charge</th><th>Amount</th></tr></thead>
               <tbody>
                 {folio.entries.map((e, i) => (
                   <tr key={i}><td>{e.sourceType}</td><td>{rupees(e.amountPaise)}</td></tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
             <p><strong>Outstanding: {rupees(folio.outstandingPaise)}</strong></p>
             <p><Btn onClick={() => pay(folio.outstandingPaise)}>Pay balance (sandbox)</Btn></p>
           </>
@@ -498,7 +498,7 @@ function HousekeepingView({ mode }: { mode: Mode }) {
     <Card title="Room readiness">
       {msg && <Alert kind="err">{msg}</Alert>}
       <p><Btn ghost onClick={load}>Refresh</Btn></p>
-      <table className="tbl">
+      <div className="tbl-wrap"><table className="tbl">
         <thead><tr><th>Room</th><th>Status</th><th>Open tasks</th></tr></thead>
         <tbody>
           {rooms.map((r) => (
@@ -509,7 +509,7 @@ function HousekeepingView({ mode }: { mode: Mode }) {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></div>
       <p className="muted">Cleaning advances a task todo → doing → inspect → done; done rooms turn ready for reception.</p>
     </Card>
   );
