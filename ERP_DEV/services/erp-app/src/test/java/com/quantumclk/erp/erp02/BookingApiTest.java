@@ -30,10 +30,18 @@ import org.springframework.test.web.servlet.MvcResult;
 class BookingApiTest {
 
   static final UUID DELUXE = UUID.fromString("22222222-2222-2222-2222-222222222222");
-  static final LocalDate WEEKDAY_FROM = LocalDate.of(2026, 11, 9); // Mon
-  static final LocalDate WEEKDAY_TO = LocalDate.of(2026, 11, 11); // Wed
-  static final LocalDate WEEKEND_FROM = LocalDate.of(2026, 10, 10); // Sat
-  static final LocalDate WEEKEND_TO = LocalDate.of(2026, 10, 12); // Mon
+  // Rolling dates: fixed 2026 dates rotted (past check-ins reject with 400),
+  // so both windows roll to the next matching weekday on every run.
+  static final LocalDate WEEKDAY_FROM = next(java.time.DayOfWeek.MONDAY);
+  static final LocalDate WEEKDAY_TO = WEEKDAY_FROM.plusDays(2); // Mon → Wed
+  static final LocalDate WEEKEND_FROM = next(java.time.DayOfWeek.SATURDAY);
+  static final LocalDate WEEKEND_TO = WEEKEND_FROM.plusDays(2); // Sat → Mon
+
+  static LocalDate next(java.time.DayOfWeek dow) {
+    LocalDate d = LocalDate.now();
+    while (d.getDayOfWeek() != dow) d = d.plusDays(1);
+    return d;
+  }
 
   @Autowired private MockMvc mvc;
 

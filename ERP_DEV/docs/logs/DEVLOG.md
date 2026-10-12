@@ -276,6 +276,13 @@
 - Next: present + ask to commit (merge separate).
 - Commit `ca47186` (user-approved): fix on `fix/dashboard-table-overflow` (5 files). Tree clean except untracked `.vscode/`. No merge/push.
 
+## 2026-10-12T08:55:00+05:30 — Fix: weekend-test calendar bomb
+- Phase/unit: fix (post-merge gate red)        Branch: fix/weekend-test-dates (from develop)
+- What: `BookingApiTest.bookWeekendPricing` 400 — fixed 2026-10-10 Saturday check-in is now in the past ("checkin cannot be in the past"). Pre-existing bomb, unrelated to the overflow merge. Fix: WEEKDAY/WEEKEND windows roll to next Mon/Sat dynamically.
+- Files changed: `services/erp-app/src/test/.../BookingApiTest.java` (test only)
+- Verification: full `mvn verify` 56/0/0 BUILD SUCCESS.
+- Next: commit + merge (EOD-style fast track, user present).
+
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);
   facilities depth TBD in requirements analysis; tax/posting treatment TBD; RFID 1 terminal + 100 cards;
