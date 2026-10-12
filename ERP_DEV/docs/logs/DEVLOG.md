@@ -282,6 +282,8 @@
 - Files changed: `services/erp-app/src/test/.../BookingApiTest.java` (test only)
 - Verification: full `mvn verify` 56/0/0 BUILD SUCCESS.
 - Next: commit + merge (EOD-style fast track, user present).
+- Commit `cfb72a5` + merge `e21222c` (user-approved flow): suite green on merged `develop`.
+- Merge `42f95e2` (user-approved "do 1 first"): `fix/dashboard-table-overflow` → `develop`; post-merge gate caught a pre-existing calendar bomb (fixed above). Overflow fix complete.
 
 ## Key facts learned (for Phase 1)
 - SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);
