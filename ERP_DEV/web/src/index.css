@@ -50,7 +50,7 @@ body { margin: 0; }
 .status-pill.down { background: #fbe3e1; color: var(--danger); }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.9rem; margin-bottom: 1.2rem; }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 1rem 1.1rem; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 1rem 1.1rem; min-width: 0; overflow: hidden; }
 .card h3 { margin: 0 0 0.6rem; font-size: 1rem; }
 .stat .num { font-size: 1.9rem; font-weight: 800; }
 .stat .lbl { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
@@ -166,12 +166,14 @@ button.btn:disabled { opacity: 0.55; cursor: default; }
 .dash-grid { display: grid; grid-template-columns: 1.65fr 1fr; gap: 0.9rem; margin-bottom: 0.9rem; }
 .panel {
   background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
-  box-shadow: var(--shadow); padding: 0.9rem 1rem; min-width: 0;
+  box-shadow: var(--shadow); padding: 0.9rem 1rem; min-width: 0; overflow: hidden;
 }
 .panel .phead { display: flex; align-items: baseline; margin-bottom: 0.5rem; }
 .panel .phead h3 { margin: 0; font-size: 0.98rem; }
 .panel .phead a { margin-left: auto; font-size: 0.78rem; color: var(--brand); cursor: pointer; font-weight: 600; }
 table.dtbl { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+/* Tables never bleed into neighbouring panels: they scroll inside their own card. */
+.tbl-wrap { overflow-x: auto; margin: 0 -0.1rem; padding: 0 0.1rem; }
 .dtbl th, .dtbl td { text-align: left; padding: 0.42rem 0.5rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .dtbl th { color: var(--muted); font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.4px; }
 .dtbl tr:last-child td { border-bottom: 0; }
