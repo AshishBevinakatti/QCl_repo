@@ -1,9 +1,9 @@
 # Project State
-Updated: 2026-10-17T15:04:35+05:30
-Phase: 3 – Core Development      Work unit: 3.7 desk confirm flow — built + live-proven (presenting for commit); PLAN-3.8 dashboard completeness written (awaiting approval)      Status: uncommitted on feature/desk-confirm-flow; user click-through pending
-Branch: feature/desk-confirm-flow         Uncommitted changes: web/src/{api.ts,dashboard.tsx,index.css}, docs/{logs/DEVLOG.md,logs/STATE.md,04-modules/erp-02-booking-reservation.md}; untracked: docs/03-phases/phase-3/PLAN-3.7-desk-confirm-flow.md (rides with the 3.7 commit) + PLAN-3.8-dashboard-completeness.md (hold until 3.8 starts), root .vscode/ (never commit)
-Last approved by user: 2026-10-17 — PLAN-3.7 "Approve — implement now" via question tool; dashboard A–L improvement brief received (PLAN-3.8 awaiting approval)
-Pending question to user: (1) commit 3.7 as proposed? (2) approve PLAN-3.8? (3) browser click-through: hold → Collect advance → Confirm (+ expired → rebook link)
-Next action: on commit approval — stage the 3.7 paths + PLAN-3.7, commit on feature/desk-confirm-flow (no merge); then start 3.8 after its approval (and 3.7 merge) on feature/dashboard-completeness
-Servers: backend Postgres+Keycloak :8080 (PID 18406), web :5173 — up; restart via DAY-ONE §5 / run-local.sh; open http://localhost:5173 (not 127.0.0.1)
-Open items: Q-002…Q-004, Q-007…Q-009; Q-008 website code location; springdoc spec lag (pre-UAT must-fix); fix/hide-table-scrollbar branch (8ab2e26+77e9a0b) unmerged + superseded by 3.7 table-fit — merge/drop decision pending
+Updated: 2026-10-17T15:07:08+05:30
+Phase: 3 – Core Development      Work unit: 3.7 committed (`c44f2e5`, not merged); PLAN-3.8 approved — starts after 3.7 lands on develop      Status: awaiting (1) merge approval for 3.7, (2) user click-through, (3) stale-branch decision
+Branch: feature/desk-confirm-flow @ c44f2e5         Uncommitted: docs/logs/{DEVLOG.md,STATE.md} (post-commit log updates); untracked: docs/03-phases/phase-3/PLAN-3.8-dashboard-completeness.md, root .vscode/ (never commit)
+Last approved by user: 2026-10-17 — commit 3.7 as proposed + approve PLAN-3.8 ("start after 3.7")
+Pending question to user: (1) merge 3.7 → develop (`--no-ff` + full suite)? (2) `fix/hide-table-scrollbar` (8ab2e26+77e9a0b, index.css scrollbar-hide only) — merge or drop? (3) browser click-through: hold → Collect advance → Confirm (+ expired → rebook link)
+Next action: on merge approval — merge c44f2e5 → develop (--no-ff), full `mvn -B verify` + web build on merged result; then branch `feature/dashboard-completeness` from develop and implement PLAN-3.8 (slice 1: business-date helper)
+Servers: backend Postgres+Keycloak :8080 (PID 18406), web :5173 — up (verified 15:05); restart via DAY-ONE §5 / run-local.sh; open http://localhost:5173 (not 127.0.0.1)
+Open items: Q-002…Q-004, Q-007…Q-009; Q-008 website code location; springdoc spec lag (pre-UAT must-fix); 127.0.0.1 realm-URI durable fix offered, pending approval
