@@ -266,7 +266,7 @@ export interface InitiateDto {
 }
 
 export async function initiatePayment(body: {
-  reservationId?: string; folioId?: string; amount?: number;
+  reservationId?: string; folioId?: string; amount?: number; idempotencyKey?: string;
 }): Promise<InitiateDto> {
   const res = await apiFetch('/api/v1/payments/initiate', {
     method: 'POST',
@@ -280,7 +280,15 @@ export async function initiatePayment(body: {
   return res.json();
 }
 
-export async function confirmPayment(gatewayRef: string, signature: string): Promise<void> {
+export interface CapturedPaymentDto {
+  id: string;
+  bookingId: string | null;
+  amountPaise: number;
+  status: string;
+  gatewayRef: string;
+}
+
+export async function confirmPayment(gatewayRef: string, signature: string): Promise<CapturedPaymentDto> {
   const res = await apiFetch('/api/v1/payments/confirm', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -290,6 +298,7 @@ export async function confirmPayment(gatewayRef: string, signature: string): Pro
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message ?? `confirm failed: ${res.status}`);
   }
+  return res.json();
 }
 export async function requestRefund(paymentId: string, amountPaise: number, reason: string) {
   const res = await apiFetch('/api/v1/refunds', {
@@ -370,6 +379,20 @@ export async function reservationById(id: string): Promise<ReservationDto> {
   return (await res.json()) as ReservationDto;
 }
 
+/** Desk confirm: hold → confirmed (backend advance gate; a 422 tells what is missing). */
+export async function confirmReservation(id: string): Promise<ReservationDto> {
+  const res = await apiFetch(`/api/v1/reservations/${id}/confirm`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message ?? `confirm failed: ${res.status}`);
+  }
+  return res.json();
+}
+
 export interface EnrichedReservation {
   id: string;
   ref: string;
@@ -378,6 +401,7 @@ export interface EnrichedReservation {
   checkinDate: string;
   checkoutDate: string;
   status: string;
+  advanceDuePaise: number;
 }
 
 /**
@@ -398,11 +422,12 @@ export async function enrichReservations(
       return {
         id: r.id, ref: r.id.slice(0, 8), guestName, category: catName(r.categoryId),
         checkinDate: r.checkinDate, checkoutDate: r.checkoutDate, status: r.status,
+        advanceDuePaise: r.advanceDuePaise,
       };
     } catch {
       return {
         id, ref: id.slice(0, 8), guestName: '—', category: '—',
-        checkinDate: '—', checkoutDate: '—', status: 'unknown',
+        checkinDate: '—', checkoutDate: '—', status: 'unknown', advanceDuePaise: 0,
       };
     }
   }));

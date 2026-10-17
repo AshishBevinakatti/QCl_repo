@@ -296,3 +296,31 @@
   Per source-of-truth order the SOW wins on scope; on process the skill wins unless the user says
   otherwise → logged as Q-001.
 - Playbook cites `QuantumClk_Freelance_Consultancy_Agreement` — not in the folder → Q-002.
+
+## 2026-10-12T18:13:19+05:30 — Session: run the server (user request)
+- Phase/unit: Phase 3 Core Development (branch feature/desk-confirm-flow)        Branch: feature/desk-confirm-flow
+- What: user asked "run the server". Started full local stack: Keycloak container (infra-keycloak-1, :8081, image quay.io/keycloak/keycloak:24.0), backend via ./run-local.sh postgres (:8080), web via npm run dev (:5173).
+- Commands that changed state: sg docker -c "docker compose -f infra/docker-compose.local.yml up -d keycloak"; nohup ./run-local.sh postgres > /tmp/opencode/backend.log 2>&1 &; (web) nohup npm run dev -- --host 127.0.0.1 --port 5173 > /tmp/opencode/web.log 2>&1 &
+- Verification: curl Keycloak openid-configuration → 200; curl localhost:8080/api/v1/health → {"status":"UP","service":"erp-app"}; curl 127.0.0.1:5173/ → 200. Backend log: Started ErpApplication, Flyway schema v8 up to date, Tomcat on :8080. System Postgres on 5432 used (compose postgres NOT started, per DAY-ONE note).
+- Uncommitted work left untouched: ERP_DEV/web/src/dashboard.tsx, ERP_DEV/web/src/index.css (modified); ERP_DEV/docs/03-phases/phase-3/PLAN-3.7-desk-confirm-flow.md + .vscode/ (untracked). No commit (needs explicit approval per Rule 7).
+- Next: user verifies in browser (fresh tab, Live + login); then next unit TBD.
+
+## 2026-10-12T18:13:19+05:30 — Fix diagnosis: "Invalid parameter: redirect_uri" on staff login
+- What: user hit Keycloak "Invalid parameter: redirect_uri" at login. Cause: realm client `erp-web` allows only `http://localhost:5173/*` (infra/keycloak/realm-golden-hills.json lines 50-55), but the previous turn started vite with `--host 127.0.0.1` and pointed the user at `http://127.0.0.1:5173/` — that origin's redirect_uri is rejected by Keycloak.
+- Verification: curl both http://localhost:5173/ and http://127.0.0.1:5173/ → 200 (same vite server); realm JSON confirms only localhost:5173 in redirectUris/webOrigins. No code change made.
+- Resolution given: open http://localhost:5173/ instead. Offered durable fix (add 127.0.0.1 URIs to realm JSON + live client) pending user approval.
+
+## 2026-10-17T15:04:35+05:30 — Unit 3.7 desk confirm flow built + live-proven
+- Phase/unit: 3.7 (PLAN-3.7 approved 2026-10-17 via question tool: "Approve — implement now")        Branch: feature/desk-confirm-flow (from develop @ ad0dc72; no commits yet)
+- What: Recent Bookings rows now act — `hold` rows: "Collect advance ₹X" (sandbox initiate+confirm with stable idempotency key `advance-{reservationId}` → double-click/reload replays, never double-charges) → "✓ Advance captured" + Confirm → Confirm (backend advance gate; 422 text shown verbatim). `expired` rows: terminal muted "expired — rebook" link to Reservations (no rebook automation). `api.ts`: `confirmReservation()`, `initiatePayment` gains `idempotencyKey`, `confirmPayment` returns captured payment, `EnrichedReservation.advanceDuePaise`. Table fit (guest-name ellipsis + highlighted headers, carried over from the paused fix/highlight-table-headers changes) rides in the same commit. The plan's cell-padding tweak was consciously SKIPPED to honour the user's same-day "do not change the UI" brief.
+- Files touched (uncommitted): `web/src/{api.ts,dashboard.tsx}` + `web/src/index.css` (table fit); `docs/04-modules/erp-02-booking-reservation.md` (3.7 change-history entry).
+- Commands that changed state: `npm run build` (green); live Postgres smoke `/tmp/opencode/smoke-37.sh` against the running stack (backend :8080, Keycloak :8081).
+- Verification: `npm run build` green; backend untouched (suite stands 56/0/0 from develop). LIVE smoke: hold `ad0378b8-81c3-4ed5-a5a4-22171f6b248e` (2 nights Deluxe, advance ₹1,500 = 150000 paise) → initiate key `advance-ad0378b8…` → replay `{replayed:true, sameRef:true}` → payment captured → reservation `confirmed`; negative: confirm before advance → 422 "advance not collected: due 150000, captured 0" (the exact string the UI surfaces); cancel path OK. Smoke rows deleted after; DB back to baseline (1 guest, 2 expired reservations = user's; audit rows remain by design — append-only).
+- NOT verified: user browser click-through of the new buttons — pending.
+- Next: present + ask to commit (merge separate).
+
+## 2026-10-17T15:04:35+05:30 — User dashboard-improvement brief → read-only audit + PLAN-3.8
+- Phase/unit: 3.8 planning (no source code)        Branch: feature/desk-confirm-flow (planning only)
+- What: user delivered an A–L dashboard improvement brief with a hard "do not change the existing UI design" rule (stat cards, arrivals, departures, room-status donut, alerts, recent bookings, in-house, top search, bell, Manage Rooms, sidebar, date/time + session identity). Read-only audit (explore subagent, file:line evidence): most panels already live on real data; real gaps = UTC business-date bug (frontend `toISOString` vs backend Asia/Kolkata), arrivals = confirmed-overlap window (not checkin=today), ≤50 enrichment calls per dashboard load (N+1), 8-char short-ref search silently fails, no debounce/stale guard, blank-until-loaded, redundant per-row refetch in Recent Bookings. Backend-less features (Reserved room status, notifications, service requests/maintenance) stay documented as limitations, not faked.
+- Wrote `docs/03-phases/phase-3/PLAN-3.8-dashboard-completeness.md` (7 thin slices: business-date helper, arrivals semantics + tests, load/401 UX hardening, search debounce+prefix, enrichment batching, View-all prefill, docs/limitations). Awaiting user approval; implementation branch `feature/dashboard-completeness` from develop after 3.7 merges.
+- Next: present 3.7 for commit + PLAN-3.8 for approval (same presentation).

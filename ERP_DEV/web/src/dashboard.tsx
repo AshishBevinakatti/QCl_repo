@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import bannerImg from './assets/banner.jpg';
 import {
-  alerts, board, checkIn, checkOut, dashboard, departures, enrichReservations, guestById,
-  inHouseGuests, listCategories, listReservations, reservationById, rupees, searchGuests,
+  alerts, board, checkIn, checkOut, confirmPayment, confirmReservation, dashboard, departures,
+  enrichReservations, guestById, inHouseGuests, initiatePayment, listCategories, listReservations,
+  reservationById, rupees, searchGuests,
   type AlertDto, type DashboardDto, type DepartureDto, type EnrichedReservation, type InHouseDto,
 } from './api';
 import { isAuthenticated, login, logout, roles, username } from './auth';
@@ -194,6 +195,9 @@ export function DashboardView({ mode, go, viewFolio }: {
   const [msg, setMsg] = useState('');
   const [acting, setActing] = useState<string | null>(null);
   const [ok, setOk] = useState('');
+  /* Captured advance refs per booking id (this session). The collect call uses a
+   * stable idempotency key, so re-collecting after a reload replays — never charges twice. */
+  const [receipts, setReceipts] = useState<Record<string, string>>({});
 
   async function load() {
     if (mode === 'preview') {
@@ -241,6 +245,39 @@ export function DashboardView({ mode, go, viewFolio }: {
       await load();
     } catch (err) {
       setMsg(err instanceof Error ? err.message : 'Check-out failed.');
+    } finally {
+      setActing(null);
+    }
+  }
+
+  async function collectAdvance(b: EnrichedReservation) {
+    setActing(b.id); setOk(''); setMsg('');
+    try {
+      const init = await initiatePayment({
+        reservationId: b.id, idempotencyKey: `advance-${b.id}`,
+      });
+      const paid = await confirmPayment(init.gatewayRef, init.signature);
+      setReceipts((m) => ({ ...m, [b.id]: paid.gatewayRef }));
+      setOk(
+        `Advance ${rupees(paid.amountPaise)} captured (sandbox ref ${paid.gatewayRef}) — ` +
+        `press Confirm to confirm booking ${b.ref}.`,
+      );
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'Advance capture failed.');
+    } finally {
+      setActing(null);
+    }
+  }
+
+  async function doConfirm(id: string) {
+    setActing(id); setOk(''); setMsg('');
+    try {
+      await confirmReservation(id);
+      setOk('Booking confirmed.');
+      await load();
+    } catch (err) {
+      // Backend gate wording (422: advance not collected / only holds can be confirmed) shown as-is.
+      setMsg(err instanceof Error ? err.message : 'Confirm failed.');
     } finally {
       setActing(null);
     }
@@ -301,7 +338,7 @@ export function DashboardView({ mode, go, viewFolio }: {
                 {arrivals.map((a) => (
                   <tr key={a.id}>
                     <td title="Check-in times are not stored — dates only">—</td>
-                    <td>{a.guestName}</td>
+                    <td className="ell" title={a.guestName}>{a.guestName}</td>
                     <td title={a.id}>{a.ref}</td>
                     <td>{a.category}</td>
                     <td title="Party size is not stored on a reservation">—</td>
@@ -360,7 +397,7 @@ export function DashboardView({ mode, go, viewFolio }: {
                 {departuresList.map((d) => (
                   <tr key={d.stayId}>
                     <td title="Check-out times are not stored — dates only">—</td>
-                    <td>{d.guestName}</td>
+                    <td className="ell" title={d.guestName}>{d.guestName}</td>
                     <td>{d.roomNo}</td>
                     <td>{d.nights} night{d.nights === 1 ? '' : 's'}</td>
                     <td>{rupees(d.outstandingPaise)}</td>
@@ -408,13 +445,38 @@ export function DashboardView({ mode, go, viewFolio }: {
             <p className="muted">{mode === 'preview' ? 'Preview shows the layout only — log in for live bookings.' : 'No bookings on this date.'}</p>
           ) : (
             <div className="tbl-wrap"><table className="dtbl">
-              <thead><tr><th>Guest Name</th><th>Booking ID</th><th>Check-in</th><th>Check-out</th><th>Status</th></tr></thead>
+              <thead><tr><th>Guest Name</th><th>Booking ID</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Action</th></tr></thead>
               <tbody>
                 {bookings.map((b) => (
                   <tr key={b.id}>
-                    <td>{b.guestName}</td><td title={b.id}>{b.ref}</td>
+                    <td className="ell" title={b.guestName}>{b.guestName}</td><td title={b.id}>{b.ref}</td>
                     <td>{b.checkinDate}</td><td>{b.checkoutDate}</td>
                     <td><Badge tone={statusTone(b.status)}>{b.status}</Badge></td>
+                    <td>
+                      {b.status === 'hold' ? (
+                        b.advanceDuePaise > 0 && !receipts[b.id] ? (
+                          <>
+                            <button className="mini-btn" disabled={acting === b.id} onClick={() => collectAdvance(b)}>
+                              {acting === b.id ? '…' : `Collect advance ${rupees(b.advanceDuePaise)}`}
+                            </button>{' '}
+                            <button className="mini-btn" disabled title="Collect the advance first">Confirm</button>
+                          </>
+                        ) : (
+                          <>
+                            {receipts[b.id] && <span className="muted" title={receipts[b.id]}>✓ Advance captured </span>}
+                            <button className="mini-btn" disabled={acting === b.id} onClick={() => doConfirm(b.id)}>
+                              {acting === b.id ? '…' : 'Confirm'}
+                            </button>
+                          </>
+                        )
+                      ) : b.status === 'expired' ? (
+                        <a className="muted" title="Expired before the advance was collected — expired holds are terminal" onClick={() => go('reservations')}>
+                          expired — rebook
+                        </a>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -433,7 +495,7 @@ export function DashboardView({ mode, go, viewFolio }: {
               <tbody>
                 {inhouseList.map((s) => (
                   <tr key={s.stayId}>
-                    <td>{s.guestName}</td><td>{s.roomNo}</td>
+                    <td className="ell" title={s.guestName}>{s.guestName}</td><td>{s.roomNo}</td>
                     <td>{s.checkoutDate ?? '—'}</td>
                     <td><Badge tone="green">{s.status}</Badge></td>
                   </tr>
