@@ -326,3 +326,13 @@
 - Wrote `docs/03-phases/phase-3/PLAN-3.8-dashboard-completeness.md` (7 thin slices: business-date helper, arrivals semantics + tests, load/401 UX hardening, search debounce+prefix, enrichment batching, View-all prefill, docs/limitations). Awaiting user approval; implementation branch `feature/dashboard-completeness` from develop after 3.7 merges.
 - Next: present 3.7 for commit + PLAN-3.8 for approval (same presentation).
 - User approved PLAN-3.8 at the same presentation (2026-10-17, question tool: "Approve — start after 3.7"). Implementation starts once 3.7 lands on develop.
+
+## 2026-10-20T13:45:07+05:30 — Cross-platform launcher `run-local.mjs` (Windows + Fedora)
+- Phase/unit: developer tooling (no backend/web behaviour change)        Branch: feature/cross-platform-run (from develop @ b2a70e8)
+- What: user asked for one run method that works on both Windows and Fedora without deleting the existing Fedora helpers. Added `ERP_DEV/run-local.mjs` (Node 22, stdlib only): `node run-local.mjs [postgres|h2] [--web] [--print]`.
+  - Sets DB + Keycloak issuer vars every run (lesson 2026-10-10 preserved), Postgres defaults identical to `run-local.sh`; `h2` = in-memory test mode.
+  - OS handling: Java via JAVA_HOME/PATH, Fedora fallback `~/.local/java/*/bin/java`; Maven via MAVEN_HOME/PATH, Fedora fallback `~/.local/maven/bin/mvn`, `mvn.cmd` on Windows; classpath cached in `os.tmpdir()/erp-local/cp.txt`; classpath separator from `path.delimiter` (`;`/`:`); Keycloak preflight warns with a per-OS start command (`docker compose` vs `sg docker`).
+- Verification (Fedora): `--print` resolves JDK-21 + Maven correctly for postgres/h2/--web; live parity run `node run-local.mjs postgres --web` (old PIDs 5736/5902 killed first) → backend :8080 PID 6540 started in 8.8 s, web :5173 PID 6570, health UP, Vite proxy 200. Windows path written to spec but not executed here (no Windows host) — flagged honestly.
+- Docs: DAY-ONE §5 now leads with the Node command (prereqs, flags, per-OS Docker line) and keeps `./run-local.sh` as the Fedora convenience; keycloak.md notes the Windows command without `sg docker`. `run-local.sh` unchanged.
+- Commit sequence: 3.8 committed first as `90ab9a6` on `feature/dashboard-completeness` (15 files, per user approval "both, in order"); this launcher commit is separate. Module 2 records (CR-001/Q-012/R-010…R-012/plan PDF) remain uncommitted pending user approval.
+- Next: present launcher commit; then pending user actions — 3.8 click-through, 3.8 merge, Module 2 plan approval/records, delete stale `fix/hide-table-scrollbar`.

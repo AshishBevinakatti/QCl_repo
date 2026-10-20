@@ -1,9 +1,10 @@
 # Project State
-Updated: 2026-10-17T15:07:08+05:30
-Phase: 3 – Core Development      Work unit: 3.7 committed (`c44f2e5`, not merged); PLAN-3.8 approved — starts after 3.7 lands on develop      Status: awaiting (1) merge approval for 3.7, (2) user click-through, (3) stale-branch decision
-Branch: feature/desk-confirm-flow @ c44f2e5         Uncommitted: docs/logs/{DEVLOG.md,STATE.md} (post-commit log updates); untracked: docs/03-phases/phase-3/PLAN-3.8-dashboard-completeness.md, root .vscode/ (never commit)
-Last approved by user: 2026-10-17 — commit 3.7 as proposed + approve PLAN-3.8 ("start after 3.7")
-Pending question to user: (1) merge 3.7 → develop (`--no-ff` + full suite)? (2) `fix/hide-table-scrollbar` (8ab2e26+77e9a0b, index.css scrollbar-hide only) — merge or drop? (3) browser click-through: hold → Collect advance → Confirm (+ expired → rebook link)
-Next action: on merge approval — merge c44f2e5 → develop (--no-ff), full `mvn -B verify` + web build on merged result; then branch `feature/dashboard-completeness` from develop and implement PLAN-3.8 (slice 1: business-date helper)
-Servers: backend Postgres+Keycloak :8080 (PID 18406), web :5173 — up (verified 15:05); restart via DAY-ONE §5 / run-local.sh; open http://localhost:5173 (not 127.0.0.1)
-Open items: Q-002…Q-004, Q-007…Q-009; Q-008 website code location; springdoc spec lag (pre-UAT must-fix); 127.0.0.1 realm-URI durable fix offered, pending approval
+Updated: 2026-10-20T13:45:07+05:30
+Phase: 3 – Core Development      Work unit: 3.8 committed (`90ab9a6`, not merged) + cross-platform launcher `run-local.mjs` (this branch)
+Status: awaiting — (1) launcher commit approval, (2) 3.8 browser click-through, (3) 3.8 merge approval, (4) Module 2 plan approval + records, (5) stale-branch deletion
+Branch: feature/cross-platform-run (from develop @ b2a70e8)      Uncommitted: Module 2 records only (CR-001/Q-012/R-010…R-012, README row, phase-4 plan); untracked: root .vscode/ (never commit)
+Last approved by user: 2026-10-20 — commit 3.8 first, then the launcher on its own branch; launcher method = Node script (`run-local.mjs`)
+Pending question to user: (1) commit the launcher as staged? (2) browser click-through: 3.7 collect→confirm + 3.8 search/arrivals/loading/View-all (3) merge 3.8 → develop (`--no-ff` + full suite)? (4) approve Module 2 plan + commit its records? (5) delete fix/hide-table-scrollbar?
+Next action: on launcher commit approval — commit `chore(dev): cross-platform local launcher (Windows + Fedora)`; then 3.8 click-through + merge (separate approval), then Module 2 decision
+Servers: backend :8080 PID 6540 (started via run-local.mjs), web :5173 PID 6570, Keycloak :8081 — all up (verified 13:42). Restart: `node run-local.mjs postgres --web`; open http://localhost:5173 (not 127.0.0.1)
+Open items: Q-002…Q-004, Q-007…Q-009, Q-012; Q-008 website location (ERP-01 not started); springdoc spec lag (pre-UAT must-fix); Windows launcher path written to spec but untested on a Windows host

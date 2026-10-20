@@ -52,10 +52,16 @@ mvn -B verify
 # jar at services/erp-app/target/erp-app-0.1.0-SNAPSHOT.jar
 ```
 
-## 5. Run the slice live (test-classpath H2 mode — no Docker needed)
-PREFERRED: `./run-local.sh [postgres|h2]` (default postgres) — one command that
-always sets the DB + issuer vars (lesson 2026-10-10: hand-typed env drops the
-issuer and breaks every login). Keycloak must be up first (see §5c).
+## 5. Run the slice live
+PREFERRED (Windows + Fedora): `node run-local.mjs [postgres|h2] [--web]` — one
+command that always sets the DB + issuer vars (lesson 2026-10-10: hand-typed env
+drops the issuer and breaks every login). Prereqs: Node 22 + Java 21 + Maven
+(on PATH, or JAVA_HOME/MAVEN_HOME). `--web` also starts Vite on :5173; `--print`
+shows the resolved Java/Maven paths, classpath cache and env without starting
+anything. Keycloak must be up first (see §5c). Fedora convenience:
+`./run-local.sh [postgres|h2]` (bash, same behaviour). Windows Docker command:
+`docker compose -f ERP_DEV/infra/docker-compose.local.yml up -d keycloak`
+(no `sg docker` wrapper needed there).
 ```
 cd ERP_DEV/services/erp-app
 export JAVA_HOME=$(echo ~/.local/java/*/ | head -1) && export PATH=$JAVA_HOME/bin:$PATH
