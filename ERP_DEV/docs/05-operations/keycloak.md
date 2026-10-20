@@ -8,6 +8,8 @@
 # Keycloak only (postgres/redis/kafka stay down — resort data lives in the
 # global Postgres; Keycloak keeps its own dev-file storage in-container).
 sg docker -c "docker compose -f ERP_DEV/infra/docker-compose.local.yml up -d keycloak"
+# Windows (Docker Desktop): drop the `sg docker -c "…"` wrapper and run
+# docker compose -f ERP_DEV/infra/docker-compose.local.yml up -d keycloak
 
 # Status / logs:
 sg docker -c "docker ps"            # expect infra-keycloak-1 Up, 0.0.0.0:8081->8080
