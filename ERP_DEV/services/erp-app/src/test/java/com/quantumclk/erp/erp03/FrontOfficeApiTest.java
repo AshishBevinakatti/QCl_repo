@@ -1,7 +1,10 @@
 package com.quantumclk.erp.erp03;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -192,6 +195,37 @@ class FrontOfficeApiTest {
             .andExpect(status().isOk())
             .andReturn();
     assertTrue(result.getResponse().getContentAsString().contains(reservation));
+  }
+
+  /**
+   * 3.8 semantics: an arrival is a confirmed booking whose check-in IS the date.
+   * A stayed guest mid-booking (checkin before, checkout after) is in-house, not
+   * an arrival — even though the old overlap query listed them.
+   */
+  @Test
+  void arrivalsExcludeOverlappingNotArrivingToday() throws Exception {
+    String reservation = bookAndConfirm("+91-9822000408", "test-key-fo-8", "2027-05-10", "2027-05-12");
+    // Mid-stay day: not an arrival on /arrivals nor in the dashboard's arrivals list.
+    mvc.perform(get("/api/v1/arrivals").param("date", "2027-05-11"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", not(hasItem(reservation))));
+    mvc.perform(get("/api/v1/front-office/dashboard").param("date", "2027-05-11"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.arrivals[?(@.id=='" + reservation + "')]", hasSize(0)));
+    // The actual arrival day still lists the booking.
+    mvc.perform(get("/api/v1/arrivals").param("date", "2027-05-10"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasItem(reservation)));
+    // 3.8 enrichment shape: arrivals carry guest, category, dates, status, advance.
+    mvc.perform(get("/api/v1/front-office/dashboard").param("date", "2027-05-10"))
+        .andExpect(status().isOk())
+        .andExpect(
+            jsonPath("$.arrivals[?(@.id=='" + reservation + "')].guestName", hasItem("FO Guest")))
+        .andExpect(jsonPath("$.arrivals[?(@.id=='" + reservation + "')].category", hasItem("Deluxe")))
+        .andExpect(jsonPath("$.arrivals[?(@.id=='" + reservation + "')].status", hasItem("confirmed")))
+        .andExpect(
+            jsonPath("$.arrivals[?(@.id=='" + reservation + "')].advanceDuePaise",
+                hasItem(greaterThan(0))));
   }
 
   String book(String phone, String key, String from, String to) throws Exception {

@@ -110,6 +110,28 @@ public class ReservationController {
         page.getTotalElements());
   }
 
+  /**
+   * 3.8 short-ref search: the ref shown on every screen is the id's first 8
+   * chars, so users type or paste that (ellipsis and case tolerated).
+   */
+  @GetMapping("/reservations/search")
+  public ReservationPage searchByRef(
+      @RequestParam String ref, @PageableDefault(size = 5) Pageable pageable) {
+    String prefix =
+        ref == null
+            ? ""
+            : ref.trim().toLowerCase(java.util.Locale.ROOT).replaceAll("[^0-9a-f-]", "");
+    if (prefix.isEmpty() || prefix.length() > 36) {
+      return new ReservationPage(List.of(), 0, 0);
+    }
+    Page<Reservation> page =
+        reservations.searchByRefPrefix(
+            RoomCategoryController.GOLDEN_HILLS_PROPERTY_ID, prefix + "%", pageable);
+    return new ReservationPage(
+        page.getContent().stream().map(this::toDto).toList(), page.getNumber(),
+        page.getTotalElements());
+  }
+
   @PatchMapping("/reservations/{id}")
   public ReservationDto modify(
       @PathVariable UUID id, @RequestBody ModifyBody body, HttpServletRequest req) {
