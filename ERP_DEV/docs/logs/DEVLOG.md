@@ -380,3 +380,9 @@
 - Post-merge verification on develop: `mvn -B verify` BUILD SUCCESS — 58 tests, 0 failures, 0 errors (27.3 s); `npm run build` green (278 ms, 302 kB JS / 90.9 kB gzip).
 - Records synced: this branch now carries develop (merge commit on `feature/cross-platform-run`), DEVLOG merged chronologically, STATE rewritten. Feature branches left in place (`feature/dashboard-completeness`, `feature/cross-platform-run`); `fix/hide-table-scrollbar` deletion still pending explicit approval.
 - Next: ask approval to merge `feature/cross-platform-run` (launcher) → develop; 3.8 browser click-through still owed; Module 2 build stays gated after Phase 3 exit.
+
+## 2026-10-20T13:53:37+05:30 — Launcher merged to develop; develop tip verified (58/0/0)
+- Merge `bdd7252` (user-approved 2026-10-20): `feature/cross-platform-run` → `develop` (`--no-ff`) — launcher `run-local.mjs`, DAY-ONE §5, keycloak.md Windows line; the branch already carried the develop sync (`b552828`), so 3.8 + Module 2 records were reconciled before the merge.
+- Verification on the merged develop tip: `mvn -B verify` BUILD SUCCESS — 58 tests, 0 failures, 0 errors; `npm run build` green (322 ms).
+- These log records ride a follow-up docs commit on this branch (second, trivial merge) to keep develop's DEVLOG/STATE truthful without a direct-to-develop commit.
+- Remaining user actions: 3.8 browser click-through; Module 2 plan approval (CR-001/Q-012); delete `fix/hide-table-scrollbar`; pick the next unit.
