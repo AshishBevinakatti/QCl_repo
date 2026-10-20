@@ -44,4 +44,29 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
       @Param("date") LocalDate date,
       @Param("status") String status,
       Pageable pageable);
+
+  /**
+   * 3.8 arrivals semantics: a confirmed booking whose check-in day IS the date
+   * (the guest is expected today). Mid-stay bookings are in-house, not arrivals —
+   * the overlap query above stays for bookings-on-date lists.
+   */
+  @Query(
+      "SELECT r FROM Reservation r WHERE r.propertyId = :property"
+          + " AND r.status = :status AND r.checkinDate = :date")
+  Page<Reservation> arrivingOn(
+      @Param("property") UUID propertyId,
+      @Param("date") LocalDate date,
+      @Param("status") String status,
+      Pageable pageable);
+
+  /**
+   * 3.8 short-ref search: every screen shows the 8-char booking ref, so users
+   * type/paste that. Prefix match on the casted id — portable SQL (Postgres + H2).
+   */
+  @Query(
+      "SELECT r FROM Reservation r WHERE r.propertyId = :property"
+          + " AND LOWER(CAST(r.id AS String)) LIKE :prefix"
+          + " ORDER BY r.checkinDate DESC")
+  Page<Reservation> searchByRefPrefix(
+      @Param("property") UUID propertyId, @Param("prefix") String prefix, Pageable pageable);
 }

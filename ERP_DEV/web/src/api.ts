@@ -31,6 +31,15 @@ export function isAuthError(err: unknown): boolean {
   return err instanceof HttpError && err.status === 401;
 }
 
+/**
+ * Today's date as YYYY-MM-DD in the resort's business timezone (Asia/Kolkata).
+ * The backend gates all day-level logic on this zone (BookingService.ZONE);
+ * the browser's UTC date desynced screens between 00:00–05:30 IST — fixed in 3.8.
+ */
+export function businessToday(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+}
+
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const url = path.startsWith('http') || (BASE && path.startsWith(BASE)) ? path : `${BASE}${path}`;
   const headers = new Headers(init.headers ?? {});
@@ -124,6 +133,7 @@ export interface ReservationSummary {
   checkinDate: string;
   checkoutDate: string;
   status: string;
+  advanceDuePaise: number;
 }
 
 /** Desk aid: bookings overlapping a date, so ids are visible (no memorising). */
@@ -175,9 +185,20 @@ export interface ReservationDto {
   advanceDuePaise: number;
   status: string;
 }
+/** 3.8: arrivals arrive enriched from the dashboard endpoint (single batch). */
+export interface ArrivalDto {
+  id: string;
+  guestName: string;
+  category: string;
+  checkinDate: string;
+  checkoutDate: string;
+  status: string;
+  advanceDuePaise: number;
+}
+
 export interface DashboardDto {
   date: string;
-  arrivals: string[];
+  arrivals: ArrivalDto[];
   inHouse: string[];
   rooms: { id: string; roomNo: string; status: string }[];
   occupancy: { categoryId: string; category: string; total: number; occupied: number; free: number }[];
@@ -372,11 +393,12 @@ export async function bookRoom(
   return res.json();
 }
 
-/** Single booking by id (the dashboard returns id lists; rows need details). */
-export async function reservationById(id: string): Promise<ReservationDto> {
-  const res = await apiFetch(`/api/v1/reservations/${id}`);
-  if (!res.ok) throw new Error(`reservation failed: ${res.status}`);
-  return (await res.json()) as ReservationDto;
+/** 3.8 short-ref search: the 8-char ref shown on every row is the id prefix. */
+export async function searchReservationsByRef(ref: string): Promise<ReservationSummary[]> {
+  const res = await apiFetch(`/api/v1/reservations/search?ref=${encodeURIComponent(ref)}`);
+  if (!res.ok) throw new Error(`reservation search failed: ${res.status}`);
+  const page = (await res.json()) as { items: ReservationSummary[] };
+  return page.items;
 }
 
 /** Desk confirm: hold → confirmed (backend advance gate; a 422 tells what is missing). */
@@ -405,31 +427,23 @@ export interface EnrichedReservation {
 }
 
 /**
- * Dashboard rows need guest + category names the list endpoints don't carry.
- * Per-row failures degrade to "—" (one bad row must not blank the table).
+ * 3.8: list DTOs already carry dates/status/advance — only guest names are
+ * missing. One guest lookup per row (≤8), no per-row reservation refetch.
  */
-export async function enrichReservations(
-  ids: string[], categories: CategoryDto[],
+export async function enrichSummaries(
+  items: ReservationSummary[], categories: CategoryDto[],
 ): Promise<EnrichedReservation[]> {
   const catName = (id: string) => categories.find((c) => c.id === id)?.name ?? '—';
-  return Promise.all(ids.map(async (id) => {
+  return Promise.all(items.map(async (r) => {
+    let guestName = '—';
     try {
-      const r = await reservationById(id);
-      let guestName = '—';
-      try {
-        guestName = (await guestById(r.guestId)).name;
-      } catch { /* keep placeholder */ }
-      return {
-        id: r.id, ref: r.id.slice(0, 8), guestName, category: catName(r.categoryId),
-        checkinDate: r.checkinDate, checkoutDate: r.checkoutDate, status: r.status,
-        advanceDuePaise: r.advanceDuePaise,
-      };
-    } catch {
-      return {
-        id, ref: id.slice(0, 8), guestName: '—', category: '—',
-        checkinDate: '—', checkoutDate: '—', status: 'unknown', advanceDuePaise: 0,
-      };
-    }
+      guestName = (await guestById(r.guestId)).name;
+    } catch { /* keep placeholder */ }
+    return {
+      id: r.id, ref: r.id.slice(0, 8), guestName, category: catName(r.categoryId),
+      checkinDate: r.checkinDate, checkoutDate: r.checkoutDate, status: r.status,
+      advanceDuePaise: r.advanceDuePaise,
+    };
   }));
 }
 

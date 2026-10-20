@@ -318,7 +318,10 @@
 - Verification: `npm run build` green; backend untouched (suite stands 56/0/0 from develop). LIVE smoke: hold `ad0378b8-81c3-4ed5-a5a4-22171f6b248e` (2 nights Deluxe, advance ₹1,500 = 150000 paise) → initiate key `advance-ad0378b8…` → replay `{replayed:true, sameRef:true}` → payment captured → reservation `confirmed`; negative: confirm before advance → 422 "advance not collected: due 150000, captured 0" (the exact string the UI surfaces); cancel path OK. Smoke rows deleted after; DB back to baseline (1 guest, 2 expired reservations = user's; audit rows remain by design — append-only).
 - NOT verified: user browser click-through of the new buttons — pending.
 - Next: present + ask to commit (merge separate).
-- Commit `c44f2e5` (user-approved 2026-10-17): 3.7 on `feature/desk-confirm-flow` (7 files, +192/−18; includes PLAN-3.7). NOT merged. Tree clean except untracked `.vscode/` + PLAN-3.8. No push.
+- Commit `c44f2e5` (user-approved 2026-10-17): 3.7 on `feature/desk-confirm-flow` (7 files, +192/−18; includes PLAN-3.7). Tree clean except untracked `.vscode/` + PLAN-3.8. No push.
+- Log record `cc6a166` (2026-10-17): DEVLOG + STATE updates for the 3.7 commit, committed on the feature branch (checkout to develop was blocked by uncommitted log edits).
+- Merge `b2a70e8` (user-approved 2026-10-17): `feature/desk-confirm-flow` → `develop` (`--no-ff`). Post-merge on develop: `mvn -B verify` 56/0/0 BUILD SUCCESS; `npm run build` green. Unit 3.7 complete. No tags/pushes.
+- Stale branch: user chose "Drop" for `fix/hide-table-scrollbar` (8ab2e26+77e9a0b — scrollbar-hide CSS superseded by 3.7 table fit). Branch left in place; deletion still needs explicit approval (will ask again).
 
 ## 2026-10-17T15:04:35+05:30 — User dashboard-improvement brief → read-only audit + PLAN-3.8
 - Phase/unit: 3.8 planning (no source code)        Branch: feature/desk-confirm-flow (planning only)
@@ -326,3 +329,38 @@
 - Wrote `docs/03-phases/phase-3/PLAN-3.8-dashboard-completeness.md` (7 thin slices: business-date helper, arrivals semantics + tests, load/401 UX hardening, search debounce+prefix, enrichment batching, View-all prefill, docs/limitations). Awaiting user approval; implementation branch `feature/dashboard-completeness` from develop after 3.7 merges.
 - Next: present 3.7 for commit + PLAN-3.8 for approval (same presentation).
 - User approved PLAN-3.8 at the same presentation (2026-10-17, question tool: "Approve — start after 3.7"). Implementation starts once 3.7 lands on develop.
+
+## 2026-10-17T15:17:11+05:30 — Unit 3.8 dashboard completeness — slices 1–3 done (in progress)
+- Phase/unit: 3.8 (PLAN approved 2026-10-17)        Branch: feature/dashboard-completeness (from develop @ b2a70e8)
+- Slice 1: `businessToday()` in api.ts (en-CA format, Asia/Kolkata — the zone the backend gates on); replaces all 4 `toISOString().slice(0,10)` business dates (dashboard.tsx ×3, App.tsx ×1). Edge check: 2026-10-16T20:00Z → 2026-10-17 (IST).
+- Slice 2: arrivals semantics — new `ReservationRepository.arrivingOn` (confirmed AND checkin_date = date); used by `/front-office/dashboard` arrivals + `/arrivals`; overlap query retained for GET /reservations (bookings-on-date). Tests-first: `FrontOfficeApiTest.arrivalsExcludeOverlappingNotArrivingToday` RED (old code listed the mid-stay booking as an arrival — assertion log kept) → GREEN, FrontOfficeApiTest 9/9.
+- Slice 3: dashboard load/401 UX — explicit `loading` state + "Loading dashboard…" panel (no blank screen); 401 via `isAuthError()` (message-regex removed); failure path shows the real error panel, never zero metrics.
+- Verification: `npm run build` green (slices 1+3); single-class backend test green (slice 2). Full suite on the branch runs at slice 7 before presentation.
+- Incident: first RED run hit an external-drive I/O error while compiling tests (target/ partially wiped, sources intact); re-ran after `sync` — success, no data loss. Drive reliability worth watching.
+- Next: slices 4 (search debounce + short-ref prefix + tests), 5 (server-side arrivals enrichment), 6 (View-all prefill), 7 (docs + full `mvn -B verify` + web build + present).
+
+## 2026-10-18T20:33:53+05:30 — Discovery: 3.8 slices 4–6 arrived from a later session; verified + records synced
+- Context: session resumed 2026-10-18. Working tree (branch `feature/dashboard-completeness`) contains uncommitted work made 2026-10-18 20:16–20:26 by a later session: PLAN-3.8 slices 4–6 — short-ref search (`GET /reservations/search?ref=`, sanitized prefix, portable `LOWER(CAST(id AS String)) LIKE`, junk → empty page), arrivals batch enrichment (`ArrivalDto` in the dashboard DTO, one guest query; per-row `enrichReservations` tail removed), search debounce (300 ms + seq stale guard + Enter-immediate + honest sign-out message), View-all prefill (`Jump.bookingStatus` → check desk filtered today list), recent-bookings reuse of list DTOs; erp-02/erp-03 docs + TRACEABILITY updated. That session did NOT update DEVLOG/STATE and did NOT commit; it restarted the backend (PID 17815, 20:24) with the new code.
+- Verification (this session): `mvn -B verify` → 58/0/0 BUILD SUCCESS; `npm run build` green (540 ms); live auth smoke — `GET /api/v1/reservations/search?ref=a611c4bc` → total 1 (the correct booking), `ref=!!` → total 0; `/front-office/dashboard` arrivals now enriched objects (empty today — consistent with the guestless baseline); `/v3/api-docs` lists `reservations/search`. Docs' "58/0/0 + live smoke" claims confirmed. No source edits made by me in this pass.
+- Records: DEVLOG + STATE synced to reality in this entry. PLAN-3.8 still untracked. Nothing committed.
+- Record hygiene found during the doc scan (to correct with new lines, not edits): CHANGELOG still reads "Phase 0 bootstrap in progress" (never advanced past bootstrap); RISKS statuses stale (R-002/R-003 answered, R-009 gate honored — all still "open"); erp-03 header still says departures/alerts endpoints missing (superseded by its own 3.6 update line).
+- Next: present 3.8 for commit (all 14 files + PLAN-3.8), then hygiene corrections, then next unit on approval.
+
+## 2026-10-18T21:17:43+05:30 — Brief item I closed: honest bell tooltip; stack restarted; still awaiting commit approval
+- Phase/unit: 3.8 slice 7 tail        Branch: feature/dashboard-completeness @ b2a70e8 (uncommitted)
+- What: bell tooltip claimed "no alerts API yet" — false since 3.6 (`/alerts` is live and rendered in the Alerts card). Fixed to the honest text: "no notification system yet; live alerts are on the dashboard" (brief item I: document, never fabricate). `dashboard.tsx` tooltip only.
+- Verification: `npm run build` green; dev server serves the new string. Full-stack restarted (this host kills background processes between turns): Postgres :5432, Keycloak :8081, backend :8080 PID 20321 (3.8 code), web :5173 PID 20612 — all verified UP.
+- Records: DEVLOG + STATE updated (this entry).
+- Next: present 3.8 for commit (15 files + PLAN-3.8), then hygiene corrections on approval, then next unit.
+
+## 2026-10-20T12:16:00+05:30 - Module 2 Restaurant ERP plan produced for approval (no code)
+- Phase/unit: Module 2 planning (pre-work; Phase 3 3.8 remains uncommitted)        Branch: feature/dashboard-completeness
+- What: user confirmed the hierarchy - Module 1 = resort ERP, Module 2 = Restaurant ERP, R-01 to R-08 = its submodules - and confirmed billzova-web is owned/internal with permission. Wrote `docs/03-phases/phase-4/MODULE-2-RESTAURANT-ERP-PLAN.md` (reuse assessment, scope, architecture, submodule plan, integration, roadmap, tests, risks, governance, approval) and generated the 30-page PDF via make-pdf. Recorded CR-001 (proposed), Q-012 (client confirmation), R-010 to R-012, README link and STATE.
+- Why: user asked "what should we build next" and then requested the best plan in a beautiful PDF for approval before any build. Module 2 implements SOW ERP-11 as a separately flaggable add-on; it does not rename CORE ERP-02 Booking or displace any CORE module.
+- Resources used: `D:\dev\billzova-web` (user-authorised internal technical reference, read-only; no LICENSE file found, so asset-level provenance checks remain required); `docs/01-requirements/source-extracts/sow-extract.md` (ERP-11 scope authority). Nothing from the resource folder was modified.
+- Files changed: `docs/03-phases/phase-4/MODULE-2-RESTAURANT-ERP-PLAN.md` (new), `.pdf` (new), `docs/01-requirements/CHANGE_REQUESTS.md`, `docs/logs/OPEN_QUESTIONS.md`, `docs/logs/RISKS.md`, `docs/logs/DEVLOG.md`, `docs/logs/STATE.md`, `docs/README.md`. No application code, schema, config, dependency or commit.
+- Commands that changed state: make-pdf generate (three passes; additions, re-pagination and the arithmetic fix). Verification only: pypdf page/text checks, PyMuPDF page renders, browse screenshots of the intermediate HTML.
+- Verification: PDF 30 pages - 4,514 words - 742 KB - title metadata correct - 1 mermaid state diagram rendered - visual spot-checks of cover, TOC, hierarchy, state machine, roadmap and approval pages. Existing 3.8 work untouched; `git status` still shows the 3.8 changes plus the new phase-4 docs.
+- Problems & fixes: first PDF ended with a near-empty page 30 (approval note only); added an "On approval" action list and document history, regenerated; final page is substantive. Arithmetic checks caught an MVP total that did not match the work-package table (24-34; corrected to 28-40 after including the minimum R-08 settings); corrected the plan, CR-001, Q-012 and STATE and regenerated the PDF. Intermediate HTML is generated by the tool and was removed after verification so only the source `.md` and `.pdf` are delivered.
+- User interaction: presented the plan/PDF for approval; asked for approval of the plan + CR-001 + Q-012. No commit requested or made.
+- Next: on approval - record CR-001/Q-012, schedule Gate 1 design package, keep Module 2 behind `module.restaurant.enabled=false`; on 3.8 approval - commit the existing 3.8 work separately. Module 2 build remains gated after Phase 3 exit.

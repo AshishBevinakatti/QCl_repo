@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  HttpError, apiHealth, availability, board, bookRoom, checkIn, checkOut, confirmPayment,
+  HttpError, apiHealth, availability, board, bookRoom, businessToday, checkIn, checkOut, confirmPayment,
   createGuest, enrollMember, folioByStay, guestById, initiatePayment, isAuthError,
   listCategories, listReservations, redeemPoints, requestRefund, rupees, searchGuests, transferStay,
   walkIn,
@@ -48,7 +48,7 @@ export default function App() {
         {mode === 'preview' && view === 'dashboard' && (
           <p className="muted" style={{ marginTop: 0 }}>Preview mode — layout with sample counts. Guest names are never invented: log in for live rows.</p>
         )}
-        {view === 'dashboard' && <DashboardView mode={mode} go={go} viewFolio={(stayId) => { setFolioStay(stayId); setFolioJump((n) => n + 1); setView('billing'); }} />}
+        {view === 'dashboard' && <DashboardView mode={mode} go={go} onJump={onJump} viewFolio={(stayId) => { setFolioStay(stayId); setFolioJump((n) => n + 1); setView('billing'); }} />}
         {view === 'reservations' && <BookView mode={mode} />}
         {view === 'guests' && (
           <>
@@ -57,7 +57,7 @@ export default function App() {
           </>
         )}
         {view === 'rooms' && <RoomsView mode={mode} initialFilter={jump?.view === 'rooms' ? jump.roomFilter : undefined} />}
-        {view === 'check' && <FrontView mode={mode} initialReservationId={jump?.view === 'check' ? jump.reservationId : undefined} jumpNonce={jump?.nonce} />}
+        {view === 'check' && <FrontView mode={mode} initialReservationId={jump?.view === 'check' ? jump.reservationId : undefined} initialBookingStatus={jump?.view === 'check' ? jump.bookingStatus : undefined} jumpNonce={jump?.nonce} />}
         {view === 'billing' && <BillingView mode={mode} initialStayId={folioStay} folioNonce={folioJump} />}
         {view === 'requests' && (
           <div className="panel">
@@ -156,18 +156,26 @@ function LoginHint() {
 }
 
 /* ---------------- Front office ---------------- */
-function FrontView({ mode, initialReservationId, jumpNonce }: {
-  mode: Mode; initialReservationId?: string; jumpNonce?: number;
+function FrontView({ mode, initialReservationId, initialBookingStatus, jumpNonce }: {
+  mode: Mode; initialReservationId?: string; initialBookingStatus?: string; jumpNonce?: number;
 }) {
   const [reservationId, setReservationId] = useState(initialReservationId ?? '');
   const [stayId, setStayId] = useState('');
   const [roomId, setRoomId] = useState('');
   const [msg, setMsg] = useState(''); const [ok, setOk] = useState('');
   const [bookings, setBookings] = useState<ReservationSummary[]>([]);
-  const [bdate, setBdate] = useState(new Date().toISOString().slice(0, 10));
+  const [bdate, setBdate] = useState(businessToday());
 
   useEffect(() => {
     if (initialReservationId) setReservationId(initialReservationId);
+    // 3.8: View-all jumps preload today's bookings on the desk (filtered).
+    if (initialBookingStatus !== undefined && mode === 'live') {
+      const d = businessToday();
+      setBdate(d);
+      listReservations(d, initialBookingStatus || undefined)
+        .then(setBookings)
+        .catch(() => setMsg('Bookings need login.'));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jumpNonce]);
 

@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import bannerImg from './assets/banner.jpg';
 import {
-  alerts, board, checkIn, checkOut, confirmPayment, confirmReservation, dashboard, departures,
-  enrichReservations, guestById, inHouseGuests, initiatePayment, listCategories, listReservations,
-  reservationById, rupees, searchGuests,
+  alerts, board, businessToday, checkIn, checkOut, confirmPayment, confirmReservation, dashboard, departures,
+  enrichSummaries, guestById, inHouseGuests, initiatePayment, isAuthError, listCategories, listReservations,
+  rupees, searchGuests, searchReservationsByRef,
   type AlertDto, type DashboardDto, type DepartureDto, type EnrichedReservation, type InHouseDto,
 } from './api';
 import { isAuthenticated, login, logout, roles, username } from './auth';
@@ -20,6 +20,8 @@ export interface Jump {
   q?: string;
   reservationId?: string;
   roomFilter?: string;
+  /** 3.8: preload the check desk's bookings list for today, filtered ('' = all). */
+  bookingStatus?: string;
 }
 
 /* Room-status → donut bucket. Backend stores free-form lowercase strings;
@@ -103,51 +105,88 @@ export function Topbar({ onJump, api }: {
   const [hits, setHits] = useState<{ kind: string; label: string; sub: string; jump: Jump }[]>([]);
   const [msg, setMsg] = useState('');
   const [now, setNow] = useState(new Date());
+  const seq = useRef(0);
+  const timer = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30000);
     return () => clearInterval(t);
   }, []);
 
-  async function run(e?: React.FormEvent) {
-    e?.preventDefault();
+  // Debounced as-you-type search; Enter runs it immediately (see submit).
+  useEffect(() => {
+    window.clearTimeout(timer.current);
+    const query = q.trim();
+    if (!query) {
+      seq.current++;
+      setHits([]);
+      setMsg('');
+      return;
+    }
+    timer.current = window.setTimeout(() => void run(query), 300);
+    return () => window.clearTimeout(timer.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q]);
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
     const query = q.trim();
     if (!query) return;
+    window.clearTimeout(timer.current);
+    void run(query);
+  }
+
+  async function run(query: string) {
+    const my = ++seq.current;
     setMsg('Searching…');
     setHits([]);
     const out: { kind: string; label: string; sub: string; jump: Jump }[] = [];
+    let anyOk = false;
+    let anyErr = false;
     try {
       const g = await searchGuests(query);
+      anyOk = true;
       for (const item of g.items.slice(0, 5)) {
         out.push({
           kind: 'Guest', label: item.name, sub: item.phone,
           jump: { view: 'guests', q: item.phone },
         });
       }
-    } catch { /* signed-out: guest search unavailable */ }
+    } catch { anyErr = true; }
     if (/^[0-9a-f-]{8,}$/i.test(query)) {
       try {
-        const r = await reservationById(query);
-        let name = r.guestId;
-        try { name = (await guestById(r.guestId)).name; } catch { /* id fallback */ }
-        out.push({
-          kind: 'Booking', label: `${r.id.slice(0, 8).toUpperCase()} — ${name}`,
-          sub: `${r.checkinDate} → ${r.checkoutDate} · ${r.status}`,
-          jump: { view: 'check', reservationId: r.id },
-        });
-      } catch { /* not a booking id */ }
+        const found = await searchReservationsByRef(query);
+        anyOk = true;
+        for (const r of found.slice(0, 3)) {
+          let name = r.guestId;
+          try { name = (await guestById(r.guestId)).name; } catch { /* id fallback */ }
+          out.push({
+            kind: 'Booking', label: `${r.id.slice(0, 8).toUpperCase()} — ${name}`,
+            sub: `${r.checkinDate} → ${r.checkoutDate} · ${r.status}`,
+            jump: { view: 'check', reservationId: r.id },
+          });
+        }
+      } catch { anyErr = true; }
     }
     try {
-      const d = await dashboard(new Date().toISOString().slice(0, 10));
+      const d = await dashboard(businessToday());
+      anyOk = true;
       for (const r of d.rooms.filter((rm) => rm.roomNo.toLowerCase().includes(query.toLowerCase())).slice(0, 5)) {
         out.push({
           kind: 'Room', label: `Room ${r.roomNo}`, sub: r.status,
           jump: { view: 'rooms', roomFilter: r.roomNo },
         });
       }
-    } catch { /* signed-out: room match unavailable */ }
+    } catch { anyErr = true; }
+    if (my !== seq.current) return; // superseded by a newer search/clear — never overwrite
     setHits(out);
-    setMsg(out.length === 0 ? 'No matches — try a guest name, phone, booking ID, or room number.' : '');
+    setMsg(
+      out.length > 0
+        ? ''
+        : anyErr && !anyOk
+          ? 'Search unavailable — log in, or check the backend is up.'
+          : 'No matches — try a guest name, phone, booking ID, or room number.',
+    );
   }
 
   const dateStr = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(now);
@@ -156,13 +195,13 @@ export function Topbar({ onJump, api }: {
   return (
     <div>
       <div className="topbar-new">
-        <form className="searchbox" onSubmit={run}>
+        <form className="searchbox" onSubmit={submit}>
           <Icon name="search" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search guest, booking ID, room number…" aria-label="Search" />
           <kbd>⌘ K</kbd>
         </form>
         <span className="clock"><strong>{dateStr}</strong>{timeStr} · {api}</span>
-        <button className="iconbtn" title="Notifications — coming soon (no alerts API yet)"><Icon name="notifications" /></button>
+        <button className="iconbtn" title="Notifications — no notification system yet; live alerts are on the dashboard"><Icon name="notifications" /></button>
       </div>
       {msg && <p className="muted">{msg}</p>}
       {hits.length > 0 && (
@@ -181,10 +220,11 @@ export function Topbar({ onJump, api }: {
 }
 
 /* ---------------- Dashboard ---------------- */
-export function DashboardView({ mode, go, viewFolio }: {
+export function DashboardView({ mode, go, viewFolio, onJump = () => {} }: {
   mode: Mode; go: (v: View) => void; viewFolio: (stayId: string) => void;
+  onJump?: (j: Jump) => void;
 }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = businessToday();
   const [dash, setDash] = useState<DashboardDto | null>(mode === 'preview' ? demoDashboard : null);
   const [arrivals, setArrivals] = useState<EnrichedReservation[]>([]);
   const [bookings, setBookings] = useState<EnrichedReservation[]>([]);
@@ -192,6 +232,7 @@ export function DashboardView({ mode, go, viewFolio }: {
   const [inhouseList, setInhouseList] = useState<InHouseDto[]>([]);
   const [alertList, setAlertList] = useState<AlertDto[]>([]);
   const [denied, setDenied] = useState(false);
+  const [loading, setLoading] = useState(mode !== 'preview');
   const [msg, setMsg] = useState('');
   const [acting, setActing] = useState<string | null>(null);
   const [ok, setOk] = useState('');
@@ -206,19 +247,22 @@ export function DashboardView({ mode, go, viewFolio }: {
       setDeparturesList([]); setInhouseList([]); setAlertList([]);
       return;
     }
+    setLoading(true);
     try {
       const [d, c] = await Promise.all([dashboard(today), listCategories()]);
       setDash(d); setDenied(false); setMsg('');
-      setArrivals(await enrichReservations(d.arrivals.slice(0, 25), c.items));
+      setArrivals(d.arrivals.slice(0, 25).map((a) => ({ ...a, ref: a.id.slice(0, 8) })));
       const recent = await listReservations(today);
-      setBookings(await enrichReservations(recent.slice(0, 8).map((r) => r.id), c.items));
+      setBookings(await enrichSummaries(recent.slice(0, 8), c.items));
       const [dep, inh, al] = await Promise.all([
         departures(today), inHouseGuests(), alerts(),
       ]);
       setDeparturesList(dep); setInhouseList(inh); setAlertList(al);
     } catch (err) {
-      if (err instanceof Error && /401|signed in/i.test(err.message)) setDenied(true);
+      if (isAuthError(err)) setDenied(true);
       else setMsg(err instanceof Error ? err.message : 'Dashboard failed.');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -291,6 +335,9 @@ export function DashboardView({ mode, go, viewFolio }: {
       </div>
     );
   }
+  if (mode === 'live' && !dash && loading) {
+    return <div className="panel"><p className="muted">Loading dashboard…</p></div>;
+  }
   if (mode === 'live' && !dash && msg) return <div className="panel"><p>{msg}</p></div>;
   if (!dash) return null;
 
@@ -326,7 +373,7 @@ export function DashboardView({ mode, go, viewFolio }: {
 
       <div className="dash-grid">
         <div className="panel">
-          <div className="phead"><h3>Today&apos;s Arrivals ({dash.arrivals.length})</h3><a onClick={() => go('check')}>View all <Icon name="arrow_forward" size={14} /></a></div>
+          <div className="phead"><h3>Today&apos;s Arrivals ({dash.arrivals.length})</h3><a onClick={() => onJump({ view: 'check', bookingStatus: 'confirmed' })}>View all <Icon name="arrow_forward" size={14} /></a></div>
           {mode === 'preview' ? (
             <p className="muted">Preview shows the layout only — guest rows are never invented. Log in for live arrivals.</p>
           ) : arrivals.length === 0 ? (
@@ -385,7 +432,7 @@ export function DashboardView({ mode, go, viewFolio }: {
 
       <div className="dash-grid">
         <div className="panel">
-          <div className="phead"><h3>Today&apos;s Departures ({mode === 'preview' ? 0 : departuresList.length})</h3><a onClick={() => go('check')}>View all <Icon name="arrow_forward" size={14} /></a></div>
+          <div className="phead"><h3>Today&apos;s Departures ({mode === 'preview' ? 0 : departuresList.length})</h3><a onClick={() => onJump({ view: 'check', bookingStatus: 'checked-in' })}>View all <Icon name="arrow_forward" size={14} /></a></div>
           {mode === 'preview' ? (
             <p className="muted">Preview shows the layout only — log in for live departures.</p>
           ) : departuresList.length === 0 ? (
@@ -440,7 +487,7 @@ export function DashboardView({ mode, go, viewFolio }: {
 
       <div className="dash-grid" style={{ gridTemplateColumns: '1fr 1fr 0.9fr' }}>
         <div className="panel">
-          <div className="phead"><h3>Recent Bookings</h3><a onClick={() => go('check')}>View all <Icon name="arrow_forward" size={14} /></a></div>
+          <div className="phead"><h3>Recent Bookings</h3><a onClick={() => onJump({ view: 'check', bookingStatus: '' })}>View all <Icon name="arrow_forward" size={14} /></a></div>
           {mode === 'preview' || bookings.length === 0 ? (
             <p className="muted">{mode === 'preview' ? 'Preview shows the layout only — log in for live bookings.' : 'No bookings on this date.'}</p>
           ) : (
@@ -529,7 +576,7 @@ export function RoomsView({ mode, initialFilter }: { mode: Mode; initialFilter?:
 
   useEffect(() => {
     if (mode === 'preview') { setRooms(demoDashboard.rooms); return; }
-    dashboard(new Date().toISOString().slice(0, 10))
+    dashboard(businessToday())
       .then((d) => setRooms(d.rooms))
       .catch((err) => setMsg(err instanceof Error ? err.message : 'Rooms need login.'));
   }, [mode]);
