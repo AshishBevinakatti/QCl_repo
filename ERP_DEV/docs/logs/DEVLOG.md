@@ -425,3 +425,9 @@
 - Documented a standing rule: every future module/endpoint/job/integration/UI feature must connect to the observability/ops baseline in the same work unit (logs + request ID, audit, health/status, flags, permissions, tests, docs; honest `NOT_CONFIGURED` only). Checklist: `02-architecture/observability.md` → "Standing rule — connect every new feature to the ops baseline"; cross-linked from `04-modules/ops-console.md`, `docs/README.md`; recorded as D-009.
 - Commit approval: user explicitly approved committing the Phase 1 work and this document update. Pre-commit verification: backend `71/71` tests, BUILD SUCCESS; `git diff --check` clean.
 - Next: commit (feature + docs), record the hash, leave servers running for continued review; no push/merge.
+
+## 2026-10-20T19:31:49+05:30 — Phase 1 committed as `45c8e88`
+- Commit `45c8e88` on `feature/3.9-observability-ops-console`: `feat(ops): add Phase 1 observability and secure ops console` — 57 files, 4,093 insertions / 35 deletions (code, tests, V9, Keycloak roles, env templates, docs, standing rule).
+- Pre-commit verification: backend 71/71 tests, BUILD SUCCESS; frontend 4/4, lint/build green (recorded above); live demo with real Keycloak token: status/flags/audit 200, anon 401, reception 403, management health UP.
+- No push/merge. Servers remain running for the user (`:8080`, `:9091`, `:5173`, Keycloak `:8081`). Root `.vscode/` remains untracked and out of scope.
+- Next: keep the standing integration rule in every future work unit; await the next unit/Phase 2 planning decision. This record will be committed as a docs follow-up.
