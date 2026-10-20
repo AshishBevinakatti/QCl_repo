@@ -216,6 +216,44 @@ class BookingApiTest {
         .andExpect(status().isUnprocessableEntity());
   }
 
+  @Test
+  void searchByShortRefPrefixFindsBooking() throws Exception {
+    // Suite pool — no other booking test touches it; unique phone.
+    MvcResult result =
+        mvc.perform(
+                post("/api/v1/reservations")
+                    .header("Idempotency-Key", "test-key-refsearch-1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        "{\"newGuest\":{\"name\":\"Ref Guest\",\"phone\":\"+91-9822000309\"},"
+                            + "\"categoryId\":\"33333333-3333-3333-3333-333333333333\","
+                            + "\"checkinDate\":\""
+                            + WEEKDAY_FROM
+                            + "\",\"checkoutDate\":\""
+                            + WEEKDAY_TO
+                            + "\",\"source\":\"web\"}"))
+            .andExpect(status().isCreated())
+            .andReturn();
+    String id = jsonId(result);
+    // The 8-char ref every screen shows.
+    mvc.perform(get("/api/v1/reservations/search").param("ref", id.substring(0, 8)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].id", is(id)));
+    // Pasted with the display ellipsis + uppercase — still found (sanitized).
+    mvc.perform(
+            get("/api/v1/reservations/search")
+                .param("ref", id.substring(0, 8).toUpperCase() + "…"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].id", is(id)));
+    // No-match and junk inputs are honest empty pages, never errors.
+    mvc.perform(get("/api/v1/reservations/search").param("ref", "deadbeef"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.total", is(0)));
+    mvc.perform(get("/api/v1/reservations/search").param("ref", "!!"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.total", is(0)));
+  }
+
   /** Sandbox settle: initiate (returns provider ref + signature) then confirm. */
   void payAdvance(String reservationId) throws Exception {
     MvcResult initiated =

@@ -14,7 +14,11 @@ export const demoCategories: CategoryDto[] = [
 
 export const demoDashboard: DashboardDto = {
   date: 'today',
-  arrivals: ['res-8f31', 'res-8f32'],
+  arrivals: [
+    // No invented guest data (user rule) — placeholder rows keep the KPI count honest.
+    { id: 'res-8f31', guestName: '—', category: 'Deluxe', checkinDate: 'today', checkoutDate: 'today', status: 'confirmed', advanceDuePaise: 0 },
+    { id: 'res-8f32', guestName: '—', category: 'Suite', checkinDate: 'today', checkoutDate: 'today', status: 'confirmed', advanceDuePaise: 0 },
+  ],
   inHouse: ['stay-11aa', 'stay-11ab', 'stay-11ac'],
   rooms: [
     { id: 'r1', roomNo: '101', status: 'ready' },

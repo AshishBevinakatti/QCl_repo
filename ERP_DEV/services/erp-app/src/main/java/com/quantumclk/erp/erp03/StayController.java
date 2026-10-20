@@ -116,25 +116,45 @@ public class StayController {
     LocalDate businessDate = date != null ? date : LocalDate.now(com.quantumclk.erp.erp02.BookingService.ZONE);
     UUID property = RoomCategoryController.GOLDEN_HILLS_PROPERTY_ID;
     List<Reservation> confirmed =
-        reservations.dashboard(property, businessDate, Reservation.CONFIRMED,
+        reservations.arrivingOn(property, businessDate, Reservation.CONFIRMED,
             Pageable.unpaged()).getContent();
     List<Stay> inHouse = stayRepository.findCheckedIn(property);
     List<Room> allRooms = rooms.findByPropertyId(property);
     Map<String, String> roomNames =
         allRooms.stream().collect(Collectors.toMap(r -> r.getId().toString(), Room::getRoomNo));
+    Map<UUID, String> categoryNames =
+        categories.findAll().stream()
+            .collect(Collectors.toMap(RoomCategory::getId, RoomCategory::getName));
+    // 3.8 single-batch enrichment: one guest query for all arrivals (no N+1 tail).
+    List<UUID> guestIds =
+        confirmed.stream()
+            .map(Reservation::getGuestId)
+            .filter(g -> g != null)
+            .distinct()
+            .toList();
+    Map<UUID, String> guestNames = new java.util.HashMap<>();
+    guests.findAllById(guestIds).forEach(g -> guestNames.put(g.getId(), g.getName()));
     return new Dashboard(
         businessDate,
-        confirmed.stream().map(r -> r.getId().toString()).toList(),
+        confirmed.stream()
+            .map(
+                r ->
+                    new ArrivalDto(
+                        r.getId(),
+                        guestNames.getOrDefault(r.getGuestId(), "—"),
+                        categoryNames.getOrDefault(r.getCategoryId(), "—"),
+                        r.getCheckinDate(),
+                        r.getCheckoutDate(),
+                        r.getStatus(),
+                        r.getAdvanceDuePaise()))
+            .toList(),
         inHouse.stream().map(s -> s.getId().toString()).toList(),
         allRooms.stream().map(r -> new RoomDto(r.getId(), r.getRoomNo(), r.getStatus())).toList(),
-        occupancy(allRooms),
+        occupancy(allRooms, categoryNames),
         roomNames);
   }
 
-  List<OccupancyDto> occupancy(List<Room> allRooms) {
-    Map<UUID, String> names =
-        categories.findAll().stream()
-            .collect(Collectors.toMap(RoomCategory::getId, RoomCategory::getName));
+  List<OccupancyDto> occupancy(List<Room> allRooms, Map<UUID, String> names) {
     return allRooms.stream()
         .collect(Collectors.groupingBy(Room::getCategoryId))
         .entrySet().stream()
@@ -154,7 +174,7 @@ public class StayController {
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
       @PageableDefault(size = 100) Pageable pageable) {
     Page<Reservation> page =
-        reservations.dashboard(
+        reservations.arrivingOn(
             RoomCategoryController.GOLDEN_HILLS_PROPERTY_ID, date, Reservation.CONFIRMED, pageable);
     return page.getContent().stream().map(r -> r.getId().toString()).toList();
   }
@@ -296,9 +316,19 @@ public class StayController {
 
   public record OccupancyDto(UUID categoryId, String category, long total, long occupied, long free) {}
 
+  /** 3.8: arrivals arrive enriched — the desk table needs no follow-up calls. */
+  public record ArrivalDto(
+      UUID id,
+      String guestName,
+      String category,
+      LocalDate checkinDate,
+      LocalDate checkoutDate,
+      String status,
+      long advanceDuePaise) {}
+
   public record Dashboard(
       LocalDate date,
-      List<String> arrivals,
+      List<ArrivalDto> arrivals,
       List<String> inHouse,
       List<RoomDto> rooms,
       List<OccupancyDto> occupancy,
