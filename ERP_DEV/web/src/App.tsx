@@ -11,6 +11,7 @@ import { demoBoard, demoCategories, demoFolio, demoGuests, demoMember } from './
 import { Alert, Badge, Btn, Card, Field, Soon, Stat, statusTone } from './ui';
 import { DashboardView, RoomsView, Sidebar, Topbar, type Jump, type Mode, type View } from './dashboard';
 import { initAuthOnce } from './auth';
+import { OpsView } from './ops/OpsView';
 
 /**
  * Golden Hills ERP workspace. Live mode talks to erp-app as the signed-in
@@ -72,6 +73,7 @@ export default function App() {
             <Soon icon="bar_chart" title="Coming soon" why="No reporting API yet — occupancy and revenue reports arrive in a later unit." />
           </div>
         )}
+        {view === 'ops' && <OpsView mode={mode} />}
         {view === 'settings' && (
           <div className="panel">
             <div className="phead"><h3>Settings</h3></div>

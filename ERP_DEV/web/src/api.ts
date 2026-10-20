@@ -19,11 +19,19 @@ export class HttpError extends Error {
   status: number;
   code?: string;
   details?: Record<string, string>;
-  constructor(status: number, message: string, code?: string, details?: Record<string, string>) {
+  requestId?: string;
+  constructor(
+    status: number,
+    message: string,
+    code?: string,
+    details?: Record<string, string>,
+    requestId?: string,
+  ) {
     super(message);
     this.status = status;
     this.code = code;
     this.details = details;
+    this.requestId = requestId;
   }
 }
 
@@ -46,25 +54,45 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   if (!headers.has('Content-Type') && init.body !== undefined) {
     headers.set('Content-Type', 'application/json');
   }
+  if (!headers.has('X-Request-Id')) {
+    headers.set('X-Request-Id', newRequestId());
+  }
   const token = await getToken();
   if (token) headers.set('Authorization', `Bearer ${token}`);
   const res = await globalThis.fetch(url, { ...init, headers });
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as {
-      message?: string; code?: string; details?: Record<string, string>;
+      message?: string; code?: string; details?: Record<string, string>; requestId?: string;
     };
     if (res.status === 401) {
-      throw new HttpError(401, 'Not signed in — use Staff log in.', body.code, body.details);
+      throw new HttpError(
+        401, 'Not signed in — use Staff log in.', body.code, body.details, body.requestId,
+      );
     }
     if (res.status >= 500) {
       throw new HttpError(
         res.status,
         'Server error — your login is fine, but the backend may be missing its login config (runbook: docs/05-operations/keycloak.md).',
+        body.code,
+        body.details,
+        body.requestId,
       );
     }
-    throw new HttpError(res.status, body.message ?? `Request failed: ${res.status}`, body.code, body.details);
+    throw new HttpError(
+      res.status,
+      body.message ?? `Request failed: ${res.status}`,
+      body.code,
+      body.details,
+      body.requestId,
+    );
   }
   return res;
+}
+
+function newRequestId(): string {
+  const c = globalThis.crypto;
+  if (c && typeof c.randomUUID === 'function') return c.randomUUID();
+  return `${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
 }
 
 export interface CategoryDto {
@@ -493,5 +521,101 @@ export interface AlertDto {
 export async function alerts(): Promise<AlertDto[]> {
   const res = await apiFetch('/api/v1/alerts');
   if (!res.ok) throw new Error(`alerts failed: ${res.status}`);
+  return res.json();
+}
+
+/* ---------------- Ops console (Phase 1: read-only) ---------------- */
+
+export interface OpsSource {
+  id: string;
+  state: string;
+  configured: boolean;
+  observedAt: string;
+  lastSuccessAt: string | null;
+  detail: string;
+}
+
+export interface OpsTelemetry {
+  configured: boolean;
+  stale: boolean;
+  lastCheckedAt: string;
+  sources: OpsSource[];
+}
+
+export interface OpsService {
+  name: string;
+  version: string;
+  state: string;
+  observedAt: string;
+  uptimeSeconds: number;
+  database: { state: string; latencyMs: number };
+}
+
+export interface OpsStatus {
+  generatedAt: string;
+  state: string;
+  environment: string;
+  service: OpsService;
+  telemetry: OpsTelemetry;
+  links: Record<string, string>;
+}
+
+export interface OpsFlag {
+  key: string;
+  value: string;
+  type: string;
+  updatedBy: string;
+  updatedAt: string | null;
+}
+
+export interface OpsFlags {
+  generatedAt: string;
+  items: OpsFlag[];
+}
+
+export interface OpsAuditEntry {
+  id: string;
+  actor: string;
+  action: string;
+  objectType: string;
+  objectId: string;
+  before: string | null;
+  after: string | null;
+  reason: string | null;
+  createdAt: string;
+}
+
+export interface OpsAuditPage {
+  items: OpsAuditEntry[];
+  page: number;
+  size: number;
+  total: number;
+  totalPages: number;
+}
+
+export async function opsStatus(): Promise<OpsStatus> {
+  const res = await apiFetch('/api/v1/ops/status');
+  return res.json();
+}
+
+export async function opsIntegrations(): Promise<OpsTelemetry> {
+  const res = await apiFetch('/api/v1/ops/integrations');
+  return res.json();
+}
+
+export async function opsFlags(): Promise<OpsFlags> {
+  const res = await apiFetch('/api/v1/ops/flags');
+  return res.json();
+}
+
+export async function opsAudit(
+  page = 0,
+  size = 25,
+  action?: string,
+  days = 7,
+): Promise<OpsAuditPage> {
+  const params = new URLSearchParams({ page: String(page), size: String(size), days: String(days) });
+  if (action) params.set('action', action);
+  const res = await apiFetch(`/api/v1/ops/audit?${params}`);
   return res.json();
 }

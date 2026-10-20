@@ -26,7 +26,7 @@ sg docker -c "docker compose -f ERP_DEV/infra/docker-compose.local.yml stop keyc
 Keycloak listens on **8081** (8080 is erp-app's port). Admin console: http://localhost:8081/admin (admin / change-me-locally-only).
 
 ## Realm
-Source of truth: `ERP_DEV/infra/keycloak/realm-golden-hills.json` (realm `resort`, 7 roles, `erp-web` public PKCE client, 6 demo users). Auto-imports from `/opt/keycloak/data/import/` on first boot. After editing the JSON, recreate the container (clean slate above) — a restart alone does NOT re-import.
+Source of truth: `ERP_DEV/infra/keycloak/realm-golden-hills.json` (realm `resort`, 12 roles — 7 resort + 5 `OPS_*`, `erp-web` public PKCE client, 6 demo users). Auto-imports from `/opt/keycloak/data/import/` on first boot. After editing the JSON, recreate the container (clean slate above) — a restart alone does NOT re-import.
 
 ## Demo staff (DEV-ONLY passwords)
 | Username | Roles | Password |
@@ -37,6 +37,8 @@ Source of truth: `ERP_DEV/infra/keycloak/realm-golden-hills.json` (realm `resort
 | accounts-staff | ACCOUNTS | change-me-dev-only |
 | membership-staff | MEMBERSHIP | change-me-dev-only |
 | housekeeping-staff | HOUSEKEEPING | change-me-dev-only |
+
+Ops console (3.9 Phase 1): assign `OPS_VIEWER`, `OPS_DEVELOPER`, `OPS_OPERATOR`, `OPS_ADMIN` or `OPS_APPROVER` to the staff user; `admin-staff`/`SUPERADMIN` already has access. No demo ops user is created. Existing realms need the clean-slate recreate above (or manual role creation) to receive the new roles. Runbook: `05-operations/ops-console.md`.
 
 ## Backend wiring
 erp-app validates JWTs against the issuer (no code change needed):

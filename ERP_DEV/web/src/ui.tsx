@@ -24,15 +24,21 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 }
 
 export function Btn({
-  children, onClick, ghost, type,
+  children, onClick, ghost, type, disabled,
 }: {
   children: ReactNode;
   onClick?: () => void;
   ghost?: boolean;
   type?: 'submit' | 'button';
+  disabled?: boolean;
 }) {
   return (
-    <button type={type ?? 'button'} className={ghost ? 'btn ghost' : 'btn'} onClick={onClick}>
+    <button
+      type={type ?? 'button'}
+      className={ghost ? 'btn ghost' : 'btn'}
+      onClick={onClick}
+      disabled={disabled}
+    >
       {children}
     </button>
   );

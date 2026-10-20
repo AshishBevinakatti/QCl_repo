@@ -6,13 +6,13 @@ import {
   rupees, searchGuests, searchReservationsByRef,
   type AlertDto, type DashboardDto, type DepartureDto, type EnrichedReservation, type InHouseDto,
 } from './api';
-import { isAuthenticated, login, logout, roles, username } from './auth';
+import { hasRole, isAuthenticated, login, logout, roles, username } from './auth';
 import { demoBoard, demoDashboard } from './demo';
 import { Badge, Btn, Donut, Icon, Kpi, statusTone } from './ui';
 
 export type View =
   | 'dashboard' | 'reservations' | 'guests' | 'rooms' | 'check'
-  | 'billing' | 'requests' | 'housekeeping' | 'reports' | 'settings';
+  | 'billing' | 'requests' | 'housekeeping' | 'reports' | 'ops' | 'settings';
 export type Mode = 'live' | 'preview';
 
 export interface Jump {
@@ -34,7 +34,7 @@ function bucket(status: string): 'available' | 'occupied' | 'maint' {
   return 'available';
 }
 
-const NAV: { id: View; label: string; icon: string }[] = [
+const NAV: { id: View; label: string; icon: string; ops?: boolean }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: 'home' },
   { id: 'reservations', label: 'Reservations', icon: 'calendar_month' },
   { id: 'guests', label: 'Guests', icon: 'group' },
@@ -44,6 +44,7 @@ const NAV: { id: View; label: string; icon: string }[] = [
   { id: 'requests', label: 'Service Requests', icon: 'build' },
   { id: 'housekeeping', label: 'Housekeeping', icon: 'cleaning_services' },
   { id: 'reports', label: 'Reports', icon: 'bar_chart' },
+  { id: 'ops', label: 'Ops Console', icon: 'monitoring', ops: true },
 ];
 
 function greeting(): string {
@@ -58,6 +59,9 @@ export function Sidebar({ view, go, mode, setMode }: {
   view: View; go: (v: View) => void; mode: Mode; setMode: (m: Mode) => void;
 }) {
   const authed = isAuthenticated();
+  const canOps = hasRole(
+    'SUPERADMIN', 'OPS_VIEWER', 'OPS_DEVELOPER', 'OPS_OPERATOR', 'OPS_ADMIN', 'OPS_APPROVER',
+  );
   return (
     <aside className="sidebar">
       <div className="brand">Golden Hills<small>Resort ERP</small></div>
@@ -66,7 +70,7 @@ export function Sidebar({ view, go, mode, setMode }: {
         <button className={mode === 'preview' ? 'active' : ''} onClick={() => setMode('preview')}>Preview</button>
       </div>
       <nav className="nav">
-        {NAV.map((n) => (
+        {NAV.filter((n) => !n.ops || canOps).map((n) => (
           <button key={n.id} className={view === n.id ? 'active' : ''} onClick={() => go(n.id)}>
             <Icon name={n.icon} />{n.label}
           </button>

@@ -102,11 +102,20 @@ npm run build        # expected: ✓ built (tsc + vite)
 npm run dev          # vite dev server; /api proxied to localhost:8080 (see vite.config.ts)
 ```
 
+## 5d. Ops console (internal, Phase 1)
+With an `OPS_*` or `SUPERADMIN` login, open **Ops Console** in the web sidebar. It is read-only: status, integrations, flags and audit. Blank `OPS_*_URL` values show `NOT_CONFIGURED` (expected locally).
+```
+curl -s http://127.0.0.1:9091/actuator/health    # {"status":"UP"} on loopback, no token
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/api/v1/ops/status  # 401 anonymously
+```
+JSON logs go to `logs/erp-app.jsonl` under the backend working directory; secrets are redacted. Full runbook: `docs/05-operations/ops-console.md`; signal contract: `docs/02-architecture/observability.md`.
+
 ## 6. Repo map
 `ERP_Resort/`: agent config (`.opencode/`, `AGENTS.md`) + `ERP_DEV/` (the project: `pom.xml`, `services/erp-app/`,
 `infra/docker-compose.local.yml`, `docs/`, `.env.example`; `web/` React lands in Phase 3).
 `services/erp-app/src/main/java/com/quantumclk/erp/`: `ErpApplication`, `health/`, `common/` (error shape),
-`erp02/` (room-category slice; packages per SOW module). Migrations: `src/main/resources/db/migration/V1__...sql`.
+`erp02/` (room-category slice; packages per SOW module), `ops/` (read-only ops console + logging filters).
+Migrations: `src/main/resources/db/migration/V1__...sql` (V9 = ops permissions/flags).
 Git root is `ERP_Resort/`; skill path `docs/...` = `ERP_DEV/docs/...`.
 
 ## 7. Workflow in one page

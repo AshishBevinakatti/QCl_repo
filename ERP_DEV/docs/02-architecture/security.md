@@ -25,6 +25,23 @@ As-built 2026-10-10 (login unit, local dev): realm `resort` (file `infra/keycloa
 
 Permission verbs: view/create/edit/delete-where-authorized/approve/export/configure/report-access (SOW §22). Every row above gets a test (allowed + denied cases).
 
+## Ops console roles (3.9 Phase 1, as-built 2026-10-20)
+Separate from the resort `OPS` (spa/facilities) role. Permissions are resolved from `role_permission` per request (never trusted from JWT claims); Phase 1 is read-only.
+
+| Role | Read scope |
+|---|---|
+| `OPS_VIEWER` | status, integrations, flags, metrics, alerts |
+| `OPS_DEVELOPER` | viewer + logs, traces, jobs |
+| `OPS_OPERATOR` | viewer + incidents, jobs, deployments |
+| `OPS_ADMIN` | everything + audit (write actions arrive with later phases) |
+| `OPS_APPROVER` | everything read-only + audit (approvals arrive with later phases) |
+| `SUPERADMIN` | all (`*`) |
+
+- `/api/v1/ops/{status,integrations,flags,audit}` enforce `ops.read`, `ops.integrations.read`, `ops.flags.read`, `ops.audit.read` server-side; 401 unauthenticated, 403 insufficient.
+- Successful ops reads are themselves audited (deduped per actor/action/60s); audit responses are bounded (≤100 rows, ≤90 days) and redacted.
+- Management health is on loopback `127.0.0.1:9091`, exposes only `health,info`, and is independent of the API security chain. Never proxy it publicly.
+- Keycloak realm roles `OPS_*` must be provisioned; existing realms need a re-import/recreate to pick them up.
+
 ## Secrets (never in repo — names only)
 `KEYCLOAK_CLIENT_SECRET, DB_URL/USER/PASSWORD, REDIS_URL, KAFKA_BOOTSTRAP, GATEWAY_API_KEY, GATEWAY_WEBHOOK_SECRET, OTA_*_API_KEY, SMTP_* , SMS_* , WHATSAPP_* , TERMINAL_API_KEYS, S3_* , JWT_SIGNING (Keycloak-managed)`. Local: `.env` (git-ignored) from `.env.example` (fake values). Staging/prod: Vault or K8s Secrets; rotation runbook in `05-operations/`. CI scans for secrets pre-commit + pre-merge; logs never print secrets, card PANs, or full ID numbers (mask: `XXXX-XXXX-1234` style).
 

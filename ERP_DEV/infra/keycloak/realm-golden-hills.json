@@ -35,6 +35,26 @@
       {
         "name": "OPS",
         "description": "Spa/facility operations where enabled"
+      },
+      {
+        "name": "OPS_VIEWER",
+        "description": "Read-only ops console: status, integrations, flags, metrics, alerts"
+      },
+      {
+        "name": "OPS_DEVELOPER",
+        "description": "Ops read plus logs, traces and job history"
+      },
+      {
+        "name": "OPS_OPERATOR",
+        "description": "Ops read plus jobs, incidents and deployment history"
+      },
+      {
+        "name": "OPS_ADMIN",
+        "description": "All ops reads including audit search; write actions arrive in later phases"
+      },
+      {
+        "name": "OPS_APPROVER",
+        "description": "Read-only oversight including audit search; approvals arrive in later phases"
       }
     ]
   },

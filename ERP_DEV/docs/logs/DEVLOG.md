@@ -386,3 +386,42 @@
 - Verification on the merged develop tip: `mvn -B verify` BUILD SUCCESS — 58 tests, 0 failures, 0 errors; `npm run build` green (322 ms).
 - These log records ride a follow-up docs commit on this branch (second, trivial merge) to keep develop's DEVLOG/STATE truthful without a direct-to-develop commit.
 - Remaining user actions: 3.8 browser click-through; Module 2 plan approval (CR-001/Q-012); delete `fix/hide-table-scrollbar`; pick the next unit.
+
+## 2026-10-20T18:19:14+05:30 — Unit 3.9 observability/ops console: audit + plan (no code)
+- Phase/unit: 3.9 planning (internal developer tooling; no SOW feature)        Branch: develop (planning only; no branch created)
+- What: user requested the Billzova production observability and secure remote operations platform, adapted to this repository under the ERP rules, with a plan and approval before implementation. Read-only audit confirmed: single Spring Boot 3.2.5 modular monolith (`services/erp-app`), Keycloak SSO + deny-by-default JWT roles, append-only `audit_event` with no read API, generic `app_config`, two `@Scheduled` jobs with no run history, plain-text logs with no request/trace IDs, no Actuator/Micrometer/OTel, React 19 SPA with no Sentry/router, Compose only for Postgres/Redis/Kafka/Keycloak, no observability stack, no Dockerfile/K8s, and no CI/CD deployment pipeline. Billzova exists only as the separate `billzova-web` frontend reference (Q-013); playbook §9 names Jaeger/ELK while the instruction names Tempo/Loki (Q-014).
+- Plan: `docs/03-phases/phase-3/PLAN-3.9-observability-ops-console.md` — full module A–L gap analysis, adapted architecture, roles/permissions, audit model, migrations V9+, API phases, frontend ops shell, telemetry pipeline, dependencies, risks, and phase acceptance. Approval covers Phase 1 only (foundation, access security, read-only status/flags/audit skeleton).
+- Files changed: plan (new), `docs/logs/OPEN_QUESTIONS.md` (Q-013/Q-014 appended), this DEVLOG entry, STATE. No application code, dependency, schema, branch or commit.
+- Next: present audit + plan; wait for explicit approval (target repo, observability stack, dependencies, Phase 1).
+
+## 2026-10-20T18:24:00+05:30 — Unit 3.9 Phase 1 approved; implementation started
+- Phase/unit: 3.9 observability/ops console — Phase 1 foundation        Branch: feature/3.9-observability-ops-console (from develop @ `bdd7252`)
+- Approval: user approved the Phase 1 plan and answered Q-013/Q-014 via the approval prompt — target = this ERP repository; baseline = OpenTelemetry + Prometheus + Grafana + Tempo + Loki; ops roles/permissions + listed dependencies approved; **Phase 1 only** (later phases need separate gates).
+- Scope: V9 ops permissions/flags; DB-backed permission resolver; read-only ops status/integrations/flags/audit API + bounded audit; request-ID filter and JSON/redacted logs; Actuator + Micrometer/OTel config; ops UI shell (Overview/Flags/Audit); tests; run/ops docs.
+- Guardrails: no production credentials/K8s/deployment pipeline exist, so those remain documented gaps; no version upgrades; no commit until user approval.
+- Next: backend foundation (pom, V9, security), tests, then UI/docs, full verify.
+
+## 2026-10-20T18:53:49+05:30 — Unit 3.9 Phase 1 implemented and verified (uncommitted)
+- Phase/unit: 3.9 observability/ops console — Phase 1        Branch: feature/3.9-observability-ops-console (base develop @ `a09d7c5` = bdd7252 + records commits); no commit on the branch yet.
+- Backend: added Actuator/Prometheus/Micrometer-OTel/OTLP + `logstash-logback-encoder` deps; `V9__ops_permissions_and_flags.sql` (5 `OPS_*` roles, read permissions, three module flags off); DB-backed `@opsAuth` resolver; read-only `/api/v1/ops/{status,integrations,flags,audit}` with bounded/redacted audit reads and 60s dedupe; request-ID filter; JSON console/file logging with redaction; loopback management port `9091` exposing only `health,info`. Request IDs are validated `[A-Za-z0-9._:-]{8,64}`, echoed in headers and error bodies.
+- Management fix: health on `:9091` initially returned 401 because the API security chain covered actuator. Added `ManagementSecurityConfig` (`@Order(HIGHEST_PRECEDENCE)`, `EndpointRequest.toAnyEndpoint()`, permitAll, only when management port differs); `ManagementHealthTest` locks it in. Main `:8080/actuator/health` remains 401 and `/api/v1/ops/status` remains 401 anonymously.
+- Frontend: typed ops client (`X-Request-Id`, `HttpError.requestId`), OpsView with Overview (incl. integration health)/Flags/Audit and honest Phase 2/4 tabs, sidebar gating for `OPS_*`/`SUPERADMIN`, optional Sentry init (11.x `dataCollection`, no DSN = no-op), Vitest/RTL setup.
+- Keycloak: added `OPS_VIEWER`, `OPS_DEVELOPER`, `OPS_OPERATOR`, `OPS_ADMIN`, `OPS_APPROVER` to realm JSON (12 roles total); existing realms need clean-slate recreate/manual roles. No demo ops user.
+- Verification: `mvn -B -f services/erp-app/pom.xml verify` → BUILD SUCCESS, **71 tests, 0 failures/errors**; `npm --prefix web test` → 4/4; `npm --prefix web run lint` → exit 0 (pre-existing warnings only); `npm --prefix web run build` → green, 313.26 kB JS / 93.96 kB gzip. Runtime smoke on local Postgres: V9 applied, management health `UP`, main health/ops 401 anonymously, JSON log written, zero span-export errors with tracing off. Logs ignored via `/logs/` and `/services/erp-app/logs/`.
+- Fix during verification: Vitest 5 + jsdom 30 needed Node ≥22.22.2 (host 22.12.0) and failed in undici/zstd; pinned `jsdom@^27.4.0` (Node ^22.12) — no app-code change.
+- Docs: `02-architecture/observability.md`, `04-modules/ops-console.md`, `05-operations/ops-console.md`; updated `docs/README.md`, `02-architecture/security.md`, `02-architecture/api.md`, `05-operations/keycloak.md`, `00-onboarding/DAY-ONE.md`.
+- Honest gaps: no Prometheus/Loki/Tempo/Grafana stack, production URLs/credentials, Sentry DSN, Dockerfile/K8s/CI-CD pipeline, audit retention job; no browser/Windows click-through. Later phases remain gated.
+- Next: present Phase 1 for commit approval; do not commit/merge until user approves.
+
+## 2026-10-20T19:09:38+05:30 — Phase 1 live test run (user demo, before commit)
+- User asked for a live test before commit. Started Keycloak (existing `infra-keycloak-1` container/realm), then `node run-local.mjs postgres --web`: backend :8080, management :9091, Vite web :5173.
+- Live checks with a real Keycloak token (`admin-staff`, SUPERADMIN): `/api/v1/ops/status` 200 (`state=OK`, DB UP, telemetry `NOT_CONFIGURED`), `/ops/flags` 200, `/ops/audit` 200 and audit rows written; anonymous 401; `reception-staff` 403; management health 200 `{"status":"UP"}`; Vite `/api` proxy 200. Existing realm has no `OPS_*` roles (not re-imported), so demo uses `admin-staff`/SUPERADMIN.
+- Fix found during demo: ops audit `actor` showed the Keycloak UUID because `Authentication.getName()` returns `sub`. `OpsAuditService` now prefers `preferred_username` for JWT principals, falling back to `sub` then `getName()`; recompiled and restarted. New audit rows show `admin-staff`; older rows keep the UUID (append-only, not rewritten).
+- Servers left running for the user at `http://localhost:5173` (login `admin-staff` / `change-me-dev-only`). No commit.
+- Next: user live review; then commit approval. Stop servers on request.
+
+## 2026-10-20T19:30:10+05:30 — User accepted live demo; standing ops-integration rule documented; Phase 1 commit approved
+- User live review: "ok good … we will develop this along the project and so when you implement anything remember to connect it to this and make a document of this … and commit it."
+- Documented a standing rule: every future module/endpoint/job/integration/UI feature must connect to the observability/ops baseline in the same work unit (logs + request ID, audit, health/status, flags, permissions, tests, docs; honest `NOT_CONFIGURED` only). Checklist: `02-architecture/observability.md` → "Standing rule — connect every new feature to the ops baseline"; cross-linked from `04-modules/ops-console.md`, `docs/README.md`; recorded as D-009.
+- Commit approval: user explicitly approved committing the Phase 1 work and this document update. Pre-commit verification: backend `71/71` tests, BUILD SUCCESS; `git diff --check` clean.
+- Next: commit (feature + docs), record the hash, leave servers running for continued review; no push/merge.

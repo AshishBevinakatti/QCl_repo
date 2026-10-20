@@ -40,6 +40,9 @@ RFID (ERP-06):
 Billing (ERP-07):
 `POST /api/v1/payments/initiate` (idem) · `POST /api/v1/payments/confirm` (webhook, signed) · `GET /api/v1/payments/{id}` · `POST /api/v1/refunds` (idem) · `GET /api/v1/folios/{id}` · `POST /api/v1/folios/{id}/entries` · `POST /api/v1/invoices` · `GET /api/v1/reconciliation?from&to=`.
 
+Ops console (internal, 3.9 Phase 1 — read-only):
+`GET /api/v1/ops/status` · `GET /api/v1/ops/integrations` · `GET /api/v1/ops/flags` · `GET /api/v1/ops/audit?page&size&action&days` (permissions `ops.*.read`; bounded/redacted; shapes in `04-modules/ops-console.md`).
+
 Admin/reporting (ERP-08):
 `GET /api/v1/admin/overview` · `CRUD /api/v1/admin/users|roles` · `GET /api/v1/reports/{reservations|occupancy|revenue|payments|refunds|membership|rfid|operations}?filters` · `POST /api/v1/exports` (async job → download) · `GET /api/v1/audit?filters&page` · `CRUD /api/v1/config/{key}`.
 

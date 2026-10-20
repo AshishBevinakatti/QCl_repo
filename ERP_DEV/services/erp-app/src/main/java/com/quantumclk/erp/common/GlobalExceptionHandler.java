@@ -43,7 +43,11 @@ public class GlobalExceptionHandler {
   }
 
   static String requestId(HttpServletRequest req) {
-    String incoming = req.getHeader("X-Request-Id");
+    Object attribute = req.getAttribute(com.quantumclk.erp.ops.logging.RequestIdFilter.ATTRIBUTE);
+    if (attribute instanceof String value && !value.isBlank()) {
+      return value;
+    }
+    String incoming = req.getHeader(com.quantumclk.erp.ops.logging.RequestIdFilter.HEADER);
     return incoming != null && !incoming.isBlank() ? incoming : UUID.randomUUID().toString();
   }
 }

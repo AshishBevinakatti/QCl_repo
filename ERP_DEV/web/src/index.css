@@ -232,3 +232,19 @@ table.dtbl { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
   .kpis { grid-template-columns: repeat(2, 1fr); }
   .dash-grid { grid-template-columns: 1fr; }
 }
+
+/* ---- Ops console (Phase 1 read-only) ---- */
+.ops-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
+.ops-tabs button {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 999px; padding: 0.38rem 0.75rem; font: inherit; font-size: 0.8rem;
+  font-weight: 600; cursor: pointer;
+}
+.ops-tabs button:hover { background: var(--bg); }
+.ops-tabs button.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+.ops-json {
+  margin: 0.35rem 0 0; padding: 0.5rem; max-height: 12rem; overflow: auto;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+  font-size: 0.72rem; white-space: pre-wrap; word-break: break-word;
+}

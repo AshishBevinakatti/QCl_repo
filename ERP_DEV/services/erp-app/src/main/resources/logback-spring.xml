@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- JSON logs for Loki/Promtail (Phase 2), with credential redaction. -->
+<configuration>
+  <springProperty scope="context" name="serviceName" source="spring.application.name" defaultValue="erp-app"/>
+  <springProperty scope="context" name="appEnv" source="ops.environment" defaultValue="local"/>
+  <springProperty scope="context" name="logFile" source="logging.file.name" defaultValue="logs/erp-app.jsonl"/>
+
+  <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+      <providers>
+        <timestamp/>
+        <logLevel/>
+        <loggerName/>
+        <threadName/>
+        <mdc/>
+        <provider class="com.quantumclk.erp.ops.logging.StaticFieldsJsonProvider">
+          <service>${serviceName}</service>
+          <environment>${appEnv}</environment>
+        </provider>
+        <provider class="com.quantumclk.erp.ops.logging.RedactedMessageJsonProvider"/>
+        <stackTrace/>
+      </providers>
+    </encoder>
+  </appender>
+
+  <springProfile name="!test">
+    <appender name="JSON_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <file>${logFile}</file>
+      <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+        <fileNamePattern>${logFile}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+        <maxFileSize>50MB</maxFileSize>
+        <maxHistory>7</maxHistory>
+        <totalSizeCap>1GB</totalSizeCap>
+      </rollingPolicy>
+      <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+        <providers>
+          <timestamp/>
+          <logLevel/>
+          <loggerName/>
+          <threadName/>
+          <mdc/>
+          <provider class="com.quantumclk.erp.ops.logging.StaticFieldsJsonProvider">
+            <service>${serviceName}</service>
+            <environment>${appEnv}</environment>
+          </provider>
+          <provider class="com.quantumclk.erp.ops.logging.RedactedMessageJsonProvider"/>
+          <stackTrace/>
+        </providers>
+      </encoder>
+    </appender>
+    <root level="INFO">
+      <appender-ref ref="JSON_CONSOLE"/>
+      <appender-ref ref="JSON_FILE"/>
+    </root>
+  </springProfile>
+
+  <springProfile name="test">
+    <root level="INFO">
+      <appender-ref ref="JSON_CONSOLE"/>
+    </root>
+  </springProfile>
+</configuration>

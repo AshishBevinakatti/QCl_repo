@@ -85,4 +85,36 @@ public class AuditEvent {
   public String getActor() {
     return actor;
   }
+
+  public UUID getPropertyId() {
+    return propertyId;
+  }
+
+  public String getObjectType() {
+    return objectType;
+  }
+
+  public String getObjectId() {
+    return objectId;
+  }
+
+  public String getBeforeJson() {
+    return beforeJson;
+  }
+
+  public String getAfterJson() {
+    return afterJson;
+  }
+
+  public String getReason() {
+    return reason;
+  }
+
+  public String getSourceIp() {
+    return sourceIp;
+  }
+
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
 }

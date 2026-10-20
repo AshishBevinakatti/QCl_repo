@@ -57,4 +57,8 @@ public class AppConfig {
   public String getUpdatedBy() {
     return updatedBy;
   }
+
+  public Instant getUpdatedAt() {
+    return updatedAt;
+  }
 }

@@ -98,22 +98,34 @@ public class SecurityConfig {
   static void unauthorized(
       HttpServletRequest req, HttpServletResponse res, org.springframework.security.core.AuthenticationException ex)
       throws IOException {
-    write(res, HttpStatus.UNAUTHORIZED, "AUTH_REQUIRED", "login required");
+    write(req, res, HttpStatus.UNAUTHORIZED, "AUTH_REQUIRED", "login required");
   }
 
   static void forbidden(
       HttpServletRequest req, HttpServletResponse res, org.springframework.security.access.AccessDeniedException ex)
       throws IOException {
-    write(res, HttpStatus.FORBIDDEN, "FORBIDDEN", "insufficient role");
+    write(req, res, HttpStatus.FORBIDDEN, "FORBIDDEN", "insufficient role");
   }
 
-  static void write(HttpServletResponse res, HttpStatus status, String code, String message)
+  static void write(
+      HttpServletRequest req,
+      HttpServletResponse res,
+      HttpStatus status,
+      String code,
+      String message)
       throws IOException {
     res.setStatus(status.value());
     res.setContentType(MediaType.APPLICATION_JSON_VALUE);
+    Object attribute = req.getAttribute(com.quantumclk.erp.ops.logging.RequestIdFilter.ATTRIBUTE);
+    String requestId =
+        attribute instanceof String value && !value.isBlank()
+            ? value
+            : req.getHeader(com.quantumclk.erp.ops.logging.RequestIdFilter.HEADER);
+    if (requestId == null || requestId.isBlank()) {
+      requestId = UUID.randomUUID().toString();
+    }
     new ObjectMapper()
         .writeValue(
-            res.getOutputStream(),
-            new ApiError(code, message, UUID.randomUUID().toString(), Map.of()));
+            res.getOutputStream(), new ApiError(code, message, requestId, Map.of()));
   }
 }
