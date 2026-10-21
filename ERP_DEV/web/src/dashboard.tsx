@@ -375,196 +375,209 @@ export function DashboardView({ mode, go, viewFolio, onJump = () => {} }: {
       {ok && <div className="panel" style={{ marginBottom: '0.9rem' }}>{ok}</div>}
       {msg && <div className="panel" style={{ marginBottom: '0.9rem' }}>{msg}</div>}
 
-      <div className="dash-grid">
-        <div className="panel">
-          <div className="phead"><h3>Today&apos;s Arrivals ({dash.arrivals.length})</h3><a onClick={() => onJump({ view: 'check', bookingStatus: 'confirmed' })}>View all <Icon name="arrow_forward" size={14} /></a></div>
-          {mode === 'preview' ? (
-            <p className="muted">Preview shows the layout only — guest rows are never invented. Log in for live arrivals.</p>
-          ) : arrivals.length === 0 ? (
-            <p className="muted">No arrivals expected today.</p>
-          ) : (
-            <div className="tbl-wrap"><table className="dtbl">
-              <thead><tr><th>Time</th><th>Guest Name</th><th>Booking ID</th><th>Room Type</th><th>Guests</th><th>Status</th><th>Action</th></tr></thead>
-              <tbody>
-                {arrivals.map((a) => (
-                  <tr key={a.id}>
-                    <td title="Check-in times are not stored — dates only">—</td>
-                    <td className="ell" title={a.guestName}>{a.guestName}</td>
-                    <td title={a.id}>{a.ref}</td>
-                    <td>{a.category}</td>
-                    <td title="Party size is not stored on a reservation">—</td>
-                    <td><Badge tone={statusTone(a.status)}>{a.status === 'confirmed' ? 'Confirmed' : a.status}</Badge></td>
-                    <td>
-                      <button className="mini-btn" disabled={acting === a.id} onClick={() => doCheckIn(a.id)}>
-                        {acting === a.id ? '…' : 'Check In'}
-                      </button>{' '}
-                      <button className="mini-btn" title="Row actions — coming soon">…</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table></div>
-          )}
-        </div>
-
-        <div className="panel">
-          <div className="phead"><h3>Room Status Overview</h3><a onClick={() => go('rooms')}>View all <Icon name="arrow_forward" size={14} /></a></div>
-          <div className="donut-wrap">
-            <Donut
-              total={total} label="Total Rooms"
-              slices={[
-                { value: avail, color: '#2e7d32' },
-                { value: occ, color: '#d84a4a' },
-                { value: maint, color: '#b98a2f' },
-              ]}
-            />
-            <div className="donut-legend">
-              <span className="rowline"><span className="dot" style={{ background: '#2e7d32' }} />Available<span className="n">{avail} ({pct(avail)}%)</span></span>
-              <span className="rowline"><span className="dot" style={{ background: '#d84a4a' }} />Occupied<span className="n">{occ} ({pct(occ)}%)</span></span>
-              <span className="rowline" title="Rooms carry no reserved status — reservations hold categories, not rooms"><span className="dot" style={{ background: '#274b9b' }} />Reserved<span className="n">—</span></span>
-              <span className="rowline"><span className="dot" style={{ background: '#b98a2f' }} />Maintenance<span className="n">{maint} ({pct(maint)}%)</span></span>
-            </div>
+      <div className="dash-columns">
+        <div className="dash-column">
+          <div className="panel dash-panel dash-panel--arrivals">
+            <div className="phead"><h3>Today&apos;s Arrivals ({dash.arrivals.length})</h3><a onClick={() => onJump({ view: 'check', bookingStatus: 'confirmed' })}>View all <Icon name="arrow_forward" size={14} /></a></div>
+            {mode === 'preview' ? (
+              <p className="muted">Preview shows the layout only — guest rows are never invented. Log in for live arrivals.</p>
+            ) : arrivals.length === 0 ? (
+              <p className="muted">No arrivals expected today.</p>
+            ) : (
+              <div className="tbl-wrap dtbl-wrap"><table className="dtbl dtbl-arrivals">
+                <thead><tr><th>Time</th><th>Guest Name</th><th>Booking ID</th><th>Room Type</th><th>Guests</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody>
+                  {arrivals.map((a) => (
+                    <tr key={a.id}>
+                      <td data-label="Time" title="Check-in times are not stored — dates only">—</td>
+                      <td data-label="Guest Name" title={a.guestName}>{a.guestName}</td>
+                      <td data-label="Booking ID" title={a.id}>{a.ref}</td>
+                      <td data-label="Room Type">{a.category}</td>
+                      <td data-label="Guests" title="Party size is not stored on a reservation">—</td>
+                      <td data-label="Status"><Badge tone={statusTone(a.status)}>{a.status === 'confirmed' ? 'Confirmed' : a.status}</Badge></td>
+                      <td data-label="Action">
+                        <span className="row-actions">
+                          <button className="mini-btn" disabled={acting === a.id} onClick={() => doCheckIn(a.id)}>
+                            {acting === a.id ? '…' : 'Check In'}
+                          </button>
+                          <button className="mini-btn" title="Row actions — coming soon">…</button>
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table></div>
+            )}
           </div>
-          <div className="minis">
-            <div className="mini"><Icon name="bed" /><span><span className="num">{avail}</span><div className="lbl">Available</div></span></div>
-            <div className="mini"><Icon name="hotel" /><span><span className="num">{occ}</span><div className="lbl">Occupied</div></span></div>
-            <div className="mini"><Icon name="event_busy" /><span><span className="num">—</span><div className="lbl">Reserved</div></span></div>
-            <div className="mini"><Icon name="build" /><span><span className="num">{maint}</span><div className="lbl">Maintenance</div></span></div>
-          </div>
-        </div>
-      </div>
 
-      <div className="dash-grid">
-        <div className="panel">
-          <div className="phead"><h3>Today&apos;s Departures ({mode === 'preview' ? 0 : departuresList.length})</h3><a onClick={() => onJump({ view: 'check', bookingStatus: 'checked-in' })}>View all <Icon name="arrow_forward" size={14} /></a></div>
-          {mode === 'preview' ? (
-            <p className="muted">Preview shows the layout only — log in for live departures.</p>
-          ) : departuresList.length === 0 ? (
-            <p className="muted">No departures expected today.</p>
-          ) : (
-            <div className="tbl-wrap"><table className="dtbl">
-              <thead><tr><th>Time</th><th>Guest Name</th><th>Room</th><th>Stay Duration</th><th>Outstanding</th><th>Status</th><th>Action</th></tr></thead>
-              <tbody>
-                {departuresList.map((d) => (
-                  <tr key={d.stayId}>
-                    <td title="Check-out times are not stored — dates only">—</td>
-                    <td className="ell" title={d.guestName}>{d.guestName}</td>
-                    <td>{d.roomNo}</td>
-                    <td>{d.nights} night{d.nights === 1 ? '' : 's'}</td>
-                    <td>{rupees(d.outstandingPaise)}</td>
-                    <td><Badge tone={d.status === 'Ready' ? 'green' : 'amber'}>{d.status}</Badge></td>
-                    <td>
-                      {d.status === 'Ready' ? (
-                        <button className="mini-btn" disabled={acting === d.stayId} onClick={() => doCheckOut(d.stayId)}>
-                          {acting === d.stayId ? '…' : 'Check Out'}
-                        </button>
-                      ) : (
-                        <button className="mini-btn" onClick={() => viewFolio(d.stayId)}>View Folio</button>
-                      )}{' '}
-                      <button className="mini-btn" title="Row actions — coming soon">…</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table></div>
-          )}
-        </div>
-        <div className="panel">
-          <div className="phead"><h3>Alerts &amp; Pending Tasks</h3></div>
-          {mode === 'preview' ? (
-            <p className="muted">Preview shows the layout only — log in for live alerts.</p>
-          ) : alertList.length === 0 ? (
-            <p className="muted">All clear — no pending alerts.</p>
-          ) : (
-            <div className="donut-legend">
-              {alertList.map((a) => (
-                <span className="rowline" key={a.ref + a.text}>
-                  <span className="dot" style={{ background: a.severity === 'high' ? '#d84a4a' : a.severity === 'medium' ? '#b98a2f' : '#274b9b' }} />
-                  {a.text}
-                </span>
-              ))}
-            </div>
-          )}
-          <p className="muted">Guest requests and maintenance issues arrive in a later unit — no source system yet.</p>
-        </div>
-      </div>
-
-      <div className="dash-grid" style={{ gridTemplateColumns: '1fr 1fr 0.9fr' }}>
-        <div className="panel">
-          <div className="phead"><h3>Recent Bookings</h3><a onClick={() => onJump({ view: 'check', bookingStatus: '' })}>View all <Icon name="arrow_forward" size={14} /></a></div>
-          {mode === 'preview' || bookings.length === 0 ? (
-            <p className="muted">{mode === 'preview' ? 'Preview shows the layout only — log in for live bookings.' : 'No bookings on this date.'}</p>
-          ) : (
-            <div className="tbl-wrap"><table className="dtbl">
-              <thead><tr><th>Guest Name</th><th>Booking ID</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Action</th></tr></thead>
-              <tbody>
-                {bookings.map((b) => (
-                  <tr key={b.id}>
-                    <td className="ell" title={b.guestName}>{b.guestName}</td><td title={b.id}>{b.ref}</td>
-                    <td>{b.checkinDate}</td><td>{b.checkoutDate}</td>
-                    <td><Badge tone={statusTone(b.status)}>{b.status}</Badge></td>
-                    <td>
-                      {b.status === 'hold' ? (
-                        b.advanceDuePaise > 0 && !receipts[b.id] ? (
-                          <>
-                            <button className="mini-btn" disabled={acting === b.id} onClick={() => collectAdvance(b)}>
-                              {acting === b.id ? '…' : `Collect advance ${rupees(b.advanceDuePaise)}`}
-                            </button>{' '}
-                            <button className="mini-btn" disabled title="Collect the advance first">Confirm</button>
-                          </>
-                        ) : (
-                          <>
-                            {receipts[b.id] && <span className="muted" title={receipts[b.id]}>✓ Advance captured </span>}
-                            <button className="mini-btn" disabled={acting === b.id} onClick={() => doConfirm(b.id)}>
-                              {acting === b.id ? '…' : 'Confirm'}
+          <div className="panel dash-panel dash-panel--departures">
+            <div className="phead"><h3>Today&apos;s Departures ({mode === 'preview' ? 0 : departuresList.length})</h3><a onClick={() => onJump({ view: 'check', bookingStatus: 'checked-in' })}>View all <Icon name="arrow_forward" size={14} /></a></div>
+            {mode === 'preview' ? (
+              <p className="muted">Preview shows the layout only — log in for live departures.</p>
+            ) : departuresList.length === 0 ? (
+              <p className="muted">No departures expected today.</p>
+            ) : (
+              <div className="tbl-wrap dtbl-wrap"><table className="dtbl dtbl-departures">
+                <thead><tr><th>Time</th><th>Guest Name</th><th>Room</th><th>Stay Duration</th><th>Outstanding</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody>
+                  {departuresList.map((d) => (
+                    <tr key={d.stayId}>
+                      <td data-label="Time" title="Check-out times are not stored — dates only">—</td>
+                      <td data-label="Guest Name" title={d.guestName}>{d.guestName}</td>
+                      <td data-label="Room">{d.roomNo}</td>
+                      <td data-label="Stay Duration">{d.nights} night{d.nights === 1 ? '' : 's'}</td>
+                      <td data-label="Outstanding">{rupees(d.outstandingPaise)}</td>
+                      <td data-label="Status"><Badge tone={d.status === 'Ready' ? 'green' : 'amber'}>{d.status}</Badge></td>
+                      <td data-label="Action">
+                        <span className="row-actions">
+                          {d.status === 'Ready' ? (
+                            <button className="mini-btn" disabled={acting === d.stayId} onClick={() => doCheckOut(d.stayId)}>
+                              {acting === d.stayId ? '…' : 'Check Out'}
                             </button>
-                          </>
-                        )
-                      ) : b.status === 'expired' ? (
-                        <a className="muted" title="Expired before the advance was collected — expired holds are terminal" onClick={() => go('reservations')}>
-                          expired — rebook
-                        </a>
-                      ) : (
-                        <span className="muted">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table></div>
-          )}
+                          ) : (
+                            <button className="mini-btn" onClick={() => viewFolio(d.stayId)}>View Folio</button>
+                          )}
+                          <button className="mini-btn" title="Row actions — coming soon">…</button>
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table></div>
+            )}
+          </div>
+
+          <div className="panel dash-panel dash-panel--recent">
+            <div className="phead"><h3>Recent Bookings</h3><a onClick={() => onJump({ view: 'check', bookingStatus: '' })}>View all <Icon name="arrow_forward" size={14} /></a></div>
+            {mode === 'preview' || bookings.length === 0 ? (
+              <p className="muted">{mode === 'preview' ? 'Preview shows the layout only — log in for live bookings.' : 'No bookings on this date.'}</p>
+            ) : (
+              <div className="tbl-wrap dtbl-wrap"><table className="dtbl dtbl-bookings">
+                <thead><tr><th>Guest Name</th><th>Booking ID</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody>
+                  {bookings.map((b) => (
+                    <tr key={b.id}>
+                      <td data-label="Guest Name" title={b.guestName}>{b.guestName}</td>
+                      <td data-label="Booking ID" title={b.id}>{b.ref}</td>
+                      <td data-label="Check-in">{b.checkinDate}</td>
+                      <td data-label="Check-out">{b.checkoutDate}</td>
+                      <td data-label="Status"><Badge tone={statusTone(b.status)}>{b.status}</Badge></td>
+                      <td data-label="Action">
+                        <span className="row-actions">
+                          {b.status === 'hold' ? (
+                            b.advanceDuePaise > 0 && !receipts[b.id] ? (
+                              <>
+                                <button className="mini-btn" disabled={acting === b.id} onClick={() => collectAdvance(b)}>
+                                  {acting === b.id ? '…' : `Collect advance ${rupees(b.advanceDuePaise)}`}
+                                </button>
+                                <button className="mini-btn" disabled title="Collect the advance first">Confirm</button>
+                              </>
+                            ) : (
+                              <>
+                                {receipts[b.id] && <span className="muted" title={receipts[b.id]}>✓ Advance captured</span>}
+                                <button className="mini-btn" disabled={acting === b.id} onClick={() => doConfirm(b.id)}>
+                                  {acting === b.id ? '…' : 'Confirm'}
+                                </button>
+                              </>
+                            )
+                          ) : b.status === 'expired' ? (
+                            <a className="muted" title="Expired before the advance was collected — expired holds are terminal" onClick={() => go('reservations')}>
+                              expired — rebook
+                            </a>
+                          ) : (
+                            <span className="muted">—</span>
+                          )}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table></div>
+            )}
+          </div>
+
+          <div className="panel dash-panel dash-panel--inhouse">
+            <div className="phead"><h3>In-House Guests ({mode === 'preview' ? 0 : inhouseList.length})</h3></div>
+            {mode === 'preview' ? (
+              <p className="muted">Preview shows the layout only — log in for live rows.</p>
+            ) : inhouseList.length === 0 ? (
+              <p className="muted">No guests currently staying.</p>
+            ) : (
+              <div className="tbl-wrap dtbl-wrap"><table className="dtbl dtbl-inhouse">
+                <thead><tr><th>Guest Name</th><th>Room</th><th>Check-out</th><th>Status</th></tr></thead>
+                <tbody>
+                  {inhouseList.map((s) => (
+                    <tr key={s.stayId}>
+                      <td data-label="Guest Name" title={s.guestName}>{s.guestName}</td>
+                      <td data-label="Room">{s.roomNo}</td>
+                      <td data-label="Check-out">{s.checkoutDate ?? '—'}</td>
+                      <td data-label="Status"><Badge tone="green">{s.status}</Badge></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table></div>
+            )}
+          </div>
         </div>
-        <div className="panel">
-          <div className="phead"><h3>In-House Guests ({mode === 'preview' ? 0 : inhouseList.length})</h3></div>
-          {mode === 'preview' ? (
-            <p className="muted">Preview shows the layout only — log in for live rows.</p>
-          ) : inhouseList.length === 0 ? (
-            <p className="muted">No guests currently staying.</p>
-          ) : (
-            <div className="tbl-wrap"><table className="dtbl">
-              <thead><tr><th>Guest Name</th><th>Room</th><th>Check-out</th><th>Status</th></tr></thead>
-              <tbody>
-                {inhouseList.map((s) => (
-                  <tr key={s.stayId}>
-                    <td className="ell" title={s.guestName}>{s.guestName}</td><td>{s.roomNo}</td>
-                    <td>{s.checkoutDate ?? '—'}</td>
-                    <td><Badge tone="green">{s.status}</Badge></td>
-                  </tr>
+
+        <div className="dash-column dash-column--side">
+          <div className="panel dash-panel dash-panel--rooms">
+            <div className="phead"><h3>Room Status Overview</h3><a onClick={() => go('rooms')}>View all <Icon name="arrow_forward" size={14} /></a></div>
+            <div className="donut-wrap">
+              <Donut
+                total={total} label="Total Rooms"
+                slices={[
+                  { value: avail, color: '#2e7d32' },
+                  { value: occ, color: '#d84a4a' },
+                  { value: maint, color: '#b98a2f' },
+                ]}
+              />
+              <div className="donut-legend">
+                <span className="rowline"><span className="dot" style={{ background: '#2e7d32' }} />Available<span className="n">{avail} ({pct(avail)}%)</span></span>
+                <span className="rowline"><span className="dot" style={{ background: '#d84a4a' }} />Occupied<span className="n">{occ} ({pct(occ)}%)</span></span>
+                <span className="rowline" title="Rooms carry no reserved status — reservations hold categories, not rooms"><span className="dot" style={{ background: '#274b9b' }} />Reserved<span className="n">—</span></span>
+                <span className="rowline"><span className="dot" style={{ background: '#b98a2f' }} />Maintenance<span className="n">{maint} ({pct(maint)}%)</span></span>
+              </div>
+            </div>
+            <div className="minis">
+              <div className="mini"><Icon name="bed" /><span><span className="num">{avail}</span><div className="lbl">Available</div></span></div>
+              <div className="mini"><Icon name="hotel" /><span><span className="num">{occ}</span><div className="lbl">Occupied</div></span></div>
+              <div className="mini"><Icon name="event_busy" /><span><span className="num">—</span><div className="lbl">Reserved</div></span></div>
+              <div className="mini"><Icon name="build" /><span><span className="num">{maint}</span><div className="lbl">Maintenance</div></span></div>
+            </div>
+          </div>
+
+          <div className="panel dash-panel dash-panel--alerts">
+            <div className="phead"><h3>Alerts &amp; Pending Tasks</h3></div>
+            {mode === 'preview' ? (
+              <p className="muted">Preview shows the layout only — log in for live alerts.</p>
+            ) : alertList.length === 0 ? (
+              <p className="muted">All clear — no pending alerts.</p>
+            ) : (
+              <div className="donut-legend">
+                {alertList.map((a) => (
+                  <span className="rowline" key={a.ref + a.text}>
+                    <span className="dot" style={{ background: a.severity === 'high' ? '#d84a4a' : a.severity === 'medium' ? '#b98a2f' : '#274b9b' }} />
+                    {a.text}
+                  </span>
                 ))}
-              </tbody>
-            </table></div>
-          )}
-        </div>
-        <div className="promo">
-          <img src={bannerImg} alt="" />
-          <div className="shade" />
-          <div className="txt">
-            <strong>Need to assign a room quickly?</strong>
-            <p>Check available rooms and assign to a guest.</p>
-            <button className="go" onClick={() => go('rooms')}>Manage Rooms <Icon name="arrow_forward" size={15} /></button>
+              </div>
+            )}
+            <p className="muted">Guest requests and maintenance issues arrive in a later unit — no source system yet.</p>
+          </div>
+
+          <div className="promo dash-promo">
+            <img src={bannerImg} alt="" />
+            <div className="shade" />
+            <div className="txt">
+              <strong>Need to assign a room quickly?</strong>
+              <p>Check available rooms and assign to a guest.</p>
+              <button className="go" onClick={() => go('rooms')}>Manage Rooms <Icon name="arrow_forward" size={15} /></button>
+            </div>
           </div>
         </div>
       </div>
+
     </>
   );
 }
