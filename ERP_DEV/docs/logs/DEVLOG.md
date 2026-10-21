@@ -481,3 +481,8 @@
 - `git diff --check` re-run after the final docs edits: clean. Build CSS is 38.88kB (the earlier 38.87kB was a typo).
 - `STATE.md` overwritten with the final 3.12 state; browser localStorage reset to light theme with the sidebar expanded for handoff. No source changes after the green build/test/lint run.
 - Still pending: user click-through in both themes and explicit commit approval. No commit/merge/push performed.
+
+## 2026-10-21T18:24:05+05:30 — Unit 3.12 committed
+- Commit: `fb286e9` — `feat(ui): apply Golden Hills design system` on `feature/3.12-ui-design-system` (30 files, +3816/−713).
+- Approved by the user in the commit-approval question on 2026-10-21. Staged explicit 3.12 code/test/doc paths only; root `.vscode/` remains untracked.
+- No push, merge or tag. 3.11 remains unmerged beneath this branch; merge approval is separate.

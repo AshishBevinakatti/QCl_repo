@@ -1,8 +1,8 @@
 # Project State
-Updated: 2026-10-21T18:18:49+05:30
-Phase: 3 – Core Development      Work unit: 3.12 UI/UX design system — implemented and verified, **uncommitted**, awaiting user click-through
+Updated: 2026-10-21T18:33:11+05:30
+Phase: 3 – Core Development      Work unit: 3.12 UI/UX design system — committed as `fb286e9`, awaiting click-through and separate merge decision
 Branch: feature/3.12-ui-design-system (stacked on feature/3.9-observability-ops-console; Unit 3.11 is committed but unmerged). Remote `origin` = https://github.com/AshishBevinakatti/QCl_repo.git (never pushed/fetched).
-Commits: `9285648` 3.10 fixture; `6555387` dashboard correction; `f8f719c` 3.11 Guests; `7f2d82d` 3.11 docs. No 3.12 commit yet.
+Commits: `9285648` 3.10 fixture; `6555387` dashboard correction; `f8f719c` 3.11 Guests; `7f2d82d` 3.11 docs; `fb286e9` 3.12 design system. `fb286e9` approved by the user; no push/merge/tag.
 Approval: plan `03-phases/phase-3/PLAN-3.12-ui-design-system.md` approved 2026-10-21 — dark-green collapsible sidebar, Inter + Lucide (no Tailwind), keep/restyle both dashboard photos, all screens, light + dark. No commit/merge/push without explicit approval.
 Implemented: self-hosted Inter + local Lucide mapping; `theme.ts` + pre-render `gh-theme` boot; CSS split into tokens/base/layout/components/screens; `PageHeader`/`EmptyState`/Kpi tones; shell (264/76px sidebar, mobile drawer with Escape/backdrop/focus return, header search Ctrl/Cmd+K, API pill, theme toggle); all views restyled; placeholders honest; guest modal bottom sheet ≤560px; colour tokens replace JSX hex values.
 Bug fixed in this unit: Preview → Live now remounts the `page-stack` (keyed by mode), so signed-out Live shows the existing login hints instead of stale demo rows/counts. This restores the 3.6/3.8 acceptance criteria.
@@ -10,4 +10,4 @@ Verification: web build green (2,227 modules; 345.89kB JS / 104.42kB gzip; CSS 3
 Docs: new `02-architecture/ui-design-system.md`, ADR-002, plan, README index, ERP-03/04/05 change histories, screens.md pointer, RESOURCES_LOG + DECISIONS D-011, this DEVLOG/STATE.
 Backend/data: untouched. Local demo fixture remains; `QA Workspace Guest` still exists until the user asks for removal. Dependencies added: `@fontsource-variable/inter`, `lucide-react`.
 Open items: user click-through in both themes; decide QA-guest removal; 3.8 click-through; Module 2 plan approval (CR-001/Q-012); delete stale `fix/hide-table-scrollbar`; observability/ops Phase 2+ credentials/infra; springdoc lag; audit retention. Known UI limits: no full drawer focus trap, no OS/cross-tab theme sync, Keycloak pages unstyled.
-Next: do not commit/merge/push until the user approves; after approval commit 3.12 as one reviewable unit (code + tests + docs), excluding root `.vscode/`. Servers still running: backend :8080, management :9091, web :5173, Keycloak :8081 (`infra-keycloak-1`); launcher PID 210880.
+Records: 3.12 commit `fb286e9` is logged; the record update is committed with this state. Working tree should be clean except untracked root `.vscode/`. Do not merge/push until separately approved. Servers still running: backend :8080, management :9091, web :5173, Keycloak :8081 (`infra-keycloak-1`); launcher PID 210880.
