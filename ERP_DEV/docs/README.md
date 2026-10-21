@@ -21,6 +21,7 @@ Golden Hills Resort ERP (QuantumCLK Technologies). Project root: `ERP_DEV/` (git
 | `03-phases/phase-4/MODULE-2-RESTAURANT-ERP-PLAN.pdf` | Module 2 - Restaurant ERP: reuse assessment and delivery plan (approval draft, 2026-10-20) |
 | `04-modules/` | one doc per module (from Phase 3); `ops-console.md` = internal operations console |
 | `05-operations/` | runbook, backup/restore, deployment, troubleshooting, releases, keycloak SSO, ops-console runbook |
+| `05-operations/local-demo-data.md` | local-only reception demo fixture (load/verify/reset, 3.10) |
 | `06-user-guides/` | user/admin guides, training (client-facing, drafted progressively) |
 | `07-testing/` | test plan, reports, UAT scripts, defect log (from Phase 5) |
 | `logs/STATE.md` | current state (overwritten each session) |
