@@ -8,7 +8,7 @@ import {
   type ReservationSummary, type RoomBoard,
 } from './api';
 import { demoBoard, demoCategories, demoFolio } from './demo';
-import { Alert, Badge, Btn, Card, Field, Soon, statusTone } from './ui';
+import { Alert, Badge, Btn, Card, Field, PageHeader, Soon, statusTone } from './ui';
 import { DashboardView, RoomsView, Sidebar, Topbar, type Jump, type Mode, type View } from './dashboard';
 import { initAuthOnce } from './auth';
 import { GuestsView } from './guests';
@@ -25,6 +25,7 @@ export default function App() {
   const [jump, setJump] = useState<(Jump & { nonce: number }) | null>(null);
   const [folioStay, setFolioStay] = useState<string | null>(null);
   const [folioJump, setFolioJump] = useState(0);
+  const [navOpen, setNavOpen] = useState(false);
 
   useEffect(() => {
     apiHealth()
@@ -35,49 +36,127 @@ export default function App() {
 
   function go(v: View) {
     setView(v);
+    setNavOpen(false);
   }
 
   function onJump(j: Jump) {
     setJump({ ...j, nonce: Date.now() });
     setView(j.view);
+    setNavOpen(false);
   }
 
   return (
     <div className="erp">
-      <Sidebar view={view} go={go} mode={mode} setMode={setMode} />
+      <Sidebar
+        view={view}
+        go={go}
+        mode={mode}
+        setMode={setMode}
+        mobileOpen={navOpen}
+        onClose={() => setNavOpen(false)}
+      />
       <main className="main">
-        <Topbar onJump={onJump} api={api} />
-        {mode === 'preview' && view === 'dashboard' && (
-          <p className="muted" style={{ marginTop: 0 }}>Preview mode — layout with sample counts. Guest names are never invented: log in for live rows.</p>
-        )}
-        {view === 'dashboard' && <DashboardView mode={mode} go={go} onJump={onJump} viewFolio={(stayId) => { setFolioStay(stayId); setFolioJump((n) => n + 1); setView('billing'); }} />}
-        {view === 'reservations' && <BookView mode={mode} />}
-        {view === 'guests' && (
-          <GuestsView mode={mode} initialQ={jump?.view === 'guests' ? jump.q : undefined} jumpNonce={jump?.nonce} />
-        )}
-        {view === 'rooms' && <RoomsView mode={mode} initialFilter={jump?.view === 'rooms' ? jump.roomFilter : undefined} />}
-        {view === 'check' && <FrontView mode={mode} initialReservationId={jump?.view === 'check' ? jump.reservationId : undefined} initialBookingStatus={jump?.view === 'check' ? jump.bookingStatus : undefined} jumpNonce={jump?.nonce} />}
-        {view === 'billing' && <BillingView mode={mode} initialStayId={folioStay} folioNonce={folioJump} />}
-        {view === 'requests' && (
-          <div className="panel">
-            <div className="phead"><h3>Service Requests</h3></div>
-            <Soon icon="build" title="Coming soon" why="No service-request API yet — guest and maintenance requests arrive in a later unit." />
-          </div>
-        )}
-        {view === 'housekeeping' && <HousekeepingView mode={mode} />}
-        {view === 'reports' && (
-          <div className="panel">
-            <div className="phead"><h3>Reports</h3></div>
-            <Soon icon="bar_chart" title="Coming soon" why="No reporting API yet — occupancy and revenue reports arrive in a later unit." />
-          </div>
-        )}
-        {view === 'ops' && <OpsView mode={mode} />}
-        {view === 'settings' && (
-          <div className="panel">
-            <div className="phead"><h3>Settings</h3></div>
-            <Soon icon="settings" title="Coming soon" why="Property configuration editing arrives in a later unit." />
-          </div>
-        )}
+        <Topbar onJump={onJump} api={api} onMenu={() => setNavOpen(true)} />
+        <div className="page-stack" key={mode}>
+          {mode === 'preview' && view === 'dashboard' && (
+            <p className="alert info">
+              Preview mode — layout with sample counts. Guest names are never invented: log in for live rows.
+            </p>
+          )}
+
+          {view === 'dashboard' && (
+            <>
+              <PageHeader title="Dashboard" subtitle="Today at a glance" />
+              <DashboardView
+                mode={mode}
+                go={go}
+                onJump={onJump}
+                viewFolio={(stayId) => {
+                  setFolioStay(stayId);
+                  setFolioJump((n) => n + 1);
+                  setView('billing');
+                }}
+              />
+            </>
+          )}
+
+          {view === 'reservations' && (
+            <>
+              <PageHeader title="Book a room" subtitle="Check availability and create a booking" />
+              <BookView mode={mode} />
+            </>
+          )}
+
+          {view === 'guests' && (
+            <GuestsView
+              mode={mode}
+              initialQ={jump?.view === 'guests' ? jump.q : undefined}
+              jumpNonce={jump?.nonce}
+            />
+          )}
+
+          {view === 'rooms' && (
+            <>
+              <PageHeader title="Rooms" subtitle="Live room status and availability" />
+              <RoomsView mode={mode} initialFilter={jump?.view === 'rooms' ? jump.roomFilter : undefined} />
+            </>
+          )}
+
+          {view === 'check' && (
+            <>
+              <PageHeader title="Front office" subtitle="Check-in, check-out, transfers and today's bookings" />
+              <FrontView
+                mode={mode}
+                initialReservationId={jump?.view === 'check' ? jump.reservationId : undefined}
+                initialBookingStatus={jump?.view === 'check' ? jump.bookingStatus : undefined}
+                jumpNonce={jump?.nonce}
+              />
+            </>
+          )}
+
+          {view === 'billing' && (
+            <>
+              <PageHeader title="Billing" subtitle="Folios, payments and refunds" />
+              <BillingView mode={mode} initialStayId={folioStay} folioNonce={folioJump} />
+            </>
+          )}
+
+          {view === 'requests' && (
+            <>
+              <PageHeader title="Service requests" subtitle="Guest and maintenance requests" />
+              <div className="panel">
+                <Soon icon="build" title="Coming soon" why="No service-request API yet — guest and maintenance requests arrive in a later unit." />
+              </div>
+            </>
+          )}
+
+          {view === 'housekeeping' && (
+            <>
+              <PageHeader title="Housekeeping" subtitle="Room readiness and cleaning tasks" />
+              <HousekeepingView mode={mode} />
+            </>
+          )}
+
+          {view === 'reports' && (
+            <>
+              <PageHeader title="Reports" subtitle="Occupancy and revenue reporting" />
+              <div className="panel">
+                <Soon icon="bar_chart" title="Coming soon" why="No reporting API yet — occupancy and revenue reports arrive in a later unit." />
+              </div>
+            </>
+          )}
+
+          {view === 'ops' && <OpsView mode={mode} />}
+
+          {view === 'settings' && (
+            <>
+              <PageHeader title="Settings" subtitle="Property configuration" />
+              <div className="panel">
+                <Soon icon="settings" title="Coming soon" why="Property configuration editing arrives in a later unit." />
+              </div>
+            </>
+          )}
+        </div>
       </main>
     </div>
   );
@@ -116,7 +195,7 @@ function BookView({ mode }: { mode: Mode }) {
   }
 
   return (
-    <>
+    <div className="desk-grid desk-grid--2">
       <Card title="Check availability">
         <div className="row">
           <Field label="Category">
@@ -142,7 +221,7 @@ function BookView({ mode }: { mode: Mode }) {
         {ok && <Alert kind="ok">{ok}</Alert>}
         {msg && <Alert kind="err">{msg}</Alert>}
       </Card>
-    </>
+    </div>
   );
 }
 
@@ -211,7 +290,7 @@ function FrontView({ mode, initialReservationId, initialBookingStatus, jumpNonce
   }
 
   return (
-    <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
+    <div className="desk-grid">
       <Card title="Check in">
         <Field label="Reservation id"><input value={reservationId} onChange={(e) => setReservationId(e.target.value)} /></Field>
         <Field label="Room id (optional — auto-assigns)"><input value={roomId} onChange={(e) => setRoomId(e.target.value)} /></Field>
@@ -291,7 +370,7 @@ function BillingView({ mode, initialStayId, folioNonce }: {
   }
 
   return (
-    <>
+    <div className="desk-grid desk-grid--2">
       <Card title="Guest folio">
         <div className="row">
           <Field label="Stay id"><input value={stayId} onChange={(e) => setStayId(e.target.value)} /></Field>
@@ -329,7 +408,7 @@ function BillingView({ mode, initialStayId, folioNonce }: {
           </Btn>
         </div>
       </Card>
-    </>
+    </div>
   );
 }
 

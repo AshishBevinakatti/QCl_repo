@@ -5,7 +5,7 @@ import {
 } from './api';
 import { hasRole, login } from './auth';
 import type { Mode } from './dashboard';
-import { Alert, Badge, Btn, Field, Icon, statusTone } from './ui';
+import { Alert, Badge, Btn, Field, Icon, PageHeader, statusTone } from './ui';
 
 const PAGE_SIZE = 20;
 const PHONE_PATTERN = /^[+]?[0-9][0-9 ()-]{5,}$/;
@@ -428,17 +428,15 @@ export function GuestsView({ mode, initialQ, jumpNonce }: {
 
   return (
     <div className="guests-page">
-      <header className="guests-header">
-        <div>
-          <h1>Guests</h1>
-          <p>Find guests, review their information, and manage their records.</p>
-        </div>
-        <Btn onClick={openCreate}><Icon name="person_add" /> Add New Guest</Btn>
-      </header>
+      <PageHeader
+        title="Guests"
+        subtitle="Find guests, review their information and manage their records"
+        actions={<Btn onClick={openCreate}><Icon name="person_add" /> Add New Guest</Btn>}
+      />
 
       <section className="card guests-search-card" aria-label="Guest search">
         <form className="guests-search" onSubmit={submitSearch} role="search">
-          <Icon name="search" />
+          <Icon name="search" size={18} />
           <input
             ref={searchInputRef}
             type="search"
@@ -457,7 +455,7 @@ export function GuestsView({ mode, initialQ, jumpNonce }: {
               onClick={clearSearch}
               aria-label="Clear search"
             >
-              <Icon name="close" />
+              <Icon name="close" size={16} />
             </button>
           )}
           <button type="submit" className="btn guests-search-btn">Search</button>
@@ -487,12 +485,12 @@ export function GuestsView({ mode, initialQ, jumpNonce }: {
 
           {searching ? (
             <div className="guests-state" role="status" aria-live="polite">
-              <Icon name="progress_activity" />
+              <Icon name="progress_activity" size={24} />
               <strong>Searching guests…</strong>
             </div>
           ) : searchError ? (
             <div className="guests-state guests-state--error" role="alert">
-              <Icon name="error" />
+              <Icon name="error" size={24} />
               <strong>{searchError.text}</strong>
               {searchError.auth ? (
                 <Btn onClick={login}>Staff log in</Btn>
@@ -502,7 +500,7 @@ export function GuestsView({ mode, initialQ, jumpNonce }: {
             </div>
           ) : guests.length === 0 ? (
             <div className="guests-state">
-              <Icon name="person_search" />
+              <Icon name="person_search" size={24} />
               <strong>
                 {mode === 'preview'
                   ? 'Guest records are available in Live mode.'
@@ -552,7 +550,7 @@ export function GuestsView({ mode, initialQ, jumpNonce }: {
                         <span className="muted">Not a member</span>
                       )}
                     </span>
-                    <span className="guest-row-open">Open <Icon name="chevron_right" /></span>
+                    <span className="guest-row-open">Open <Icon name="chevron_right" size={16} /></span>
                   </button>
                 ))}
               </div>
@@ -569,7 +567,7 @@ export function GuestsView({ mode, initialQ, jumpNonce }: {
         {selected ? (
           <aside className="card guest-profile" ref={profileRef} aria-label="Selected guest profile">
             <button type="button" className="guest-back" onClick={backToResults}>
-              <Icon name="arrow_back" /> Back to results
+              <Icon name="arrow_back" size={16} /> Back to results
             </button>
 
             <div className="guest-profile-head">
@@ -668,7 +666,7 @@ export function GuestsView({ mode, initialQ, jumpNonce }: {
                 </div>
               ) : (
                 <div className="guest-member-empty">
-                  <Icon name="workspace_premium" />
+                  <Icon name="workspace_premium" size={20} />
                   <div>
                     <strong>Not enrolled</strong>
                     <p className="muted">This guest does not have a membership yet.</p>
@@ -692,7 +690,7 @@ export function GuestsView({ mode, initialQ, jumpNonce }: {
           </aside>
         ) : (
           <aside className="card guest-profile guest-profile--empty" aria-label="Guest profile">
-            <span className="guest-avatar guest-avatar--large"><Icon name="person" /></span>
+            <span className="guest-avatar guest-avatar--large"><Icon name="person" size={24} /></span>
             <h2>Select a guest</h2>
             <p>Open a search result to review contact details, membership status and available actions.</p>
           </aside>
@@ -719,7 +717,7 @@ export function GuestsView({ mode, initialQ, jumpNonce }: {
                 aria-label="Close add guest"
                 disabled={creating || duplicateBusy}
               >
-                <Icon name="close" />
+                <Icon name="close" size={16} />
               </button>
             </div>
             <form className="guest-modal-body" onSubmit={submitCreate}>

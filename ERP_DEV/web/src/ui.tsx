@@ -1,4 +1,52 @@
-import type { ReactNode } from 'react';
+import type { ComponentType, ReactNode } from 'react';
+import {
+  Activity,
+  ArrowLeft,
+  ArrowLeftRight,
+  ArrowRight,
+  BadgeCheck,
+  BarChart3,
+  BedDouble,
+  Bell,
+  CalendarCheck,
+  CalendarDays,
+  CalendarX,
+  ChevronLeft,
+  ChevronRight,
+  CircleAlert,
+  CircleHelp,
+  Clock,
+  Crown,
+  Database,
+  FileText,
+  HeartPulse,
+  History,
+  Hotel,
+  LayoutDashboard,
+  LoaderCircle,
+  LogIn,
+  LogOut,
+  Menu,
+  Moon,
+  ReceiptText,
+  Rocket,
+  Route,
+  Search,
+  Server,
+  Settings,
+  Sparkles,
+  Sun,
+  ToggleRight,
+  TriangleAlert,
+  User,
+  UserPlus,
+  UserSearch,
+  Users,
+  UsersRound,
+  Wrench,
+  X,
+  type LucideProps,
+} from 'lucide-react';
 
 /** Shared building blocks so every desk screen looks and behaves alike. */
 export function Card({ title, children }: { title: string; children: ReactNode }) {
@@ -64,38 +112,111 @@ export function statusTone(status: string): 'green' | 'amber' | 'red' | undefine
   return undefined;
 }
 
-/** Material Symbol (Google icons CDN; degrades to ligature text offline). */
+const MATERIAL_ICONS: Record<string, ComponentType<LucideProps>> = {
+  home: LayoutDashboard,
+  calendar_month: CalendarDays,
+  group: Users,
+  groups: UsersRound,
+  bed: BedDouble,
+  hotel: Hotel,
+  swap_horiz: ArrowLeftRight,
+  receipt_long: ReceiptText,
+  build: Wrench,
+  cleaning_services: Sparkles,
+  bar_chart: BarChart3,
+  monitoring: Activity,
+  monitor_heart: HeartPulse,
+  settings: Settings,
+  logout: LogOut,
+  login: LogIn,
+  search: Search,
+  notifications: Bell,
+  arrow_forward: ArrowRight,
+  arrow_back: ArrowLeft,
+  chevron_left: ChevronLeft,
+  chevron_right: ChevronRight,
+  close: X,
+  error: CircleAlert,
+  warning: TriangleAlert,
+  event_available: CalendarCheck,
+  event_busy: CalendarX,
+  person: User,
+  person_add: UserPlus,
+  person_search: UserSearch,
+  progress_activity: LoaderCircle,
+  workspace_premium: Crown,
+  badge_check: BadgeCheck,
+  toggle_on: ToggleRight,
+  description: FileText,
+  dns: Server,
+  database: Database,
+  history: History,
+  route: Route,
+  schedule: Clock,
+  rocket_launch: Rocket,
+  menu: Menu,
+  sun: Sun,
+  moon: Moon,
+};
+
+/** Material-name compatible icon wrapper backed by Lucide (local SVG, no CDN). */
 export function Icon({ name, size }: { name: string; size?: number }) {
-  return (
-    <span className="material-symbols-outlined" style={size ? { fontSize: size } : undefined} aria-hidden>
-      {name}
-    </span>
-  );
+  const Component = MATERIAL_ICONS[name] ?? CircleHelp;
+  return <Component className="icon" size={size ?? 20} strokeWidth={2} aria-hidden data-icon={name} />;
 }
 
 /** Honest placeholder where no backend endpoint exists yet (never fake rows). */
-export function Soon({ icon, title, why }: { icon: string; title: string; why: string }) {
+export function EmptyState({ icon, title, description, action }: {
+  icon?: string; title: string; description?: ReactNode; action?: ReactNode;
+}) {
   return (
-    <div className="soon">
-      <Icon name={icon} />
+    <div className="empty-state">
+      {icon && <span className="empty-state__icon"><Icon name={icon} size={22} /></span>}
       <strong>{title}</strong>
-      <div style={{ marginTop: 4 }}>{why}</div>
+      {description && <p>{description}</p>}
+      {action && <div className="empty-state__action">{action}</div>}
     </div>
   );
 }
 
-/** KPI stat card with a tinted icon chip (theme palette only). */
-export function Kpi({ icon, tint, num, lbl, sub }: {
-  icon: string; tint: string; num: ReactNode; lbl: string; sub: string;
+export function Soon({ icon, title, why }: { icon: string; title: string; why: string }) {
+  return <EmptyState icon={icon} title={title} description={why} />;
+}
+
+export type KpiTone = 'brand' | 'gold' | 'info' | 'danger' | 'neutral';
+
+/** KPI stat card with a tinted icon tile (theme palette only). */
+export function Kpi({ icon, tone = 'brand', tint, num, lbl, sub }: {
+  icon: string; tone?: KpiTone; tint?: string; num: ReactNode; lbl: string; sub: string;
 }) {
   return (
     <div className="kpi">
-      <span className="ic" style={{ background: tint }}><Icon name={icon} /></span>
-      <span>
+      <span
+        className={`ic ic--${tone}`}
+        style={tint ? { background: tint, color: 'var(--ink)' } : undefined}
+      >
+        <Icon name={icon} size={18} />
+      </span>
+      <span className="kpi-copy">
         <span className="num">{num}</span>
         <div className="lbl">{lbl}</div>
         <div className="sub">{sub}</div>
       </span>
+    </div>
+  );
+}
+
+/** Page heading used consistently across every screen. */
+export function PageHeader({ title, subtitle, actions }: {
+  title: string; subtitle?: ReactNode; actions?: ReactNode;
+}) {
+  return (
+    <div className="page-header">
+      <div className="page-header__copy">
+        <h1>{title}</h1>
+        {subtitle && <p>{subtitle}</p>}
+      </div>
+      {actions && <div className="page-header__actions">{actions}</div>}
     </div>
   );
 }
@@ -122,9 +243,9 @@ export function Donut({ slices, total, label }: {
   return (
     <div style={{ position: 'relative', width: 140, height: 140, flex: 'none' }}>
       <svg width="140" height="140" viewBox="0 0 140 140">{segs}</svg>
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <strong style={{ fontSize: '1.5rem', lineHeight: 1 }}>{total}</strong>
-        <small style={{ color: 'var(--muted)', fontSize: '0.7rem' }}>{label}</small>
+      <div className="donut-center">
+        <strong>{total}</strong>
+        <small>{label}</small>
       </div>
     </div>
   );

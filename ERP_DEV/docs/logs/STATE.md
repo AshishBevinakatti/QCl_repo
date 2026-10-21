@@ -1,16 +1,13 @@
 # Project State
-Updated: 2026-10-21T16:50:21+05:30
-Phase: 3 – Core Development      Work unit: 3.11 Guests reception workspace + dashboard correction (3.10 fixture/docs included) — committed, awaiting user click-through
-Status: three feature commits created on the branch; no merge/push. This DEVLOG/STATE record is committed as a docs follow-up.
-Branch: feature/3.9-observability-ops-console. Remote: `origin` = https://github.com/AshishBevinakatti/QCl_repo.git (added 2026-10-21; never pushed/fetched).
-Commits: `9285648` test(erp-03) local reception fixture + E2E evidence; `6555387` fix(erp-03) dashboard rebalance; `f8f719c` feat(erp-04) Guests reception workspace.
-Last approved by user: 2026-10-21 — three-commit sequence; remote addition instruction. No approval to merge or push.
-Demo fixture: 6 Demo guests, 6 reservations (3 in-house, 1 arrival, 1 hold, 1 future), 3 folios/4 captured payments, 3 dirty rooms + open tasks; loaded and verified after removing the enrolment test membership. Local-only; production/UAT remain seed-free.
-Live data note: locally created `QA Workspace Guest` (+91-9000000199, no membership/reservations) remains; the user said they will say when to remove it.
-Live dashboard (1366): 23 available / 4 occupied / 3 maintenance, 1 arrival, 2 departures, 3 in-house, 3 alerts. Page height 1345px, Recent table 710px, `checked-in` badge 83px in a 99px cell (single line), no horizontal overflow.
-Guests workspace: search/select/profile/create/duplicate/enrol/global-jump verified live; responsive screenshots at 1366/1024/390; no horizontal overflow; Escape closes the 390 bottom-sheet modal; no console errors in the create/jump runs.
-Verification: web **12/12**, lint exit 0 with pre-existing warnings, build 308 modules green, `git diff --check` clean. Backend unchanged from the 3.10 baseline (71/71).
-Key limits: `GET /guests/{id}/stays` is an empty hook; reservations have no guest filter; guest DTO has no email/address. UI shows real fields only.
-Next action: user click-through; decide QA-guest removal. Push/merge only on explicit instruction naming the remote/branch.
-Servers: RUNNING — backend :8080, management :9091, web :5173, Keycloak :8081 (`infra-keycloak-1`). Launcher PID 210880; log /tmp/opencode/erp-live.log.
-Open items: Q-002…Q-004, Q-007…Q-009, Q-012; 3.8 browser click-through; delete stale branch `fix/hide-table-scrollbar` (approval pending); production observability credentials/infra + Sentry DSN absent; springdoc spec lag; audit-retention job pending.
+Updated: 2026-10-21T18:18:49+05:30
+Phase: 3 – Core Development      Work unit: 3.12 UI/UX design system — implemented and verified, **uncommitted**, awaiting user click-through
+Branch: feature/3.12-ui-design-system (stacked on feature/3.9-observability-ops-console; Unit 3.11 is committed but unmerged). Remote `origin` = https://github.com/AshishBevinakatti/QCl_repo.git (never pushed/fetched).
+Commits: `9285648` 3.10 fixture; `6555387` dashboard correction; `f8f719c` 3.11 Guests; `7f2d82d` 3.11 docs. No 3.12 commit yet.
+Approval: plan `03-phases/phase-3/PLAN-3.12-ui-design-system.md` approved 2026-10-21 — dark-green collapsible sidebar, Inter + Lucide (no Tailwind), keep/restyle both dashboard photos, all screens, light + dark. No commit/merge/push without explicit approval.
+Implemented: self-hosted Inter + local Lucide mapping; `theme.ts` + pre-render `gh-theme` boot; CSS split into tokens/base/layout/components/screens; `PageHeader`/`EmptyState`/Kpi tones; shell (264/76px sidebar, mobile drawer with Escape/backdrop/focus return, header search Ctrl/Cmd+K, API pill, theme toggle); all views restyled; placeholders honest; guest modal bottom sheet ≤560px; colour tokens replace JSX hex values.
+Bug fixed in this unit: Preview → Live now remounts the `page-stack` (keyed by mode), so signed-out Live shows the existing login hints instead of stale demo rows/counts. This restores the 3.6/3.8 acceptance criteria.
+Verification: web build green (2,227 modules; 345.89kB JS / 104.42kB gzip; CSS 38.88kB / 8.12kB); tests **18/18** (12 existing + 3 theme + 3 design primitives); lint exit 0 with pre-existing warnings only; `git diff --check` clean at 18:18. CDP/browser: light + dark at 1440/1366/1024/768/390, every nav view, sidebar collapse + reload persistence, theme persistence, drawer focus, guest modal, no horizontal overflow, no uncaught console errors. Live signed-out shows correct login hints; expected 401s only.
+Docs: new `02-architecture/ui-design-system.md`, ADR-002, plan, README index, ERP-03/04/05 change histories, screens.md pointer, RESOURCES_LOG + DECISIONS D-011, this DEVLOG/STATE.
+Backend/data: untouched. Local demo fixture remains; `QA Workspace Guest` still exists until the user asks for removal. Dependencies added: `@fontsource-variable/inter`, `lucide-react`.
+Open items: user click-through in both themes; decide QA-guest removal; 3.8 click-through; Module 2 plan approval (CR-001/Q-012); delete stale `fix/hide-table-scrollbar`; observability/ops Phase 2+ credentials/infra; springdoc lag; audit retention. Known UI limits: no full drawer focus trap, no OS/cross-tab theme sync, Keycloak pages unstyled.
+Next: do not commit/merge/push until the user approves; after approval commit 3.12 as one reviewable unit (code + tests + docs), excluding root `.vscode/`. Servers still running: backend :8080, management :9091, web :5173, Keycloak :8081 (`infra-keycloak-1`); launcher PID 210880.

@@ -8,6 +8,7 @@ import {
 } from './api';
 import { hasRole, isAuthenticated, login, logout, roles, username } from './auth';
 import { demoBoard, demoDashboard } from './demo';
+import { currentTheme, toggleTheme, type Theme } from './theme';
 import { Badge, Btn, Donut, Icon, Kpi, statusTone } from './ui';
 
 export type View =
@@ -55,66 +56,195 @@ function greeting(): string {
 }
 
 /* ---------------- Sidebar ---------------- */
-export function Sidebar({ view, go, mode, setMode }: {
+const SIDEBAR_KEY = 'gh-sidebar-collapsed';
+
+export function Sidebar({ view, go, mode, setMode, mobileOpen, onClose }: {
   view: View; go: (v: View) => void; mode: Mode; setMode: (m: Mode) => void;
+  mobileOpen: boolean; onClose: () => void;
 }) {
   const authed = isAuthenticated();
   const canOps = hasRole(
     'SUPERADMIN', 'OPS_VIEWER', 'OPS_DEVELOPER', 'OPS_OPERATOR', 'OPS_ADMIN', 'OPS_APPROVER',
   );
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(SIDEBAR_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    const focusBefore = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusTimer = window.setTimeout(() => closeRef.current?.focus(), 0);
+    document.addEventListener('keydown', onKey);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = previous;
+      focusBefore?.focus();
+    };
+  }, [mobileOpen, onClose]);
+
+  function toggleCollapsed() {
+    setCollapsed((previous) => {
+      const next = !previous;
+      try {
+        localStorage.setItem(SIDEBAR_KEY, next ? '1' : '0');
+      } catch {
+        /* ignore unavailable storage */
+      }
+      return next;
+    });
+  }
+
+  function choose(next: View) {
+    go(next);
+    onClose();
+  }
+
   return (
-    <aside className="sidebar">
-      <div className="brand">Golden Hills<small>Resort ERP</small></div>
-      <div className="mode-toggle" role="group" aria-label="data mode">
-        <button className={mode === 'live' ? 'active' : ''} onClick={() => setMode('live')}>Live</button>
-        <button className={mode === 'preview' ? 'active' : ''} onClick={() => setMode('preview')}>Preview</button>
-      </div>
-      <nav className="nav">
-        {NAV.filter((n) => !n.ops || canOps).map((n) => (
-          <button key={n.id} className={view === n.id ? 'active' : ''} onClick={() => go(n.id)}>
-            <Icon name={n.icon} />{n.label}
-          </button>
-        ))}
-      </nav>
-      <div className="side-foot">
-        {authed ? (
-          <div className="usercard">
-            <span className="avatar">{(username() || '?').slice(0, 1).toUpperCase()}</span>
-            <span className="who"><strong>{username()}</strong><small>{roles().join(', ') || 'staff'}</small></span>
+    <>
+      {mobileOpen && (
+        <div className="sidebar-backdrop" onClick={onClose} aria-hidden="true" />
+      )}
+      <aside
+        id="erp-sidebar"
+        className={`sidebar${collapsed ? ' is-collapsed' : ''}${mobileOpen ? ' is-mobile-open' : ''}`}
+        aria-label="Primary navigation"
+      >
+        <div className="sidebar-head">
+          <div className="brand">
+            <span className="brand-copy"><strong>Golden Hills</strong><small>Resort ERP</small></span>
+            <span className="brand-mark" aria-hidden="true">GH</span>
           </div>
-        ) : (
-          <div className="usercard">
-            <span className="avatar">?</span>
-            <span className="who"><strong>Not signed in</strong><small>{mode === 'preview' ? 'preview data' : 'live needs login'}</small></span>
-          </div>
-        )}
-        <nav className="nav">
-          <button className={view === 'settings' ? 'active' : ''} onClick={() => go('settings')}>
-            <Icon name="settings" />Settings
+          <button
+            type="button"
+            className="sidebar-toggle"
+            onClick={toggleCollapsed}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-expanded={!collapsed}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <Icon name={collapsed ? 'chevron_right' : 'chevron_left'} size={18} />
           </button>
-          {authed
-            ? <button onClick={logout}><Icon name="logout" />Logout</button>
-            : <button onClick={login}><Icon name="login" />Staff log in</button>}
+          <button
+            ref={closeRef}
+            type="button"
+            className="sidebar-close"
+            onClick={onClose}
+            aria-label="Close navigation"
+          >
+            <Icon name="close" size={18} />
+          </button>
+        </div>
+
+        <div className="mode-toggle" role="group" aria-label="Data mode">
+          <button
+            className={mode === 'live' ? 'active' : ''}
+            onClick={() => setMode('live')}
+            title="Live data"
+          >
+            Live
+          </button>
+          <button
+            className={mode === 'preview' ? 'active' : ''}
+            onClick={() => setMode('preview')}
+            title="Preview layout"
+          >
+            Preview
+          </button>
+        </div>
+
+        <nav className="nav nav--primary">
+          {NAV.filter((n) => !n.ops || canOps).map((n) => (
+            <button
+              key={n.id}
+              className={view === n.id ? 'active' : ''}
+              onClick={() => choose(n.id)}
+              title={collapsed ? n.label : undefined}
+              aria-current={view === n.id ? 'page' : undefined}
+            >
+              <Icon name={n.icon} size={18} />
+              <span className="nav-label">{n.label}</span>
+            </button>
+          ))}
         </nav>
-      </div>
-    </aside>
+
+        <div className="side-foot">
+          {authed ? (
+            <div className="usercard">
+              <span className="avatar">{(username() || '?').slice(0, 1).toUpperCase()}</span>
+              <span className="who"><strong>{username()}</strong><small>{roles().join(', ') || 'staff'}</small></span>
+            </div>
+          ) : (
+            <div className="usercard">
+              <span className="avatar">?</span>
+              <span className="who"><strong>Not signed in</strong><small>{mode === 'preview' ? 'preview data' : 'live needs login'}</small></span>
+            </div>
+          )}
+          <nav className="nav nav--utility">
+            <button
+              className={view === 'settings' ? 'active' : ''}
+              onClick={() => choose('settings')}
+              title={collapsed ? 'Settings' : undefined}
+              aria-current={view === 'settings' ? 'page' : undefined}
+            >
+              <Icon name="settings" size={18} />
+              <span className="nav-label">Settings</span>
+            </button>
+            {authed ? (
+              <button onClick={logout} title={collapsed ? 'Logout' : undefined}>
+                <Icon name="logout" size={18} />
+                <span className="nav-label">Logout</span>
+              </button>
+            ) : (
+              <button onClick={login} title={collapsed ? 'Staff log in' : undefined}>
+                <Icon name="login" size={18} />
+                <span className="nav-label">Staff log in</span>
+              </button>
+            )}
+          </nav>
+        </div>
+      </aside>
+    </>
   );
 }
 
 /* ---------------- Topbar ---------------- */
-export function Topbar({ onJump, api }: {
-  onJump: (j: Jump) => void; api: string;
+export function Topbar({ onJump, api, onMenu }: {
+  onJump: (j: Jump) => void; api: string; onMenu: () => void;
 }) {
   const [q, setQ] = useState('');
   const [hits, setHits] = useState<{ kind: string; label: string; sub: string; jump: Jump }[]>([]);
   const [msg, setMsg] = useState('');
   const [now, setNow] = useState(new Date());
+  const [theme, setTheme] = useState<Theme>(() => currentTheme());
   const seq = useRef(0);
   const timer = useRef<number | undefined>(undefined);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30000);
     return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        searchRef.current?.focus();
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
   }, []);
 
   // Debounced as-you-type search; Enter runs it immediately (see submit).
@@ -195,25 +325,77 @@ export function Topbar({ onJump, api }: {
 
   const dateStr = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(now);
   const timeStr = new Intl.DateTimeFormat('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).format(now);
+  const apiUp = api === 'UP';
+
+  function clearSearch() {
+    setHits([]);
+    setMsg('');
+    setQ('');
+    searchRef.current?.blur();
+  }
 
   return (
-    <div>
-      <div className="topbar-new">
+    <div className="topbar-wrap">
+      <header className="topbar-new">
+        <button type="button" className="menu-btn" onClick={onMenu} aria-label="Open navigation" aria-controls="erp-sidebar">
+          <Icon name="menu" size={20} />
+        </button>
+        <div className="topbar-title">
+          <h1>Resort operations</h1>
+          <span className="sub">{dateStr} · {timeStr}</span>
+        </div>
         <form className="searchbox" onSubmit={submit}>
-          <Icon name="search" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search guest, booking ID, room number…" aria-label="Search" />
-          <kbd>⌘ K</kbd>
+          <Icon name="search" size={18} />
+          <input
+            ref={searchRef}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') clearSearch();
+            }}
+            placeholder="Search guest, booking, room…"
+            aria-label="Search guests, bookings and rooms"
+          />
+          <kbd>⌘K</kbd>
         </form>
-        <span className="clock"><strong>{dateStr}</strong>{timeStr} · {api}</span>
-        <button className="iconbtn" title="Notifications — no notification system yet; live alerts are on the dashboard"><Icon name="notifications" /></button>
-      </div>
-      {msg && <p className="muted">{msg}</p>}
+        <span className={`api-pill${apiUp ? '' : ' is-down'}`} title={`API ${api}`}>
+          <span className="api-dot" />
+          {apiUp ? 'Online' : api}
+        </span>
+        <button
+          type="button"
+          className="iconbtn"
+          onClick={() => setTheme(toggleTheme())}
+          title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          aria-pressed={theme === 'dark'}
+        >
+          <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
+        </button>
+        <button
+          type="button"
+          className="iconbtn"
+          title="Notifications — no notification system yet; live alerts are on the dashboard"
+          aria-label="Notifications"
+        >
+          <Icon name="notifications" size={18} />
+        </button>
+      </header>
+
+      {msg && (
+        <div className="search-panel">
+          <p className="search-note" role="status">{msg}</p>
+        </div>
+      )}
       {hits.length > 0 && (
-        <div className="panel" style={{ marginBottom: '1rem' }}>
+        <div className="search-panel">
           {hits.map((h, i) => (
-            <div key={i} className="row" style={{ alignItems: 'center', padding: '0.25rem 0' }}>
+            <div key={i} className="search-hit">
               <Badge>{h.kind}</Badge>
-              <span><strong>{h.label}</strong> <span className="muted">{h.sub}</span></span>
+              <span className="search-hit-copy">
+                <strong>{h.label}</strong>
+                <small>{h.sub}</small>
+              </span>
               <Btn ghost onClick={() => { onJump(h.jump); setHits([]); setQ(''); }}>Open</Btn>
             </div>
           ))}
@@ -365,11 +547,11 @@ export function DashboardView({ mode, go, viewFolio, onJump = () => {} }: {
       </div>
 
       <div className="kpis">
-        <Kpi icon="bed" tint="var(--brand)" num={avail} lbl="Rooms Available" sub={`out of ${total} rooms`} />
-        <Kpi icon="event_available" tint="var(--gold)" num={dash.arrivals.length} lbl="Expected Arrivals" sub="Today" />
-        <Kpi icon="event_busy" tint="#8a8f85" num={mode === 'preview' ? '—' : departuresList.length} lbl="Expected Departures" sub="Today" />
-        <Kpi icon="groups" tint="#274b9b" num={dash.inHouse.length} lbl="In-House Guests" sub="Currently staying" />
-        <Kpi icon="cleaning_services" tint="var(--danger)" num={ready} lbl="Rooms Awaiting Readiness" sub="Housekeeping in progress" />
+        <Kpi icon="bed" tone="brand" num={avail} lbl="Rooms Available" sub={`out of ${total} rooms`} />
+        <Kpi icon="event_available" tone="gold" num={dash.arrivals.length} lbl="Expected Arrivals" sub="Today" />
+        <Kpi icon="event_busy" tone="neutral" num={mode === 'preview' ? '—' : departuresList.length} lbl="Expected Departures" sub="Today" />
+        <Kpi icon="groups" tone="info" num={dash.inHouse.length} lbl="In-House Guests" sub="Currently staying" />
+        <Kpi icon="cleaning_services" tone="danger" num={ready} lbl="Rooms Awaiting Readiness" sub="Housekeeping in progress" />
       </div>
 
       {ok && <div className="panel" style={{ marginBottom: '0.9rem' }}>{ok}</div>}
@@ -527,16 +709,16 @@ export function DashboardView({ mode, go, viewFolio, onJump = () => {} }: {
               <Donut
                 total={total} label="Total Rooms"
                 slices={[
-                  { value: avail, color: '#2e7d32' },
-                  { value: occ, color: '#d84a4a' },
-                  { value: maint, color: '#b98a2f' },
+                  { value: avail, color: 'var(--chart-available)' },
+                  { value: occ, color: 'var(--chart-occupied)' },
+                  { value: maint, color: 'var(--chart-maintenance)' },
                 ]}
               />
               <div className="donut-legend">
-                <span className="rowline"><span className="dot" style={{ background: '#2e7d32' }} />Available<span className="n">{avail} ({pct(avail)}%)</span></span>
-                <span className="rowline"><span className="dot" style={{ background: '#d84a4a' }} />Occupied<span className="n">{occ} ({pct(occ)}%)</span></span>
-                <span className="rowline" title="Rooms carry no reserved status — reservations hold categories, not rooms"><span className="dot" style={{ background: '#274b9b' }} />Reserved<span className="n">—</span></span>
-                <span className="rowline"><span className="dot" style={{ background: '#b98a2f' }} />Maintenance<span className="n">{maint} ({pct(maint)}%)</span></span>
+                <span className="rowline"><span className="dot" style={{ background: 'var(--chart-available)' }} />Available<span className="n">{avail} ({pct(avail)}%)</span></span>
+                <span className="rowline"><span className="dot" style={{ background: 'var(--chart-occupied)' }} />Occupied<span className="n">{occ} ({pct(occ)}%)</span></span>
+                <span className="rowline" title="Rooms carry no reserved status — reservations hold categories, not rooms"><span className="dot" style={{ background: 'var(--info)' }} />Reserved<span className="n">—</span></span>
+                <span className="rowline"><span className="dot" style={{ background: 'var(--chart-maintenance)' }} />Maintenance<span className="n">{maint} ({pct(maint)}%)</span></span>
               </div>
             </div>
             <div className="minis">
@@ -557,7 +739,7 @@ export function DashboardView({ mode, go, viewFolio, onJump = () => {} }: {
               <div className="donut-legend">
                 {alertList.map((a) => (
                   <span className="rowline" key={a.ref + a.text}>
-                    <span className="dot" style={{ background: a.severity === 'high' ? '#d84a4a' : a.severity === 'medium' ? '#b98a2f' : '#274b9b' }} />
+                    <span className="dot" style={{ background: a.severity === 'high' ? 'var(--danger)' : a.severity === 'medium' ? 'var(--gold)' : 'var(--info)' }} />
                     {a.text}
                   </span>
                 ))}
@@ -602,10 +784,12 @@ export function RoomsView({ mode, initialFilter }: { mode: Mode; initialFilter?:
   return (
     <div className="panel">
       <div className="phead"><h3>Rooms ({shown.length})</h3></div>
-      <div className="row" style={{ marginBottom: '0.7rem' }}>
+      <div className="search-inline">
+        <Icon name="search" size={18} />
         <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filter by room number…" aria-label="Filter rooms" />
+        <span className="muted">{shown.length} shown</span>
       </div>
-      {msg && <p className="muted">{msg}</p>}
+      {msg && <p className="alert err">{msg}</p>}
       <div className="roomgrid">
         {shown.map((r) => (
           <div className="roomcell" key={r.id}>

@@ -12,7 +12,7 @@ import {
   type OpsStatus,
 } from '../api';
 import { hasRole, isAuthenticated } from '../auth';
-import { Alert, Badge, Btn, Card, Icon, Kpi, Soon } from '../ui';
+import { Alert, Badge, Btn, Card, Icon, Kpi, PageHeader, Soon } from '../ui';
 
 type Tab =
   | 'overview'
@@ -117,32 +117,40 @@ export function OpsView({ mode }: { mode: 'live' | 'preview' }) {
 
   if (mode !== 'live') {
     return (
-      <Card title="Operations console">
-        <Alert kind="info">
-          Live mode only. This console reads real health, flags and audit rows — switch to Live and
-          sign in with an ops role. No sample telemetry is shown.
-        </Alert>
-      </Card>
+      <>
+        <PageHeader title="Operations console" subtitle="Read-only Phase 1 — real state only" />
+        <Card title="Live only">
+          <Alert kind="info">
+            Live mode only. This console reads real health, flags and audit rows — switch to Live and
+            sign in with an ops role. No sample telemetry is shown.
+          </Alert>
+        </Card>
+      </>
     );
   }
 
   if (!isAuthenticated()) {
     return (
-      <Card title="Operations console">
-        <Alert kind="info">Sign in with an ops role to open the console.</Alert>
-      </Card>
+      <>
+        <PageHeader title="Operations console" subtitle="Read-only Phase 1 — real state only" />
+        <Card title="Access required">
+          <Alert kind="info">Sign in with an ops role to open the console.</Alert>
+        </Card>
+      </>
     );
   }
 
   return (
     <>
-      <div className="topbar" style={{ marginBottom: '0.75rem' }}>
-        <h1>Operations console</h1>
-        <span className="sub">Read-only Phase 1 — real state only</span>
-        <span className={`status-pill${status?.state === 'DOWN' ? ' down' : ''}`}>
-          {status ? status.state : '…'}
-        </span>
-      </div>
+      <PageHeader
+        title="Operations console"
+        subtitle="Read-only Phase 1 — real state only"
+        actions={(
+          <span className={`status-pill${status?.state === 'DOWN' ? ' down' : ''}`}>
+            {status ? status.state : '…'}
+          </span>
+        )}
+      />
 
       <div className="ops-tabs" role="tablist" aria-label="ops sections">
         {TABS.map((t) => (
@@ -158,7 +166,7 @@ export function OpsView({ mode }: { mode: 'live' | 'preview' }) {
               }
             }}
           >
-            <Icon name={t.icon} />
+            <Icon name={t.icon} size={16} />
             {t.label}
           </button>
         ))}
@@ -172,28 +180,28 @@ export function OpsView({ mode }: { mode: 'live' | 'preview' }) {
           <div className="grid">
             <Kpi
               icon="monitor_heart"
-              tint={status.state === 'OK' ? '#dff0dc' : '#fbeecb'}
+              tone={status.state === 'OK' ? 'brand' : 'gold'}
               num={status.state}
               lbl="Overall"
               sub={status.environment}
             />
             <Kpi
               icon="dns"
-              tint="#e8eefb"
+              tone="info"
               num={status.service.state}
               lbl="Application"
               sub={`${status.service.name} ${status.service.version}`}
             />
             <Kpi
               icon="database"
-              tint="#eee9d8"
+              tone="neutral"
               num={`${status.service.database.latencyMs} ms`}
               lbl="Database"
               sub={status.service.database.state}
             />
             <Kpi
               icon="schedule"
-              tint="#eee9d8"
+              tone="neutral"
               num={uptime(status.service.uptimeSeconds)}
               lbl="Uptime"
               sub={`checked ${when(status.service.observedAt)}`}

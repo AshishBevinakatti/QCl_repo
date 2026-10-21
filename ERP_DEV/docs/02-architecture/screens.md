@@ -6,6 +6,8 @@
 ## Conventions
 Responsive (SOW §25.1), keyboard-navigable, labelled inputs, contrast-safe; every write shows success/failure + reason (never silent); every money screen shows paise-exact totals + currency.
 
+Presentation (shell, page headers, cards, tables, theme, icons, breakpoints) follows `02-architecture/ui-design-system.md` from Unit 3.12. The flows below are unchanged.
+
 ## Flows (role → steps → API → result)
 1. Guest books online: dates + category → `GET availability` calendar (free/price) → details + promo → `POST reservations` (idem) → pay advance (gateway hosted) → confirmation + history. Fail: room taken → clean unavailable + alternatives.
 2. Reception check-in: dashboard (`GET front-office/dashboard`) → arrival → verify ID → allocate ready room → `POST stays/check-in`. Blocked (dirty/unpaid) → reason shown, manager override path.
