@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 import {
-  HttpError, apiHealth, availability, board, bookRoom, businessToday, checkIn, checkOut, confirmPayment,
-  createGuest, enrollMember, folioByStay, guestById, initiatePayment, isAuthError,
-  listCategories, listReservations, redeemPoints, requestRefund, rupees, searchGuests, transferStay,
+  apiHealth, availability, board, bookRoom, businessToday, checkIn, checkOut, confirmPayment,
+  folioByStay, initiatePayment, isAuthError,
+  listCategories, listReservations, requestRefund, rupees, transferStay,
   walkIn,
-  type CategoryDto, type FolioDto, type GuestDto, type MemberDto,
+  type CategoryDto, type FolioDto,
   type ReservationSummary, type RoomBoard,
 } from './api';
-import { demoBoard, demoCategories, demoFolio, demoGuests, demoMember } from './demo';
-import { Alert, Badge, Btn, Card, Field, Soon, Stat, statusTone } from './ui';
+import { demoBoard, demoCategories, demoFolio } from './demo';
+import { Alert, Badge, Btn, Card, Field, Soon, statusTone } from './ui';
 import { DashboardView, RoomsView, Sidebar, Topbar, type Jump, type Mode, type View } from './dashboard';
 import { initAuthOnce } from './auth';
+import { GuestsView } from './guests';
 import { OpsView } from './ops/OpsView';
 
 /**
@@ -52,10 +53,7 @@ export default function App() {
         {view === 'dashboard' && <DashboardView mode={mode} go={go} onJump={onJump} viewFolio={(stayId) => { setFolioStay(stayId); setFolioJump((n) => n + 1); setView('billing'); }} />}
         {view === 'reservations' && <BookView mode={mode} />}
         {view === 'guests' && (
-          <>
-            <GuestsView mode={mode} initialQ={jump?.view === 'guests' ? jump.q : undefined} jumpNonce={jump?.nonce} />
-            <div style={{ marginTop: '1rem' }}><MembersView mode={mode} /></div>
-          </>
+          <GuestsView mode={mode} initialQ={jump?.view === 'guests' ? jump.q : undefined} jumpNonce={jump?.nonce} />
         )}
         {view === 'rooms' && <RoomsView mode={mode} initialFilter={jump?.view === 'rooms' ? jump.roomFilter : undefined} />}
         {view === 'check' && <FrontView mode={mode} initialReservationId={jump?.view === 'check' ? jump.reservationId : undefined} initialBookingStatus={jump?.view === 'check' ? jump.bookingStatus : undefined} jumpNonce={jump?.nonce} />}
@@ -253,155 +251,6 @@ function FrontView({ mode, initialReservationId, initialBookingStatus, jumpNonce
       {ok && <Alert kind="ok">{ok}</Alert>}
       {msg && <Alert kind="err">{msg}</Alert>}
     </div>
-  );
-}
-
-/* ---------------- Guests (+ Members) ---------------- */
-function GuestsView({ mode, initialQ, jumpNonce }: {
-  mode: Mode; initialQ?: string; jumpNonce?: number;
-}) {
-  const [q, setQ] = useState(initialQ ?? '');
-  const [guests, setGuests] = useState<GuestDto[]>(mode === 'preview' ? demoGuests : []);
-  const [name, setName] = useState(''); const [phone, setPhone] = useState('');
-  const [msg, setMsg] = useState(''); const [ok, setOk] = useState('');
-  const [cerr, setCerr] = useState('');
-  const [dupId, setDupId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (initialQ === undefined) return;
-    setQ(initialQ);
-    if (mode === 'live' && initialQ) {
-      searchGuests(initialQ).then((p) => setGuests(p.items)).catch(() => setMsg('Search needs login.'));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jumpNonce]);
-
-  async function runSearch(e?: React.FormEvent) {
-    e?.preventDefault(); setMsg('');
-    if (mode === 'preview') {
-      setGuests(demoGuests.filter((g) => (g.name + g.phone).toLowerCase().includes(q.toLowerCase())));
-      return;
-    }
-    try { setGuests((await searchGuests(q)).items); }
-    catch { setMsg('Search needs login.'); }
-  }
-
-  async function runCreate(e: React.FormEvent) {
-    e.preventDefault(); setCerr(''); setOk(''); setDupId(null);
-    if (mode === 'preview') { setOk('Preview: guest is not saved.'); return; }
-    try {
-      const g = await createGuest(name, phone);
-      setOk(`Created ${g.name}.`); setName(''); setPhone('');
-      setGuests((await searchGuests(g.phone)).items);
-    } catch (err) {
-      // GUEST_EXISTS carries the existing profile id in details (no raw UUID in text).
-      if (err instanceof HttpError && err.code === 'GUEST_EXISTS' && err.details?.existingGuestId) {
-        setCerr('This phone number is already registered to a guest.');
-        setDupId(err.details.existingGuestId);
-      } else {
-        setCerr(err instanceof Error ? err.message : 'Create failed.');
-      }
-    }
-  }
-
-  async function showDuplicate() {
-    setCerr('');
-    try {
-      const g = await guestById(dupId!);
-      setQ(g.phone); setGuests([g]);
-    } catch { setCerr('Could not load the existing profile.'); }
-  }
-
-  return (
-    <>
-      <Card title="Find guests">
-        <form onSubmit={runSearch}>
-          <div className="row">
-            <Field label="Name or phone"><input value={q} onChange={(e) => setQ(e.target.value)} /></Field>
-            <Btn type="submit" ghost>Search</Btn>
-          </div>
-        </form>
-        {msg && <Alert kind="err">{msg}</Alert>}
-        <div className="tbl-wrap"><table className="tbl">
-          <thead><tr><th>Name</th><th>Phone</th><th>Status</th><th>Member</th></tr></thead>
-          <tbody>
-            {guests.map((g) => (
-              <tr key={g.id}>
-                <td>{g.name}</td><td>{g.phone}</td>
-                <td><Badge tone={statusTone(g.status)}>{g.status}</Badge></td>
-                <td>{g.memberId ? '★ member' : '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table></div>
-      </Card>
-      <Card title="New guest">
-        <form onSubmit={runCreate}>
-          <div className="row">
-            <Field label="Name"><input value={name} onChange={(e) => setName(e.target.value)} required /></Field>
-            <Field label="Phone"><input value={phone} onChange={(e) => setPhone(e.target.value)} required /></Field>
-            <Btn type="submit">Add guest</Btn>
-          </div>
-        </form>
-        {ok && <Alert kind="ok">{ok}</Alert>}
-        {cerr && <Alert kind="err">{cerr}</Alert>}
-        {dupId && <p><Btn ghost onClick={showDuplicate}>Show the existing guest</Btn></p>}
-      </Card>
-    </>
-  );
-}
-
-/* ---------------- Members ---------------- */
-function MembersView({ mode }: { mode: Mode }) {
-  const [guestId, setGuestId] = useState('');
-  const [member, setMember] = useState<MemberDto | null>(mode === 'preview' ? demoMember : null);
-  const [folioId, setFolioId] = useState(''); const [points, setPoints] = useState('100');
-  const [msg, setMsg] = useState('');
-
-  async function enroll(e: React.FormEvent) {
-    e.preventDefault(); setMsg('');
-    if (mode === 'preview') { setMember(demoMember); return; }
-    try { setMember(await enrollMember(guestId)); }
-    catch (err) { setMsg(err instanceof Error ? err.message : 'Enroll needs login.'); }
-  }
-
-  async function redeem(e: React.FormEvent) {
-    e.preventDefault(); setMsg('');
-    if (!member) return;
-    if (mode === 'preview') { setMsg('Preview: points are not spent.'); return; }
-    try { setMember(await redeemPoints(member.id, folioId, parseInt(points, 10))); }
-    catch (err) { setMsg(err instanceof Error ? err.message : 'Redeem failed.'); }
-  }
-
-  return (
-    <>
-      <Card title="Enroll member">
-        <form onSubmit={enroll}>
-          <div className="row">
-            <Field label="Guest id"><input value={guestId} onChange={(e) => setGuestId(e.target.value)} required /></Field>
-            <Btn type="submit">Enroll</Btn>
-          </div>
-        </form>
-        {msg && <Alert kind="err">{msg}</Alert>}
-      </Card>
-      {member && (
-        <Card title="Member dashboard">
-          <div className="grid">
-            <Stat num={member.membershipNo} lbl="Membership no." />
-            <Stat num={member.tier} lbl="Tier" />
-            <Stat num={member.points} lbl="Points" />
-            <Stat num={member.status} lbl={`Status (till ${member.validTo})`} />
-          </div>
-          <form onSubmit={redeem}>
-            <div className="row">
-              <Field label="Folio id"><input value={folioId} onChange={(e) => setFolioId(e.target.value)} required /></Field>
-              <Field label="Points"><input value={points} onChange={(e) => setPoints(e.target.value)} required /></Field>
-              <Btn type="submit" ghost>Redeem to folio</Btn>
-            </div>
-          </form>
-        </Card>
-      )}
-    </>
   );
 }
 

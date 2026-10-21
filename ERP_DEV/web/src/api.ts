@@ -142,8 +142,9 @@ export interface GuestPage {
   total: number;
 }
 
-export async function searchGuests(q: string): Promise<GuestPage> {
-  const res = await apiFetch(`/api/v1/guests?search=${encodeURIComponent(q)}`);
+export async function searchGuests(q: string, page = 0, size = 20): Promise<GuestPage> {
+  const params = new URLSearchParams({ search: q, page: String(page), size: String(size) });
+  const res = await apiFetch(`/api/v1/guests?${params}`);
   if (!res.ok) throw new Error(`guests failed: ${res.status}`);
   return res.json();
 }

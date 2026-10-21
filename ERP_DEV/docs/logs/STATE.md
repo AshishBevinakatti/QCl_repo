@@ -1,12 +1,16 @@
 # Project State
-Updated: 2026-10-20T19:31:49+05:30
-Phase: 3 – Core Development      Work unit: 3.9 observability and secure operations console — Phase 1 implemented, awaiting commit approval
-Status: Phase 1 COMMITTED at `45c8e88` (feature branch, not merged/pushed); backend 71/71 tests, web 4/4, lint/build green; live demo verified.
-Branch: feature/3.9-observability-ops-console (base develop @ `a09d7c5`)      Tree: clean after records follow-up; root .vscode/ untracked (pre-existing, out of scope)
-Last approved by user: 2026-10-20 — 3.9 Phase 1 plan, target repo, stack, ops roles and dependencies; 3.8/launcher/Module 2 records already merged
-Standing instruction (2026-10-20): every future feature must connect to the ops/observability baseline (logs/request ID, audit, health/status, flags, permissions, tests, docs) — checklist in `02-architecture/observability.md`; decision D-009.
-Phase 1 delivered: V9 ops permissions/flags; DB permission resolver; read-only ops status/integrations/flags/audit API; request-ID + JSON redacted logs; Actuator + Micrometer/OTel (tracing off by default); loopback management health; ops UI shell; Keycloak OPS_* roles; tests; docs
-Verification: `mvn -B -f services/erp-app/pom.xml verify` BUILD SUCCESS (71 tests); `npm --prefix web test` 4/4; `npm --prefix web run lint` exit 0 (pre-existing warnings); `npm --prefix web run build` green (313.26 kB JS); runtime smoke on Postgres: health UP on :9091, ops/main actuator 401 anonymously, JSON logs, no exporter errors
-Next action: await user decision on next work unit / Phase 2 (observability stack); do not merge/push without explicit approval
-Servers: RUNNING for user demo — backend :8080, management :9091, web :5173, Keycloak :8081 (`infra-keycloak-1`). Stop on request. Launcher PID in `/tmp/opencode/erp-live.pid`; log `/tmp/opencode/erp-live.log`.
-Open items: Q-002…Q-004, Q-007…Q-009, Q-012; 3.8 browser click-through; delete `fix/hide-table-scrollbar` (approval pending); production observability credentials/infra + Sentry DSN absent (documented gaps); no telemetry stack/Dockerfile/K8s/CI-CD, audit retention job pending; springdoc spec lag (pre-UAT must-fix)
+Updated: 2026-10-21T16:38:00+05:30
+Phase: 3 – Core Development      Work unit: 3.11 Guests reception workspace + dashboard UI correction (with 3.10 fixture/docs) — implemented and live-verified, awaiting commit approval
+Status: Guests redesign, dashboard rebalance and 3.10 fixture work are uncommitted; frontend 12/12 tests, lint/build green; no commit/merge/push.
+Branch: feature/3.9-observability-ops-console (base develop @ a09d7c5; 3.9 commits 45c8e88 + 775373e). Tree: modified dashboard/App/api/CSS + 3.10/3.11 docs; new `web/src/guests.tsx`, `web/src/guests.test.tsx`, `docs/03-phases/phase-3/PLAN-3.11-*`, 3.10 plan/report/guide + `scripts/dev/`; root `.vscode/` remains untracked.
+Last approved by user: 2026-10-21 — Unit 3.10 plan/fixture exception (D-010); Unit 3.11 plan (“Approve — implement now”). No commit approval yet.
+Demo fixture: 6 Demo guests, 6 reservations (3 in-house, 1 arrival, 1 hold, 1 future), 3 folios/4 captured payments, 3 dirty rooms + open tasks. Loaded and verified after removing the enrolment test membership. Local-only; production/UAT stay seed-free.
+Live data note: one locally created `QA Workspace Guest` (+91-9000000199, no membership/reservations) remains from the 3.11 successful-create test; deletion needs user approval.
+Live dashboard (1366): 23 available / 4 occupied / 3 maintenance rooms, 1 arrival, 2 departures, 3 in-house, 3 alerts. Page height 1345px (was 1598px); Recent table 710px; `checked-in` badge 83px in a 99px cell, single line; no horizontal overflow.
+Guests workspace: 8 current rows (7 before QA create); search/select/profile/create/duplicate/enrol/global-jump all verified against real APIs. Enrolment returned Silver `GHM-2026-A9C790` for Demo Diya Shah during the test, then fixture reload removed it.
+Test results: web **12/12** (`npm test -- --run`; 8 Guests + 4 existing), `npm run lint` exit 0 with pre-existing warnings only, `npm run build` green (308 modules, 325.38kB JS / 23.26kB CSS), `git diff --check` clean. Backend unchanged from 3.10 baseline (71/71).
+Verification: Guests screenshots at 1366×768, 1024×768, 390×844; no horizontal page overflow; 390 modal is a bottom sheet (8px inset) and Escape closes it; no browser console errors in create/jump runs. Dashboard final metrics/screenshot at 1366 after the badge-width fix.
+Key limits: `GET /guests/{id}/stays` is an empty hook; reservations have no guest filter; guest DTO has no email/address. The UI shows real fields only and documents the gap. Membership enrol/redeem role rules are enforced server-side; UI gates match.
+Next action: user click-through of Guests/dashboard; then approve a commit plan (recommended separate commits: dashboard correction, 3.10 fixture/docs, 3.11 Guests). Decide whether to delete `QA Workspace Guest`. Do not merge/push.
+Servers: RUNNING — backend :8080, management :9091, web :5173, Keycloak :8081 (`infra-keycloak-1`). Launcher PID in /tmp/opencode/erp-live.pid; log /tmp/opencode/erp-live.log.
+Open items: Q-002…Q-004, Q-007…Q-009, Q-012; 3.8 browser click-through; delete stale branch `fix/hide-table-scrollbar` (approval pending); production observability credentials/infra + Sentry DSN absent; springdoc spec lag; audit-retention job pending.
