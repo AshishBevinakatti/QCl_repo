@@ -9,7 +9,8 @@ Golden Hills Resort ERP (QuantumCLK Technologies). Project root: `ERP_DEV/` (git
 | `00-onboarding/GLOSSARY.md` | hotel/ERP terms |
 | `00-onboarding/WORKING-AGREEMENT.md` | phases, gates, git flow, commit approval |
 | `01-requirements/RESOURCE_INDEX.md` | resource-folder inventory + missing items |
-| `01-requirements/source-extracts/` | derived text of SOW, landing checklist, playbook, stack proposal |
+| `01-requirements/source-extracts/` | derived text of SOW, landing checklist, playbook, stack proposal, discovery call |
+| `01-requirements/reports/` | gap-analysis and client-input reports (PDF + editable Markdown) |
 | `01-requirements/REQUIREMENTS.md` | REQ-<module>-<nnn> baseline (Phase 1) |
 | `01-requirements/TRACEABILITY.md` | SOW → REQ → design → code → test → doc |
 | `01-requirements/DECISIONS-FROM-CLIENT.md` | Decision Pack answers (Phase 1) |
