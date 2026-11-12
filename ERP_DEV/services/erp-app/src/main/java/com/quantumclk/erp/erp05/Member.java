@@ -90,6 +90,10 @@ public class Member {
     return status;
   }
 
+  public LocalDate getValidFrom() {
+    return validFrom;
+  }
+
   public LocalDate getValidTo() {
     return validTo;
   }

@@ -1,6 +1,6 @@
 # Traceability matrix — Phase 1 baseline (CORE only)
 
-- Purpose: every requirement traces to its source. Audience: approvers, developers, testers. Last verified: 2026-10-09. Owner: project team.
+- Purpose: every requirement traces to its source. Audience: approvers, developers, testers. Last verified: 2026-10-22. Owner: project team.
 - Format: `| SOW § | REQ id | Requirement | Design ref | Code (path) | Tests (path) | Doc | Status |`
 - Design/Code/Tests are `TBD (Phase 2/3)` — this baseline is docs-only (Rule 3). Status `baselined` = approved-to-design, not built.
 
@@ -23,11 +23,11 @@
 | §6 | REQ-ERP03-005 | Check-out + settlement | 02-architecture/data-model.md + 02-architecture/api.md + 02-architecture/screens.md(§2–5,12) | services/erp-app/.../erp03/ (3.3) | FrontOfficeApiTest + StayRaceTest | 04-modules/erp-03-front-office.md | baselined |
 | §6 | REQ-ERP03-006 | Search + arrivals/departures | 02-architecture/data-model.md + 02-architecture/api.md + 02-architecture/screens.md(§2–5,12) | services/erp-app/.../erp03/ (3.3) + departures/in-house/alerts (3.6) + short-ref search (3.8) | FrontOfficeApiTest + StayRaceTest + FrontOfficeListsApiTest | 04-modules/erp-03-front-office.md | baselined |
 | §6 | REQ-ERP03-007 | Reception activity log | 02-architecture/data-model.md + 02-architecture/api.md + 02-architecture/screens.md(§2–5,12) | services/erp-app/.../erp03/ (3.3) | FrontOfficeApiTest + StayRaceTest | 04-modules/erp-03-front-office.md | baselined |
-| §7 | REQ-ERP04-001 | Guest profile + phone key | 02-architecture/data-model.md + 02-architecture/api.md + 02-architecture/screens.md(§6) | services/erp-app/.../erp04/ (3.1) | GuestApiTest | 04-modules/erp-04-guest-crm.md | baselined |
-| §7 | REQ-ERP04-002 | Stay history + returning flag | 02-architecture/data-model.md + 02-architecture/api.md + 02-architecture/screens.md(§6) | services/erp-app/.../erp04/ (3.1) | GuestApiTest | 04-modules/erp-04-guest-crm.md | baselined |
+| §7 | REQ-ERP04-001 | Guest profile + phone key | 02-architecture/data-model.md + 02-architecture/api.md + 02-architecture/screens.md(§6) | services/erp-app/.../erp04/ (3.1, 3.13 profile) + `V10__guest_email.sql` | GuestApiTest + GuestProfileApiTest | 04-modules/erp-04-guest-crm.md | baselined; 3.13 profile |
+| §7 | REQ-ERP04-002 | Stay history + returning flag | 02-architecture/data-model.md + 02-architecture/api.md + 02-architecture/screens.md(§6) | services/erp-app/.../erp04/ + erp02/erp03 queries (3.1, 3.13 bounded history) | GuestApiTest + GuestProfileApiTest | 04-modules/erp-04-guest-crm.md | baselined; 3.13 history |
 | §7 | REQ-ERP04-003 | Guest search + admin | 02-architecture/data-model.md + 02-architecture/api.md + 02-architecture/screens.md(§6) | services/erp-app/.../erp04/ (3.1) | GuestApiTest | 04-modules/erp-04-guest-crm.md | baselined |
-| §7 | REQ-ERP04-004 | Membership/service link | 02-architecture/data-model.md + 02-architecture/api.md + 02-architecture/screens.md(§6) | services/erp-app/.../erp04/ (3.1) + member chip (3.5) | GuestApiTest + MemberApiTest chip | 04-modules/erp-04-guest-crm.md | baselined |
-| §7 | REQ-ERP04-005 | Communication records | 02-architecture/data-model.md + 02-architecture/api.md + 02-architecture/screens.md(§6) | services/erp-app/.../erp04/ (3.1) | GuestApiTest | 04-modules/erp-04-guest-crm.md | baselined |
+| §7 | REQ-ERP04-004 | Membership/service link | 02-architecture/data-model.md + 02-architecture/api.md + 02-architecture/screens.md(§6) | services/erp-app/.../erp04/ (3.1) + member chip (3.5) + profile membership (3.13) | GuestApiTest + MemberApiTest chip + GuestProfileApiTest | 04-modules/erp-04-guest-crm.md | baselined; 3.13 membership summary |
+| §7 | REQ-ERP04-005 | Communication records | 02-architecture/data-model.md + 02-architecture/api.md + 02-architecture/screens.md(§6) | services/erp-app/.../erp04/ (3.1; no writer/read API yet) | GuestApiTest | 04-modules/erp-04-guest-crm.md | baselined; honest unavailable in 3.13 |
 | §8 | REQ-ERP05-001 | Member enrollment + ID | 02-architecture/data-model.md + 02-architecture/api.md + 02-architecture/screens.md(§7) | services/erp-app/.../erp05/ (3.5) | MemberApiTest + EarnRaceTest | 04-modules/erp-05-membership-loyalty.md | baselined |
 | §8 | REQ-ERP05-002 | Tiers + benefits (config) | 02-architecture/data-model.md + 02-architecture/api.md + 02-architecture/screens.md(§7) | services/erp-app/.../erp05/ (3.5) | MemberApiTest + EarnRaceTest | 04-modules/erp-05-membership-loyalty.md | baselined |
 | §8 | REQ-ERP05-003 | Points earn/redeem engine | 02-architecture/data-model.md + 02-architecture/api.md + 02-architecture/screens.md(§7) | services/erp-app/.../erp05/ (3.5) | MemberApiTest + EarnRaceTest | 04-modules/erp-05-membership-loyalty.md | baselined |

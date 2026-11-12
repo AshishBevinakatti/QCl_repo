@@ -71,4 +71,8 @@ public class Folio {
   public String getStatus() {
     return status;
   }
+
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
 }

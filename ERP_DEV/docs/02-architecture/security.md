@@ -1,6 +1,6 @@
 # Security design — Phase 2 baseline
 
-- Purpose: who can do what, and how secrets/money/data stay safe. Audience: user (approver), developers. Last verified: 2026-10-09. Owner: project team.
+- Purpose: who can do what, and how secrets/money/data stay safe. Audience: user (approver), developers. Last verified: 2026-10-22. Owner: project team.
 - Sources: SOW §§22/25, REQ-ERP08-002, REQ-XCUT-003, engineering rules (RBAC, secrets, payments, privacy, hardening, RFID).
 
 ## Auth
@@ -41,6 +41,13 @@ Separate from the resort `OPS` (spa/facilities) role. Permissions are resolved f
 - Successful ops reads are themselves audited (deduped per actor/action/60s); audit responses are bounded (≤100 rows, ≤90 days) and redacted.
 - Management health is on loopback `127.0.0.1:9091`, exposes only `health,info`, and is independent of the API security chain. Never proxy it publicly.
 - Keycloak realm roles `OPS_*` must be provisioned; existing realms need a re-import/recreate to pick them up.
+
+## Guest 360 profile (3.13, as-built 2026-10-22)
+- `GET /api/v1/guests/{id}/profile` requires authentication and currently follows the existing guest-read scope (all authenticated staff); it does **not** add a new broad role gate. The UI presents it only inside the signed-in Guests workspace.
+- Guest create/update require `RECEPTION`, `MANAGER` or `SUPERADMIN`; merge remains `MANAGER`/`SUPERADMIN`. The write checks are server-side `@PreAuthorize`, not UI-only.
+- The projection is DTO-only: contact data plus operational/billing facts. It excludes full ID document numbers, scans, card data, gateway credentials, raw preference JSON and payment credentials. The canonical balance is `FolioService.outstanding`.
+- Guest edits are audited with actor, before/after identity summary and optional reason. Live verification: membership read 200 / write 403; unknown guest 404; reception profile 200 and edit allowed; set/clear email recorded and the final value restored to `null`.
+- Email is optional PII, nullable and non-unique; it is not used as an identity key. Do not log email values in application logs; audit before/after retains the contact identity summary for traceability.
 
 ## Secrets (never in repo — names only)
 `KEYCLOAK_CLIENT_SECRET, DB_URL/USER/PASSWORD, REDIS_URL, KAFKA_BOOTSTRAP, GATEWAY_API_KEY, GATEWAY_WEBHOOK_SECRET, OTA_*_API_KEY, SMTP_* , SMS_* , WHATSAPP_* , TERMINAL_API_KEYS, S3_* , JWT_SIGNING (Keycloak-managed)`. Local: `.env` (git-ignored) from `.env.example` (fake values). Staging/prod: Vault or K8s Secrets; rotation runbook in `05-operations/`. CI scans for secrets pre-commit + pre-merge; logs never print secrets, card PANs, or full ID numbers (mask: `XXXX-XXXX-1234` style).

@@ -13,4 +13,10 @@ public interface FolioRepository extends JpaRepository<Folio, UUID> {
   Optional<Folio> findByStayId(UUID stayId);
 
   List<Folio> findByGuestId(UUID guestId);
+
+  Optional<Folio> findFirstByPropertyIdAndGuestIdAndStatusOrderByCreatedAtDesc(
+      UUID propertyId, UUID guestId, String status);
+
+  Optional<Folio> findFirstByPropertyIdAndGuestIdOrderByCreatedAtDesc(
+      UUID propertyId, UUID guestId);
 }

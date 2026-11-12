@@ -129,11 +129,104 @@ export interface GuestDto {
   id: string;
   name: string;
   phone: string;
+  email: string | null;
   idType: string | null;
   preferences: string;
   status: string;
   mergedIntoId: string | null;
   memberId: string | null;
+}
+
+export interface GuestProfileGuest {
+  id: string;
+  name: string;
+  phone: string;
+  email: string | null;
+  idType: string | null;
+  status: string;
+  memberId: string | null;
+}
+
+export interface GuestMembership {
+  id: string;
+  membershipNo: string;
+  tier: string;
+  status: string;
+  validFrom: string | null;
+  validTo: string;
+  points: number;
+}
+
+export interface GuestReservation {
+  reservationId: string;
+  reference: string;
+  status: string;
+  source: string;
+  categoryId: string;
+  categoryName: string | null;
+  checkinDate: string;
+  checkoutDate: string;
+  nights: number;
+  roomId: string | null;
+  roomNo: string | null;
+  roomStatus: string | null;
+  stayId: string | null;
+  stayStatus: string | null;
+  checkinAt: string | null;
+  checkoutAt: string | null;
+}
+
+export interface GuestInvoice {
+  id: string;
+  status: string;
+  totalPaise: number;
+  issuedAt: string | null;
+}
+
+export interface GuestPaymentAlert {
+  paymentId: string;
+  status: string;
+  amountPaise: number;
+  createdAt: string;
+}
+
+export interface GuestBilling {
+  folioId: string | null;
+  stayId: string | null;
+  status: string | null;
+  chargesPaise: number;
+  paymentsPaise: number;
+  creditsPaise: number;
+  outstandingPaise: number;
+  advanceDuePaise: number | null;
+  advancePaidPaise: number | null;
+  invoice: GuestInvoice | null;
+  paymentAlerts: GuestPaymentAlert[];
+}
+
+export interface GuestAlert {
+  severity: string;
+  text: string;
+  ref: string | null;
+}
+
+export interface GuestPreference {
+  key: string;
+  label: string;
+  value: string;
+}
+
+export interface GuestProfileDto {
+  guest: GuestProfileGuest;
+  membership: GuestMembership | null;
+  currentStay: GuestReservation | null;
+  nextReservation: GuestReservation | null;
+  operationalState: string;
+  reservations: GuestReservation[];
+  reservationTotal: number;
+  billing: GuestBilling;
+  alerts: GuestAlert[];
+  preferences: GuestPreference[];
 }
 
 export interface GuestPage {
@@ -152,6 +245,11 @@ export async function searchGuests(q: string, page = 0, size = 20): Promise<Gues
 export async function guestById(id: string): Promise<GuestDto> {
   const res = await apiFetch(`/api/v1/guests/${id}`);
   if (!res.ok) throw new Error(`guest failed: ${res.status}`);
+  return res.json();
+}
+
+export async function guestProfile(id: string): Promise<GuestProfileDto> {
+  const res = await apiFetch(`/api/v1/guests/${id}/profile`);
   return res.json();
 }
 
@@ -175,16 +273,29 @@ export async function listReservations(date?: string, status?: string): Promise<
   const page = (await res.json()) as { items: ReservationSummary[] };
   return page.items;
 }
-export async function createGuest(name: string, phone: string): Promise<GuestDto> {
+export async function createGuest(name: string, phone: string, email?: string): Promise<GuestDto> {
   const res = await apiFetch('/api/v1/guests', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, phone }),
+    body: JSON.stringify(email ? { name, phone, email } : { name, phone }),
   });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.message ?? `create failed: ${res.status}`);
-  }
+  return res.json();
+}
+
+export interface GuestUpdate {
+  name?: string;
+  phone?: string;
+  email?: string | null;
+  idType?: string | null;
+  reason?: string;
+}
+
+export async function updateGuest(id: string, body: GuestUpdate): Promise<GuestDto> {
+  const res = await apiFetch(`/api/v1/guests/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
   return res.json();
 }
 

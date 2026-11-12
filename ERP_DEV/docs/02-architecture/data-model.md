@@ -1,6 +1,6 @@
 # Data model — Phase 2 design baseline
 
-- Purpose: agreed tables, keys, states, and rules every module builds on. Audience: user (approver), backend developers. Last verified: 2026-10-09. Owner: project team.
+- Purpose: agreed tables, keys, states, and rules every module builds on. Audience: user (approver), backend developers. Last verified: 2026-10-22. Owner: project team.
 - Sources: REQUIREMENTS (REQ-ERP02…09 + FAC/HSK/XCUT), module docs `04-modules/*`, ADR-001 (Postgres, monolith-first). All money/tax/rate assumptions are config data, not schema.
 
 ## Conventions (apply to every table)
@@ -45,7 +45,7 @@ app_user + role_permission + app_config (key, value jsonb, effective_from)
 | room | id, property_id, category_id, room_no, status (vacant-ready/occupied/dirty/cleaning/ready) | unique(property_id, room_no); index(status) |
 | rate_plan | id, property_id, category_id, name, multiplier_bps, from_date, to_date | index(category_id, from_date, to_date) |
 | promo | id, property_id, code, pct_bps, valid_from/to, max_uses, used | unique(property_id, code) |
-| guest | id, property_id, name, phone, id_type, preferences jsonb, status, merged_into | unique(property_id, phone) — full unique, not partial (same script runs on H2, which lacks partial indexes); index(property_id, name) |
+| guest | id, property_id, name, phone, email nullable, id_type, preferences jsonb, status, merged_into | unique(property_id, phone) — full unique, not partial (same script runs on H2, which lacks partial indexes); index(property_id, name); non-unique index(property_id, email) (V10) |
 | reservation | id, property_id, guest_id, room_id, checkin_date, checkout_date, nights, quoted_total_paise, status (hold/confirmed/checked-in/checked-out/cancelled/expired), source, idempotency_key | unique(property_id, idempotency_key); EXCLUDE overlapping confirmed holds per room (enforced in txn + app lock; concurrency test proves it); index(room_id, checkin_date, checkout_date, status) |
 | reservation_hold | reservation_id PK, expires_at | index(expires_at) for expiry job |
 | stay | id, property_id, reservation_id, room_id, checkin_at, checkout_at, status | index(reservation_id); index(room_id, status) |
@@ -66,6 +66,11 @@ app_user + role_permission + app_config (key, value jsonb, effective_from)
 | service_request | id, property_id, dept, assignee, priority, status, notes, ref | index(status, dept) |
 | channel/listing/map/sync_run | as ERD; `ota_reservation_map.channel_booking_id` unique per channel | index(channel, status) |
 | app_user/role_permission/app_config/audit_view | users, least-privilege grants, versioned config, read-only audit union | — |
+
+## As-built notes (2026-10-22)
+- `V10__guest_email.sql` adds the nullable `guest.email VARCHAR(320)` and a non-unique `(property_id, email)` index. It is forward-only, has no default/backfill, and preserves all existing guest rows; PostgreSQL is at Flyway version 10. Clearing an email stores `null` via the API contract; `null` in a PATCH body means “unchanged”.
+- Guest 360 is a **read projection**, not a new table. It reuses `guest`, `reservation`, `stay`, `room`/`room_category`, `member`/`loyalty_ledger`, `folio`/`folio_entry`/`payment`/`invoice` and `audit_event`. The outstanding balance is derived by `FolioService.outstanding`; no denormalised total or UI-only table exists.
+- No notes, service-request, verification, address, DOB, nationality or ID-document-number model is introduced in 3.13. Unsupported areas are shown as unavailable rather than invented.
 
 ## State machines (enforced server-side; illegal transitions rejected)
 - Reservation: `hold → confirmed → checked-in → checked-out`; `hold → expired`; `confirmed → cancelled`. WHY: money + inventory move only on legal transitions.

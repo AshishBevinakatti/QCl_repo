@@ -117,6 +117,54 @@ class GuestApiTest {
   }
 
   @Test
+  void emailIsOptionalAndEditableWithValidation() throws Exception {
+    MvcResult created =
+        mvc.perform(
+                post("/api/v1/guests")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        "{\"name\":\"Email Guest\",\"phone\":\"+91-9822000116\","
+                            + "\"email\":\"guest@example.com\"}"))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.email", is("guest@example.com")))
+            .andReturn();
+    String id = jsonId(created);
+    mvc.perform(
+            patch("/api/v1/guests/" + id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"updated@example.com\",\"reason\":\"contact change\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.email", is("updated@example.com")));
+    mvc.perform(
+            patch("/api/v1/guests/" + id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"not-an-email\"}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code", is("VALIDATION_FAILED")));
+    mvc.perform(
+            patch("/api/v1/guests/" + id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.email", org.hamcrest.Matchers.nullValue()));
+  }
+
+  @Test
+  @WithMockUser(username = "membership-user", authorities = "MEMBERSHIP")
+  void membershipRoleCannotCreateOrUpdateGuests() throws Exception {
+    mvc.perform(
+            post("/api/v1/guests")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Forbidden Create\",\"phone\":\"+91-9822000117\"}"))
+        .andExpect(status().isForbidden());
+    mvc.perform(
+            patch("/api/v1/guests/99999999-9999-9999-9999-999999999997")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Forbidden Update\"}"))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
   void unknownGuestIs404() throws Exception {
     mvc.perform(get("/api/v1/guests/99999999-9999-9999-9999-999999999998"))
         .andExpect(status().isNotFound())

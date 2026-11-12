@@ -5,8 +5,10 @@ import com.quantumclk.erp.erp05.MemberRepository;
 import com.quantumclk.erp.erp02.RoomCategoryController;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,14 +39,21 @@ public class GuestController {
 
   private final GuestRepository guests;
   private final MemberRepository members;
+  private final GuestProfileService profiles;
   private final AuditLog auditLog;
 
-  public GuestController(GuestRepository guests, MemberRepository members, AuditLog auditLog) {
+  public GuestController(
+      GuestRepository guests,
+      MemberRepository members,
+      GuestProfileService profiles,
+      AuditLog auditLog) {
     this.guests = guests;
     this.members = members;
+    this.profiles = profiles;
     this.auditLog = auditLog;
   }
 
+  @PreAuthorize("hasAnyAuthority('RECEPTION','MANAGER','SUPERADMIN')")
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public GuestDto create(@Valid @RequestBody CreateGuest body, HttpServletRequest req) {
@@ -61,12 +70,13 @@ public class GuestController {
     Guest g =
         new Guest(
             RoomCategoryController.GOLDEN_HILLS_PROPERTY_ID,
-            body.name(),
+            body.name().trim(),
             body.phone(),
             body.idType(),
             body.preferences());
+    g.setEmail(normalizeEmail(body.email()));
     guests.save(g);
-    audit("guest.created", g.getId().toString(), null, g.getPhone(), body.reason(), req);
+    audit("guest.created", g.getId().toString(), null, identity(g), body.reason(), req);
     return toDto(g);
   }
 
@@ -75,36 +85,51 @@ public class GuestController {
     return toDto(or404(id));
   }
 
+  /** Guest 360 read projection: one bounded request for the whole profile. */
+  @GetMapping("/{id}/profile")
+  public GuestProfileDto profile(@PathVariable UUID id) {
+    return profiles.load(RoomCategoryController.GOLDEN_HILLS_PROPERTY_ID, or404(id));
+  }
+
+  @PreAuthorize("hasAnyAuthority('RECEPTION','MANAGER','SUPERADMIN')")
   @PatchMapping("/{id}")
   public GuestDto update(
-      @PathVariable UUID id, @RequestBody Map<String, String> body, HttpServletRequest req) {
+      @PathVariable UUID id,
+      @Valid @RequestBody UpdateGuest body,
+      HttpServletRequest req) {
     Guest g = or404(id);
-    String before = g.getName() + "|" + g.getPhone();
-    if (body.containsKey("name")) {
-      g.setName(body.get("name"));
+    String before = identity(g);
+    if (body.name() != null) {
+      if (body.name().isBlank()) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "guest name cannot be blank");
+      }
+      g.setName(body.name().trim());
     }
-    if (body.containsKey("phone") && !body.get("phone").equals(g.getPhone())) {
+    if (body.phone() != null && !body.phone().equals(g.getPhone())) {
       var clash =
           guests.findByPropertyIdAndPhoneAndMergedIntoIsNull(
-              RoomCategoryController.GOLDEN_HILLS_PROPERTY_ID, body.get("phone"));
+              RoomCategoryController.GOLDEN_HILLS_PROPERTY_ID, body.phone());
       if (clash.isPresent()) {
         throw new ResponseStatusException(HttpStatus.CONFLICT, "another guest holds this phone");
       }
-      g.setPhone(body.get("phone"));
+      g.setPhone(body.phone());
     }
-    if (body.containsKey("idType")) {
-      g.setIdType(body.get("idType"));
+    if (body.email() != null) {
+      g.setEmail(normalizeEmail(body.email()));
     }
-    if (body.containsKey("preferences")) {
-      g.setPreferences(body.get("preferences"));
+    if (body.idType() != null) {
+      g.setIdType(body.idType().isBlank() ? null : body.idType().trim());
+    }
+    if (body.preferences() != null) {
+      g.setPreferences(body.preferences());
     }
     guests.save(g);
     audit(
         "guest.updated",
         g.getId().toString(),
         before,
-        g.getName() + "|" + g.getPhone(),
-        body.get("reason"),
+        identity(g),
+        body.reason(),
         req);
     return toDto(g);
   }
@@ -157,6 +182,17 @@ public class GuestController {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "guest not found"));
   }
 
+  String identity(Guest g) {
+    return g.getName() + "|" + g.getPhone() + "|" + (g.getEmail() == null ? "" : g.getEmail());
+  }
+
+  String normalizeEmail(String email) {
+    if (email == null || email.isBlank()) {
+      return null;
+    }
+    return email.trim();
+  }
+
   void audit(
       String action, String objectId, String before, String after, String reason,
       HttpServletRequest req) {
@@ -184,6 +220,7 @@ public class GuestController {
         g.getId(),
         g.getName(),
         g.getPhone(),
+        g.getEmail(),
         g.getIdType(),
         g.getPreferences(),
         g.getStatus(),
@@ -192,16 +229,35 @@ public class GuestController {
   }
 
   public record CreateGuest(
-      @NotBlank String name,
+      @NotBlank @Size(max = 200) String name,
       @NotBlank @Pattern(regexp = "^[+]?[0-9][0-9 ()-]{5,}$", message = "phone looks invalid")
+          @Size(max = 30)
           String phone,
-      String idType,
+      @Email @Size(max = 320) String email,
+      @Size(max = 50) String idType,
       String preferences,
-      String reason) {}
+      @Size(max = 500) String reason) {}
+
+  public record UpdateGuest(
+      @Size(max = 200) String name,
+      @Pattern(regexp = "^[+]?[0-9][0-9 ()-]{5,}$", message = "phone looks invalid")
+          @Size(max = 30)
+          String phone,
+      @Email @Size(max = 320) String email,
+      @Size(max = 50) String idType,
+      String preferences,
+      @Size(max = 500) String reason) {}
 
   public record GuestDto(
-      UUID id, String name, String phone, String idType, String preferences, String status,
-      UUID mergedIntoId, UUID memberId) {}
+      UUID id,
+      String name,
+      String phone,
+      String email,
+      String idType,
+      String preferences,
+      String status,
+      UUID mergedIntoId,
+      UUID memberId) {}
 
   public record GuestPage(List<GuestDto> items, int page, long total) {}
 }

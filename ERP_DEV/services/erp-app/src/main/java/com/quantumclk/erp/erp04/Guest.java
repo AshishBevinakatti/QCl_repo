@@ -35,6 +35,9 @@ public class Guest {
   @Column(nullable = false, length = 30)
   private String phone;
 
+  @Column(length = 320)
+  private String email;
+
   @Column(name = "id_type", length = 50)
   private String idType;
 
@@ -80,6 +83,14 @@ public class Guest {
 
   public void setPhone(String phone) {
     this.phone = phone;
+  }
+
+  public String getEmail() {
+    return email;
+  }
+
+  public void setEmail(String email) {
+    this.email = email;
   }
 
   public String getIdType() {

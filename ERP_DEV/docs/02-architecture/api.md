@@ -1,15 +1,14 @@
 # API contract — Phase 2 design baseline
 
-- Purpose: one versioned contract frontend, website, terminal, and channel adapters code against. Audience: user (approver), backend + frontend developers. Last verified: 2026-10-09. Owner: project team.
+- Purpose: one versioned contract frontend, website, terminal, and channel adapters code against. Audience: user (approver), backend + frontend developers. Last verified: 2026-10-22. Owner: project team.
 - Sources: module docs `04-modules/*` (endpoint lists), data-model.md (resources), ADR-001 (Spring Boot + React, OpenAPI codegen). OpenAPI file itself is generated in the hello-world slice (springdoc) and kept at `services/.../openapi.yaml` + published copy in `docs/02-architecture/openapi/` — this doc is the human-readable contract the generator must match.
 - Slice proof (2026-10-09, verified live): generated spec saved at `docs/02-architecture/openapi/erp-app.json`
   (paths: `/api/v1/health`, `/api/v1/room-categories`, `/api/v1/room-categories/{id}`); runtime UI at `/v3/api-docs`.
-- Known gap (3.3–3.4, 2026-10-09): the runtime spec still lists only the 14 pre-3.3 paths although the
-  stay/housekeeping/payment endpoints are live and green through MockMvc full-stack tests (200/409/422,
-  never 404). Tried: `springdoc.packages-to-scan` (no effect) + DEBUG logging (no springdoc output —
-  suspicious in itself). Next leads: version bump with Boot upgrade, or explicit GroupedOpenApi per
-  module. Single source of truth until fixed: the controllers + tests + this doc. NOT release-blocking
-  (consumers use this contract + typed clients), but must be fixed before UAT (Phase 6).
+- Runtime spec (verified 2026-10-22): `/v3/api-docs` now exposes **49 paths**, including
+  `/api/v1/guests/{id}/profile`. The published `docs/02-architecture/openapi/erp-app.json` still carries
+  the older 14-path snapshot (last refreshed for 3.2); refresh it before UAT. Single source of truth
+  until then: the controllers + tests + this doc. NOT release-blocking for local development
+  (consumers use this contract + typed clients), but the published-copy drift must be fixed in Phase 6.
 
 ## Global conventions (no exceptions)
 - Base: `/api/v1/...`; version in path; breaking change → `/api/v2` + `BREAKING CHANGE` footer + ADR line.
@@ -29,7 +28,9 @@ Front-office (ERP-03):
 `GET /api/v1/front-office/dashboard?date=` · `POST /api/v1/walk-ins` · `POST /api/v1/stays/check-in` · `POST /api/v1/stays/{id}/transfer` · `POST /api/v1/stays/{id}/check-out` · `GET /api/v1/arrivals?date=` · `GET /api/v1/departures?date=`.
 
 Guest CRM (ERP-04):
-`POST /api/v1/guests` · `GET /api/v1/guests/{id}` · `PATCH /api/v1/guests/{id}` · `GET /api/v1/guests?search&page` · `GET /api/v1/guests/{id}/stays` · `POST /api/v1/guests/merge` (manager).
+`POST /api/v1/guests` · `GET /api/v1/guests/{id}` · `PATCH /api/v1/guests/{id}` · `GET /api/v1/guests?search&page` · `GET /api/v1/guests/{id}/profile` (3.13) · `GET /api/v1/guests/{id}/stays` (compatibility stub) · `POST /api/v1/guests/merge` (manager).
+
+Guest 360 profile (3.13, authenticated read): DTO-only response containing identity (optional `email`), membership, active stay, next `hold`/`confirmed` reservation, latest-20 history, canonical folio totals/outstanding, invoice, bounded pending/failed payment indicators, derived operational alerts and parsed preferences. No entity/raw-JSON/payment-credential leakage; the frontend never sums money. Guest create/update require `RECEPTION`, `MANAGER` or `SUPERADMIN`; merge remains manager-only. Email is optional/validated and clearable with an empty string; `null` means “unchanged” on PATCH.
 
 Membership (ERP-05):
 `POST /api/v1/members` · `GET /api/v1/members/{id}` · `POST /api/v1/members/{id}/earn|redeem|adjust|renew` (adjust = approve role) · `GET /api/v1/members/{id}/ledger?page`.

@@ -92,6 +92,12 @@ export default function App() {
               mode={mode}
               initialQ={jump?.view === 'guests' ? jump.q : undefined}
               jumpNonce={jump?.nonce}
+              onOpenFrontOffice={(reservationId) => onJump({ view: 'check', reservationId })}
+              onOpenBilling={(stayId) => {
+                setFolioStay(stayId);
+                setFolioJump((n) => n + 1);
+                setView('billing');
+              }}
             />
           )}
 

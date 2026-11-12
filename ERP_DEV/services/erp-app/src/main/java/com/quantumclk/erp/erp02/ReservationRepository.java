@@ -69,4 +69,23 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
           + " ORDER BY r.checkinDate DESC")
   Page<Reservation> searchByRefPrefix(
       @Param("property") UUID propertyId, @Param("prefix") String prefix, Pageable pageable);
+
+  /** Guest 360: bounded reservation history, newest booking date first. */
+  @Query(
+      "SELECT r FROM Reservation r WHERE r.propertyId = :property AND r.guestId = :guest"
+          + " ORDER BY r.checkinDate DESC, r.id DESC")
+  Page<Reservation> findByGuestForProfile(
+      @Param("property") UUID propertyId,
+      @Param("guest") UUID guestId,
+      Pageable pageable);
+
+  /** Guest 360: earliest still-actionable booking when no stay is active. */
+  @Query(
+      "SELECT r FROM Reservation r WHERE r.propertyId = :property AND r.guestId = :guest"
+          + " AND r.status IN :statuses ORDER BY r.checkinDate ASC, r.id ASC")
+  List<Reservation> findNextForGuest(
+      @Param("property") UUID propertyId,
+      @Param("guest") UUID guestId,
+      @Param("statuses") List<String> statuses,
+      Pageable pageable);
 }

@@ -24,6 +24,13 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 
   List<Payment> findByBookingId(UUID bookingId);
 
+  /** Guest 360: bounded payment indicators, never a full payment-history load. */
+  List<Payment> findTop5ByPropertyIdAndFolioIdAndStatusInOrderByCreatedAtDesc(
+      UUID propertyId, UUID folioId, List<String> statuses);
+
+  List<Payment> findTop5ByPropertyIdAndBookingIdAndStatusInOrderByCreatedAtDesc(
+      UUID propertyId, UUID bookingId, List<String> statuses);
+
   /** Serialises confirm/refund processing per payment (double-posting guard). */
   @Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
   @Query("SELECT p FROM Payment p WHERE p.propertyId = :property AND p.gatewayRef = :ref")

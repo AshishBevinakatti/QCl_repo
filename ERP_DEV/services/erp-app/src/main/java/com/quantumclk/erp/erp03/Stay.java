@@ -74,6 +74,14 @@ public class Stay {
     this.roomId = roomId;
   }
 
+  public Instant getCheckinAt() {
+    return checkinAt;
+  }
+
+  public Instant getCheckoutAt() {
+    return checkoutAt;
+  }
+
   public String getStatus() {
     return status;
   }
