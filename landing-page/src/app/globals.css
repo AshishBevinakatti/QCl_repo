@@ -1,0 +1,856 @@
+/* Hallmark · checked: 2026-11-10 · genre: editorial
+ * floor: 0 FAIL · redesign: full · v2.0.0 */
+
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--brand-ink);
+  font-family: var(--font-sans);
+  font-size: var(--type-body);
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--color-brass); color: var(--color-forest); }
+a { color: inherit; text-underline-offset: 5px; }
+button { font: inherit; }
+img { max-width: 100%; }
+h1, h2, h3, p, figure { margin: 0; }
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: var(--tracking-display);
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+h1, h2 { line-height: var(--leading-display); }
+h3 { line-height: 1.14; }
+p { line-height: var(--leading-body); text-wrap: pretty; }
+a:focus-visible, button:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--color-brass);
+  outline-offset: 4px;
+}
+a:active, button:active {
+  transform: translateY(1px);
+}
+section:focus, main:focus { outline: none; }
+#vision, #cottages, #spaces, #dining, #gatherings, #opening-hero {
+  scroll-margin-top: var(--header-height);
+}
+.wrap {
+  width: min(calc(100% - 2 * var(--gutter)), var(--container));
+  margin-inline: auto;
+}
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 16px;
+  z-index: 100;
+  background: var(--color-chalk);
+  color: var(--color-forest);
+  padding: 16px 20px;
+}
+.skip-link:focus { top: 12px; }
+
+/* One small arch marks each chapter, drawn from the pool niche and the logo. */
+.section-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-sans);
+  font-size: var(--type-label);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: var(--tracking-label);
+  color: var(--color-muted);
+}
+.section-note::before {
+  content: "";
+  flex: none;
+  width: 12px;
+  height: 18px;
+  border: 1px solid var(--color-brass);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+}
+.section-note.is-on-dark { color: var(--color-forest-soft); }
+
+/* A quiet rectangular action keeps the chrome from feeling like an app. */
+.explore-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 52px;
+  padding: 0 20px;
+  border: 1px solid var(--color-chalk-58);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--color-chalk);
+  font-size: var(--type-small);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color .18s var(--ease-out), color .18s var(--ease-out), border-color .18s var(--ease-out);
+}
+.explore-button:hover {
+  background: var(--color-chalk);
+  color: var(--color-forest);
+  border-color: var(--color-chalk);
+}
+.explore-button:active {
+  transform: translateY(1px);
+}
+.explore-button svg { flex: none; }
+
+/* A full image, not a card: the sky holds the title, the arch stays clear. */
+.hero {
+  position: relative;
+  height: min(900px, calc(100svh - var(--header-height)));
+  min-height: 670px;
+  color: var(--color-chalk);
+}
+.hero-figure, .hero-window, .hero-media, .hero-shade { position: absolute; inset: 0; }
+.hero-window { overflow: hidden; background: var(--color-forest); color: var(--color-chalk); }
+.hero-media picture, .hero-media img { display: block; width: 100%; height: 100%; }
+.hero-media img { object-fit: cover; object-position: center 54%; }
+.hero-shade {
+  background:
+    linear-gradient(100deg, var(--color-shade-mid) 0%, var(--color-shade-whisper) 38%, transparent 64%),
+    linear-gradient(180deg, var(--color-shade-light) 0%, transparent 32%, transparent 62%, var(--color-shade-dark) 100%);
+}
+.hero-heading {
+  position: absolute;
+  top: 40px;
+  left: var(--gutter);
+  right: var(--gutter);
+}
+.hero-bottom {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: 92px;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 28px;
+}
+.hero-disclosure {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid var(--color-chalk-28);
+  padding-top: 12px;
+  font-size: 12.5px;
+}
+
+/* The concept statement is a short, offset editorial pause. */
+.vision-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
+  gap: var(--grid-gap);
+  padding-block: var(--space-section);
+}
+.vision-margin {
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 48px;
+}
+.vision-margin p { font-size: var(--type-small); color: var(--color-muted); }
+.arch-mark {
+  display: block;
+  width: 52px;
+  height: 76px;
+  border: 1px solid var(--color-brass);
+  border-bottom: 0;
+  border-radius: 52px 52px 0 0;
+}
+.vision-statement h2 { font-size: var(--type-statement); max-width: 15ch; }
+.vision-details {
+  margin-top: 56px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--grid-gap);
+  max-width: 880px;
+}
+.vision-details p { font-size: var(--type-body); max-width: 400px; }
+.vision-details p + p { color: var(--color-muted); }
+
+/* Cottage chapter: native, bounded sticky storytelling on larger screens. */
+.cottage-section {
+  background: var(--color-forest);
+  color: var(--color-chalk);
+  padding-block: clamp(88px, 8vw, 112px) 72px;
+}
+.cottage-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr);
+  align-items: end;
+  gap: 20px var(--grid-gap);
+}
+.cottage-heading .section-note { grid-column: 1 / -1; color: var(--color-forest-soft); }
+.cottage-heading h2 { grid-column: 1; font-size: var(--type-title); max-width: 14ch; }
+.cottage-disclaimer {
+  grid-column: 2;
+  justify-self: end;
+  max-width: 320px;
+  text-align: right;
+  font-size: var(--type-small);
+  line-height: 1.6;
+  color: var(--color-forest-soft);
+}
+.story-track {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.65fr);
+  gap: var(--grid-gap);
+  margin-top: 72px;
+}
+.story-beats, .story-stills { display: contents; }
+.story-beat { grid-column: 1; align-self: center; max-width: 360px; padding-block: 40px; }
+.story-beat:nth-child(1), .story-still-0 { grid-row: 1; }
+.story-beat:nth-child(2), .story-still-1 { grid-row: 2; }
+.story-beat:nth-child(3), .story-still-2 { grid-row: 3; }
+.story-still { grid-column: 2; }
+.chapter-line {
+  display: block;
+  width: 26px;
+  height: 38px;
+  margin-bottom: 28px;
+  border: 1px solid var(--color-brass);
+  border-bottom: 0;
+  border-radius: 26px 26px 0 0;
+}
+.story-beat h3 {
+  font-size: var(--type-subtitle);
+  max-width: 20ch;
+  margin-bottom: 24px;
+}
+.story-beat p { font-size: var(--type-body); color: var(--color-forest-soft); }
+.concept-note {
+  display: block;
+  margin-top: 24px;
+  font-size: var(--type-small);
+  color: var(--color-forest-soft);
+}
+.story-track .concept-figure figcaption { color: var(--color-forest-soft); }
+.is-cinematic { align-items: start; }
+.is-cinematic .story-beats { display: block; grid-column: 1; grid-row: 1; }
+.is-cinematic .story-beat {
+  min-height: 78svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.story-stage {
+  position: sticky;
+  top: 12svh;
+  height: 76svh;
+  max-height: 720px;
+  grid-row: 1;
+  grid-column: 2;
+}
+.story-aperture {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(100% - 72px);
+  overflow: hidden;
+}
+.story-scene { position: absolute; inset: 0; }
+.story-scene .concept-image { height: 100%; aspect-ratio: auto; }
+.story-stage > figcaption { position: absolute; left: 0; right: 0; bottom: 36px; }
+.story-scene:nth-child(1) img { object-position: 54% center; }
+.story-progress {
+  position: absolute;
+  bottom: 0;
+  height: 1px;
+  width: 100%;
+  background: var(--color-chalk-18);
+}
+.story-progress span { display: block; height: 100%; background: var(--color-brass); transform-origin: 0 50%; }
+
+/* Captions are stable siblings of the animated image plane. */
+.concept-figure { min-width: 0; }
+.concept-image {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-limestone);
+  aspect-ratio: 1.5;
+}
+.concept-media { position: absolute; inset: 0; }
+.concept-media img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.concept-figure figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding-top: 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+.concept-figure figcaption span:first-child { font-weight: 500; color: var(--brand-ink); }
+.cottage-section .concept-figure figcaption span:first-child { color: var(--color-chalk); }
+
+/* Arrival takes the width; the interior is a smaller, intimate counterpoint. */
+.spaces-section { padding-block: var(--space-section); }
+.spaces-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, .85fr);
+  gap: 72px var(--grid-gap);
+}
+.spaces-copy { grid-column: 2; grid-row: 1; padding-top: 12px; }
+.spaces-copy h2 { font-size: clamp(34px, 3.4vw, 52px); max-width: 22ch; margin-block: 24px; }
+.spaces-copy > p:last-child { font-size: var(--type-body); max-width: 320px; }
+.arrival-view { grid-column: 1; grid-row: 1 / 3; }
+.arrival-view .concept-image { aspect-ratio: .93; }
+.interior-story { grid-column: 2; grid-row: 2; margin-top: 0; }
+.interior-view .concept-image { aspect-ratio: 1.17; }
+.interior-note {
+  margin-top: 24px;
+  max-width: 300px;
+  font-size: var(--type-small);
+  color: var(--color-muted);
+}
+
+/* Dining behaves like a spread, not a pair of equal cards. */
+.dining-section { background: var(--color-garden); }
+.dining-layout {
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.7fr);
+  gap: 48px var(--grid-gap);
+  padding-block: clamp(104px, 9vw, 128px);
+}
+.dining-heading { grid-column: 1 / -1; }
+.dining-heading h2 { font-size: var(--type-title); max-width: 15ch; margin-top: 24px; }
+.dining-copy { grid-column: 1; grid-row: 2; align-self: center; max-width: 300px; font-size: var(--type-body); }
+.dining-main { grid-column: 2; grid-row: 2 / 4; align-self: start; margin-top: 24px; }
+.dining-main .concept-image { aspect-ratio: 1.6; }
+.dining-detail { grid-column: 1; grid-row: 3 / 5; margin-top: 40px; }
+.dining-detail .concept-image { aspect-ratio: .84; }
+.dining-aside {
+  grid-column: 2;
+  grid-row: 4;
+  align-self: start;
+  justify-self: end;
+  max-width: 22ch;
+  padding-right: 8%;
+  font-family: var(--font-display);
+  font-size: var(--type-subtitle);
+  line-height: 1.14;
+}
+.evening-chapter {
+  background: var(--color-forest);
+  color: var(--color-chalk);
+  padding-block: clamp(80px, 8vw, 104px) clamp(96px, 9vw, 120px);
+}
+.evening-inner {
+  display: grid;
+  grid-template-columns: minmax(0, .65fr) minmax(0, 1.7fr);
+  gap: 36px var(--grid-gap);
+}
+.evening-chapter h3 {
+  grid-column: 1 / -1;
+  max-width: 12ch;
+  margin-bottom: clamp(32px, 3.4vw, 56px);
+  font-size: var(--type-title);
+}
+.bar-view { grid-column: 2; grid-row: 2; }
+.bar-view .concept-image { aspect-ratio: 1.48; }
+.bar-view figcaption { color: var(--color-forest-soft); }
+.evening-copy { grid-column: 1; grid-row: 2; align-self: end; padding-bottom: 40px; }
+.evening-rule {
+  display: block;
+  width: 26px;
+  height: 38px;
+  margin-bottom: 24px;
+  border: 1px solid var(--color-brass);
+  border-bottom: 0;
+  border-radius: 26px 26px 0 0;
+}
+.evening-copy p:first-of-type {
+  font-family: var(--font-display);
+  font-size: var(--type-subtitle);
+  line-height: 1.14;
+  margin-bottom: 24px;
+}
+.evening-copy p:last-child { max-width: 260px; font-size: var(--type-small); color: var(--color-forest-soft); }
+
+.gatherings-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, .8fr);
+  gap: 40px var(--grid-gap);
+  padding-block: clamp(104px, 10vw, 152px);
+}
+.gatherings-heading {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 40px;
+}
+.gatherings-heading h2 { font-size: var(--type-title); text-align: right; }
+.gatherings-view { grid-column: 1 / -1; width: 84%; }
+.gatherings-view .concept-image { aspect-ratio: 1.95; }
+.gatherings-copy { grid-column: 2; max-width: 380px; padding-top: 4px; font-size: var(--type-body); }
+
+/* The closing is the page's single cinematic moment: the garden at dusk. */
+.closing-section {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  min-height: 88svh;
+  background: var(--color-forest);
+  color: var(--color-chalk);
+}
+.closing-media { position: absolute; inset: 0; }
+.closing-media img { width: 100%; height: 100%; object-fit: cover; object-position: center 58%; }
+.closing-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, var(--color-scrim-haze) 18%, var(--color-scrim-mid) 52%, var(--color-scrim-deep) 100%);
+}
+.closing-inner {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 48px;
+  padding-block: 80px 104px;
+}
+.closing-copy > p { margin-bottom: 20px; font-size: var(--type-small); color: var(--color-chalk-82); }
+.closing-inner h2 { font-size: var(--type-display); max-width: 12ch; }
+.closing-cta { justify-self: end; }
+.closing-meta {
+  position: absolute;
+  right: var(--gutter);
+  bottom: 32px;
+  z-index: 2;
+  max-width: 46ch;
+  text-align: right;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-chalk-66);
+}
+
+/* Footer closes the story with the same quiet rules as the page. */
+.site-footer {
+  background: var(--color-paper);
+  border-top: 1px solid var(--color-line);
+  padding-block: 64px 32px;
+}
+.footer-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, .7fr) minmax(0, .9fr);
+  gap: var(--grid-gap);
+  align-items: start;
+}
+.footer-brand img { display: block; width: 132px; height: auto; }
+.footer-brand p {
+  margin-top: 20px;
+  max-width: 330px;
+  font-size: var(--type-small);
+  color: var(--color-muted);
+}
+.footer-col h2 {
+  margin-bottom: 16px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  color: var(--color-muted);
+}
+.footer-list { display: flex; flex-direction: column; gap: 8px; }
+.footer-list a {
+  width: fit-content;
+  font-size: var(--type-small);
+  text-decoration: none;
+  transition: color .16s var(--ease-out);
+}
+.footer-list a:hover { color: var(--color-muted); }
+.footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 24px;
+  margin-top: 56px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-line);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--color-muted);
+}
+.footer-bottom p { max-width: 680px; }
+.back-top {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  text-decoration: none;
+  color: var(--brand-ink);
+}
+.back-top:hover { color: var(--color-muted); }
+
+@media (min-width: 1800px) {
+  .opening .hero { max-width: 1800px; margin-inline: auto; }
+}
+
+@media (max-width: 999px) {
+  :root { --header-height: 76px; }
+  .desktop-nav, .header-action { display: none; }
+  .vision-section { grid-template-columns: minmax(0, .55fr) minmax(0, 2fr); gap: 40px; }
+  .vision-details { gap: 32px; }
+  .cottage-heading { gap: 20px 40px; }
+  .story-track { grid-template-columns: minmax(0, .9fr) minmax(0, 1.25fr); gap: 56px 40px; }
+  .story-still .concept-image { aspect-ratio: 1.08; }
+  .spaces-layout { grid-template-columns: minmax(0, 1fr); gap: 48px; }
+  .spaces-copy { grid-column: 1; grid-row: 1; padding: 0; }
+  .spaces-copy h2 { max-width: none; }
+  .arrival-view { grid-column: 1; grid-row: 2; }
+  .arrival-view .concept-image { aspect-ratio: .93; }
+  .interior-story { grid-column: 1; grid-row: 3; width: 60%; justify-self: end; margin-top: 0; }
+  .dining-layout { column-gap: 40px; }
+  .evening-inner { column-gap: 40px; }
+  .gatherings-heading { display: block; }
+  .gatherings-heading h2 { margin-top: 24px; text-align: left; }
+  .closing-inner { grid-template-columns: minmax(0, 1fr); gap: 40px; padding-block: 72px 56px; }
+  .closing-cta { justify-self: start; }
+  .closing-section { flex-direction: column; justify-content: flex-end; align-items: stretch; }
+  .closing-meta { position: static; margin: 16px auto 0; padding-inline: var(--gutter); padding-bottom: 24px; text-align: left; }
+  .footer-top { grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr) minmax(0, .8fr); gap: 40px; }
+}
+
+@media (max-width: 700px) {
+  :root { --gutter: 24px; }
+  .vision-section { display: block; padding-block: 88px 96px; }
+  .vision-margin { flex-direction: row; align-items: center; gap: 24px; margin-bottom: 40px; }
+  .arch-mark { width: 30px; height: 46px; border-radius: 30px 30px 0 0; }
+  .vision-margin p { text-align: right; }
+  .vision-details { display: block; margin-top: 32px; }
+  .vision-details p + p { margin-top: 20px; }
+  .cottage-section { padding-block: 72px 80px; }
+  .cottage-heading { display: block; }
+  .cottage-heading h2 { margin-top: 24px; }
+  .cottage-disclaimer { margin-top: 24px; text-align: left; }
+  .story-track { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; margin-top: 48px; }
+  .story-beat { grid-column: 1; padding: 0; }
+  .story-beat:nth-child(1) { grid-row: 1; }
+  .story-beat:nth-child(2) { grid-row: 3; margin-top: 32px; }
+  .story-beat:nth-child(3) { grid-row: 5; margin-top: 32px; }
+  .story-still { grid-column: 1; }
+  .story-still-0 { grid-row: 2; width: 88%; justify-self: end; }
+  .story-still-1 { grid-row: 4; margin-inline: calc(-1 * var(--gutter)); }
+  .story-still-2 { grid-row: 6; width: 88%; }
+  .story-still-1 figcaption { padding-inline: var(--gutter); }
+  .story-still .concept-image { aspect-ratio: 1.05; }
+  .story-still-1 .concept-image { aspect-ratio: 1.05; }
+  .chapter-line { width: 22px; height: 32px; margin-bottom: 20px; border-radius: 22px 22px 0 0; }
+  .story-beat h3 { margin-bottom: 16px; }
+  .story-beat p { max-width: 320px; }
+  .concept-note { margin-top: 16px; }
+  .concept-figure figcaption { display: block; }
+  .concept-figure figcaption span { display: block; }
+  .concept-figure figcaption span + span { margin-top: 2px; }
+  .spaces-section { padding-block: 88px; }
+  .spaces-layout { display: flex; flex-direction: column; gap: 40px; }
+  .spaces-copy { padding: 0; }
+  .spaces-copy h2 { margin-block: 24px; }
+  .arrival-view { margin-left: calc(-1 * var(--gutter)); width: calc(100% + var(--gutter)); }
+  .arrival-view .concept-image { aspect-ratio: 1.02; }
+  .arrival-view figcaption { padding-left: var(--gutter); }
+  .interior-story { width: 84%; align-self: end; margin-top: 8px; }
+  .interior-view .concept-image { aspect-ratio: .95; }
+  .dining-layout { display: flex; flex-direction: column; padding-block: 80px; gap: 32px; }
+  .dining-heading h2 { margin-top: 20px; }
+  .dining-copy { align-self: start; max-width: 320px; }
+  .dining-main { margin: 4px calc(-1 * var(--gutter)) 0; }
+  .dining-main .concept-image { aspect-ratio: 1.22; }
+  .dining-main figcaption { padding-inline: var(--gutter); }
+  .dining-detail { width: 82%; margin-top: 16px; align-self: end; }
+  .dining-detail .concept-image { aspect-ratio: .94; }
+  .dining-aside { align-self: start; margin-top: 8px; }
+  .evening-chapter { padding-block: 56px 72px; }
+  .evening-inner { display: flex; flex-direction: column; gap: 32px; }
+  .evening-chapter h3 { margin: 0; }
+  .bar-view { margin-inline: calc(-1 * var(--gutter)); }
+  .bar-view .concept-image { aspect-ratio: 1.1; }
+  .bar-view figcaption { padding-inline: var(--gutter); }
+  .evening-copy { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1fr); gap: 20px; padding: 0; align-self: stretch; }
+  .evening-rule { display: none; }
+  .evening-copy p:first-of-type { margin: 0; }
+  .gatherings-section { display: block; padding-block: 88px; }
+  .gatherings-heading h2 { margin-top: 20px; }
+  .gatherings-view { width: calc(100% + 2 * var(--gutter)); margin: 32px calc(-1 * var(--gutter)) 0; }
+  .gatherings-view .concept-image { aspect-ratio: 1.28; }
+  .gatherings-view figcaption { padding-inline: var(--gutter); }
+  .gatherings-copy { max-width: 300px; margin-left: auto; margin-top: 32px; }
+  .closing-section { min-height: 78svh; }
+  .closing-inner { padding-block: 64px 24px; }
+  .closing-inner h2 { max-width: 9ch; }
+  .closing-cta { width: 100%; }
+  .closing-meta { padding-bottom: 20px; font-size: 11.5px; }
+  .site-footer { padding-block: 48px 24px; }
+  .footer-top { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px 24px; }
+  .footer-brand { grid-column: 1 / -1; }
+  .footer-bottom { display: block; margin-top: 40px; }
+  .back-top { margin-top: 16px; }
+}
+
+/* Hallmark · full redesign · luxury editorial arrival sequence
+ * pre-emit critique: P5 H5 E4 S5 R5 V4 · weakest: E, motion is intentionally quiet and concentrated in the story handoffs
+ * redesign: full · preserve supplied concepts, disclosures, links and routes
+ * answered F3 · display heads use one face and one weight across the page
+ */
+
+.vision-section {
+  grid-template-columns: minmax(140px, .7fr) minmax(0, 3fr);
+  gap: var(--grid-gap);
+  padding-block: clamp(120px, 15vw, 224px);
+}
+
+.vision-index {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 48px;
+}
+
+.vision-statement .section-note {
+  margin-bottom: 32px;
+}
+
+.vision-statement h2 {
+  max-width: 12ch;
+  font-size: clamp(48px, 6.8vw, 104px);
+}
+
+.vision-details {
+  margin-top: clamp(56px, 8vw, 104px);
+  max-width: 820px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+  gap: var(--grid-gap);
+}
+
+.vision-details p:first-child {
+  font-size: clamp(18px, 1.7vw, 25px);
+  line-height: 1.42;
+}
+
+.vision-details p + p {
+  padding-top: 8px;
+}
+
+.arrival-section {
+  background: var(--color-limestone);
+  padding-block: clamp(112px, 13vw, 208px);
+}
+
+.arrival-layout {
+  display: grid;
+  grid-template-columns: minmax(0, .78fr) minmax(0, 1.58fr);
+  gap: var(--grid-gap);
+  align-items: start;
+}
+
+.arrival-copy {
+  grid-column: 1;
+  padding-top: clamp(20px, 7vw, 104px);
+}
+
+.arrival-copy h2 {
+  max-width: 12ch;
+  margin-block: 28px 32px;
+  font-size: var(--type-title);
+}
+
+.arrival-copy > p:not(.section-note) {
+  max-width: 31ch;
+}
+
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 36px;
+  font-size: var(--type-small);
+  text-underline-offset: 5px;
+}
+
+.text-link svg {
+  transition: transform var(--dur-short) var(--ease-out);
+}
+
+.text-link:hover svg {
+  transform: translateX(4px);
+}
+
+.arrival-figure {
+  grid-column: 2;
+  grid-row: 1 / 3;
+}
+
+.arrival-figure .concept-image {
+  aspect-ratio: 1.12;
+}
+
+.arrival-detail {
+  grid-column: 1;
+  grid-row: 2;
+  align-self: end;
+}
+
+.arrival-detail .concept-image {
+  aspect-ratio: 1.08;
+}
+
+.arrival-detail > p {
+  max-width: 46ch;
+  margin-top: 20px;
+  color: var(--color-muted);
+  font-size: var(--type-small);
+}
+
+.cottage-section {
+  padding-top: clamp(128px, 15vw, 232px);
+}
+
+.cottage-heading h2 {
+  font-size: clamp(48px, 6vw, 92px);
+}
+
+.dining-heading h2,
+.evening-chapter h3,
+.gatherings-heading h2 {
+  font-size: clamp(44px, 5.2vw, 78px);
+}
+
+.dining-main .concept-image,
+.bar-view .concept-image,
+.gatherings-view .concept-image {
+  transition: transform .8s var(--ease-out);
+}
+
+.dining-main:hover .concept-image,
+.bar-view:hover .concept-image,
+.gatherings-view:hover .concept-image {
+  transform: scale(1.012);
+}
+
+.closing-section {
+  min-height: 78svh;
+}
+
+@media (max-width: 999px) {
+  .vision-section {
+    grid-template-columns: minmax(0, .6fr) minmax(0, 2fr);
+    gap: 40px;
+  }
+
+  .arrival-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    gap: 48px 32px;
+  }
+
+  .arrival-copy {
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .vision-section {
+    display: block;
+    padding-block: 96px 112px;
+  }
+
+  .vision-index {
+    min-height: 0;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 72px;
+  }
+
+  .vision-index .arch-mark {
+    width: 40px;
+    height: 58px;
+  }
+
+  .vision-statement h2 {
+    font-size: clamp(46px, 13vw, 70px);
+  }
+
+  .vision-details {
+    display: block;
+    margin-top: 48px;
+  }
+
+  .vision-details p + p {
+    margin-top: 24px;
+  }
+
+  .arrival-section {
+    padding-block: 88px 104px;
+  }
+
+  .arrival-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+  }
+
+  .arrival-copy {
+    order: 1;
+  }
+
+  .arrival-figure {
+    order: 2;
+  }
+
+  .arrival-detail {
+    order: 3;
+    width: 78%;
+    align-self: flex-end;
+  }
+
+  .arrival-copy h2 {
+    font-size: clamp(42px, 11vw, 60px);
+  }
+
+  .cottage-section {
+    padding-top: 96px;
+  }
+
+  .dining-heading h2,
+  .evening-chapter h3,
+  .gatherings-heading h2 {
+    font-size: clamp(42px, 11vw, 62px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .text-link svg,
+  .dining-main .concept-image,
+  .bar-view .concept-image,
+  .gatherings-view .concept-image {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .explore-button, .footer-list a { transition: none; }
+  .hero-media, [data-hero-entrance], .concept-media { transform: none !important; opacity: 1 !important; }
+}

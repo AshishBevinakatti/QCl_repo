@@ -1,0 +1,37 @@
+[
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "shape": "photographic spread",
+  "theme": "brand-preserved",
+  "axes": [
+   "full",
+   "editorial",
+   "asymmetric",
+   "cinematic",
+   "quiet-motion",
+   "arrival-led"
+  ],
+  "hero": "existing pool-courtyard opening with scroll-settled masthead",
+  "nav": "resort links with plan-ahead action",
+  "footer": "mast with explore and plan-ahead links",
+  "imagery": "supplied resort concept renders",
+  "photos": [],
+  "entry": "full redesign of the Golden Hills landing page",
+  "fingerprint": "arrival-retreat-gathering",
+  "sections": [
+   "hero",
+   "vision",
+   "arrival",
+   "cottage studies",
+   "dining",
+   "gatherings",
+   "closing",
+   "footer"
+  ],
+  "signature": "cinematic cottage scroll story",
+  "waived": [],
+  "prompt": "redesign the whole landing page with new layout and animation effects",
+  "date": "2026-11-09"
+ }
+]

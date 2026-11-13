@@ -1,0 +1,86 @@
+/* Hallmark · redesign: full · brand: preserved (forest/gold/cream, Bodoni Moda + Manrope)
+ * pre-emit critique: P4 H4 E5 S4 R5 V4 · weakest: S, resort concept preview is an evocative category; led with immediate full-bleed hero immersion and architectural typography
+ * genre: editorial · job: visit · hero: Settled · nav: transparent-to-cream · footer: mast
+ * shape: Photographic spread · signature: cinematic cottage scroll story
+ * deal: manual (brand) · v2.0.0 */
+/* Hallmark · answered F15 · existing chapters keep their tuned editorial rhythm */
+
+:root {
+  /* Brand */
+  --brand-forest: #104028;
+  --brand-gold: #b88828;
+  --brand-cream: #f7f2ec;
+  --brand-ink: #18241d;
+
+  /* Surfaces & Solids */
+  --color-paper: var(--brand-cream);
+  --color-forest: var(--brand-forest);
+  --color-ink: var(--brand-ink);
+  --color-limestone: #e8e1d7;
+  --color-garden: #e0e2d3;
+  --color-brass: var(--brand-gold);
+  --color-chalk: #fffaf3;
+  --color-forest-soft: #cfd9c9;
+  --color-muted: #596a5e;
+  --color-line: #c3c9bd;
+
+  /* Alpha Tints & Scrims (strictly tokenized) */
+  --color-chalk-82: color-mix(in srgb, var(--color-chalk) 82%, transparent);
+  --color-chalk-78: color-mix(in srgb, var(--color-chalk) 78%, transparent);
+  --color-chalk-66: color-mix(in srgb, var(--color-chalk) 66%, transparent);
+  --color-chalk-58: color-mix(in srgb, var(--color-chalk) 58%, transparent);
+  --color-chalk-45: color-mix(in srgb, var(--color-chalk) 45%, transparent);
+  --color-chalk-28: color-mix(in srgb, var(--color-chalk) 28%, transparent);
+  --color-chalk-18: color-mix(in srgb, var(--color-chalk) 18%, transparent);
+
+  --color-shade-dark: color-mix(in srgb, var(--color-forest) 84%, transparent);
+  --color-shade-mid: color-mix(in srgb, var(--color-forest) 58%, transparent);
+  --color-shade-light: color-mix(in srgb, var(--color-forest) 34%, transparent);
+  --color-shade-whisper: color-mix(in srgb, var(--color-forest) 22%, transparent);
+
+  --color-scrim-deep: color-mix(in srgb, var(--color-forest) 90%, transparent);
+  --color-scrim-mid: color-mix(in srgb, var(--color-forest) 26%, transparent);
+  --color-scrim-haze: color-mix(in srgb, var(--color-forest) 4%, transparent);
+
+  /* Type */
+  --font-sans: "Manrope Variable", "Segoe UI", Arial, sans-serif;
+  --font-display: "Bodoni Moda Variable", "Bodoni MT", Georgia, serif;
+
+  /* Scale */
+  --type-display: clamp(52px, 7.4vw, 112px);
+  --type-statement: clamp(44px, 5.8vw, 84px);
+  --type-title: clamp(36px, 4.4vw, 64px);
+  --type-subtitle: clamp(24px, 2.4vw, 34px);
+  --type-lead: clamp(18px, 1.35vw, 21px);
+  --type-body: 16px;
+  --type-small: 14px;
+  --type-label: 13px;
+
+  /* Leading */
+  --leading-display: 1.04;
+  --leading-title: 1.07;
+  --leading-body: 1.65;
+
+  /* Tracking */
+  --tracking-display: -.02em;
+  --tracking-label: 0em;
+
+  /* Space - strictly 4px aligned */
+  --space-section: clamp(104px, 11vw, 176px);
+  --space-section-tight: clamp(80px, 8vw, 120px);
+  --gutter: clamp(24px, 4.5vw, 88px);
+  --grid-gap: 64px;
+  --container: 1480px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --dur-micro: .16s;
+  --dur-short: .3s;
+
+  /* Chrome */
+  --header-height: 80px;
+}
+
+@media (max-width: 1119px) {
+  :root { --header-height: 68px; }
+}
