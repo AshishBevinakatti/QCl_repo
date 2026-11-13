@@ -29,6 +29,35 @@ body {
   opacity: 0.5;
 }
 
+/* Typography Rules: General Sans for Headings/Subheadings, Inter for Body & UI */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
+
+body,
+p,
+span,
+li,
+a,
+button,
+input,
+textarea,
+select,
+label,
+table,
+th,
+td {
+  font-family: var(--font-sans);
+  letter-spacing: var(--tracking-body);
+}
+
+nav a,
+.opening-desktop a,
+.opening-mobile-nav a,
+.footer-list a {
+  letter-spacing: var(--tracking-nav);
+}
+
 /* Reduced motion guarantee */
 @media (prefers-reduced-motion: reduce) {
   *,

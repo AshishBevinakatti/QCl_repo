@@ -43,39 +43,75 @@
   --color-scrim-haze: color-mix(in srgb, var(--color-forest) 4%, transparent);
 
   /* Type */
-  --font-sans: "Manrope Variable", "Segoe UI", Arial, sans-serif;
-  --font-display: "Bodoni Moda Variable", "Bodoni MT", Georgia, serif;
+  --font-sans: "Inter Variable", "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: "General Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
-  /* Scale */
-  --type-display: clamp(52px, 7.4vw, 112px);
-  --type-statement: clamp(44px, 5.8vw, 84px);
-  --type-title: clamp(36px, 4.4vw, 64px);
-  --type-subtitle: clamp(24px, 2.4vw, 34px);
-  --type-lead: clamp(18px, 1.35vw, 21px);
+  /* Scale: Unified, harmonious typography scale */
+  --type-hero: clamp(54px, 5.8vw, 80px);
+  --type-display: clamp(32px, 3.4vw, 44px);
+  --type-section: clamp(32px, 3.4vw, 44px);
+  --type-card: clamp(19px, 1.4vw, 22px);
+  --type-subtitle: clamp(16px, 1.3vw, 19px);
   --type-body: 16px;
+  --type-card-body: 14px;
+  --type-card-meta: 12px;
+  --type-card-features: 13px;
   --type-small: 14px;
-  --type-label: 13px;
+  --type-label: 12px;
+  --type-badge: 11px;
+  --type-footnote: 11px;
+
+  /* Legacy aliases mapped cleanly to new scale */
+  --type-statement: clamp(32px, 3.4vw, 44px);
+  --type-title: clamp(32px, 3.4vw, 44px);
+  --type-lead: clamp(16px, 1.3vw, 19px);
+
+  /* Weights */
+  --weight-hero: 700;
+  --weight-section: 600;
+  --weight-card: 600;
+  --weight-subheading: 500;
+  --weight-meta: 500;
+  --weight-badge: 600;
+  --weight-body: 400;
+
+  /* Letter Spacing (Tracking) */
+  --tracking-hero: -0.03em;
+  --tracking-section: -0.02em;
+  --tracking-card: -0.01em;
+  --tracking-body: 0;
+  --tracking-nav: 0.02em;
+  --tracking-display: -0.02em;
+  --tracking-label: 0.06em;
+  --tracking-badge: 0.05em;
 
   /* Leading */
-  --leading-display: 1.04;
-  --leading-title: 1.07;
-  --leading-body: 1.65;
-
-  /* Tracking */
-  --tracking-display: -.02em;
-  --tracking-label: 0em;
+  --leading-hero: 1.08;
+  --leading-display: 1.15;
+  --leading-section: 1.15;
+  --leading-title: 1.25;
+  --leading-card: 1.25;
+  --leading-body: 1.6;
 
   /* Space - strictly 4px aligned */
-  --space-section: clamp(104px, 11vw, 176px);
-  --space-section-tight: clamp(80px, 8vw, 120px);
-  --gutter: clamp(24px, 4.5vw, 88px);
-  --grid-gap: 64px;
-  --container: 1480px;
+  --space-section: clamp(48px, 5.5vw, 88px);
+  --space-section-tight: clamp(36px, 4vw, 60px);
+  --gutter: clamp(20px, 4vw, 64px);
+  --grid-gap: clamp(28px, 3.5vw, 48px);
+  --container: 1440px;
 
   /* Motion */
   --ease-out: cubic-bezier(.22, 1, .36, 1);
   --dur-micro: .16s;
   --dur-short: .3s;
+
+  /* Uniform Border Radius System (All Cards, Tiles, Images, and Boxes) */
+  --radius-card: 16px;
+  --radius-box: 16px;
+  --radius-image: 16px;
+  --radius-inner: 10px;
+  --radius-control: 8px;
+  --radius-pill: 999px;
 
   /* Chrome */
   --header-height: 80px;

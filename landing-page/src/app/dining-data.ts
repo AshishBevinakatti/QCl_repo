@@ -1,0 +1,119 @@
+import type { DiningOutlet } from "./dining-cards";
+
+export const diningOutlets: DiningOutlet[] = [
+  {
+    name: "Pure Veg Restaurant",
+    tag: "Dedicated Pure Veg Kitchen",
+    timing: "07:00 AM – 11:00 PM",
+    cuisine: "Regional & Satvik Specialties",
+    lead: "Dedicated vegetarian dining hall serving authentic North Karnataka thalis and South Indian classics in a 100% segregated environment.",
+    highlights: [
+      "100% separate kitchen, cookware & dedicated vegetarian staff",
+      "Traditional North Karnataka Jolada Rotti thalis & regional curries",
+      "Freshly prepared South Indian breakfast & wholesome family feasts",
+    ],
+    serviceNotes: [
+      "Dedicated POS billing counter ensuring complete operational separation",
+      "Features Astu Architects custom pendant lighting & booth banquettes",
+    ],
+    sceneId: "dining-veg-seating-p13",
+    imageAlt: "Pure Vegetarian dining hall concept with pendant lighting and upholstered booth banquettes",
+    imageLabel: "Dedicated Pure Vegetarian Dining Hall",
+  },
+  {
+    name: "Non-Veg Restaurant",
+    tag: "Multi-Cuisine & Barbecue",
+    timing: "07:00 AM – 11:00 PM",
+    cuisine: "Live Grill, Italian & Pan-Asian",
+    lead: "Expansive restaurant featuring an open barbecue grill, tandoor ovens, and curated global favorites.",
+    highlights: [
+      "Open live barbecue grill & clay tandoor kebabs",
+      "Stone-baked thin crust pizzas and hand-tossed pasta",
+      "Wok-tossed Pan-Asian delicacies and spicy regional curries",
+    ],
+    serviceNotes: [
+      "Separately zoned kitchen operations from the vegetarian hall",
+      "Curved natural timber acoustic paneling and spacious table layouts",
+    ],
+    sceneId: "dining-non-veg-aisle-p07",
+    imageAlt: "Non-vegetarian restaurant concept with a central aisle and curved timber paneling",
+    imageLabel: "Multi-Cuisine & Barbecue Restaurant",
+  },
+  {
+    name: "The Bar Lounge",
+    tag: "Spirits & Appetizers",
+    timing: "07:00 AM – 11:00 PM",
+    cuisine: "Spirits, Cocktails & Tapas",
+    lead: "Sophisticated evening destination featuring a backlit onyx marble bar, emerald velvet banquettes, and sommelier wines.",
+    highlights: [
+      "Curated premium domestic and imported spirits & sommelier wines",
+      "Hand-crafted signature cocktails and refreshing mocktails",
+      "Artisanal finger tapas, mezze boards & chef's savory platters",
+    ],
+    serviceNotes: [
+      "Custom backlit onyx marble counter with emerald booth seating",
+      "Atmospheric evening lounge soundtrack and cocktail mixology",
+    ],
+    sceneId: "evening-bar-wide-p09",
+    imageAlt: "Bar lounge concept with patterned flooring, green banquettes and a warmly lit counter",
+    imageLabel: "The Bar Lounge Evening Atmosphere",
+  },
+  {
+    name: "Resto-Bar Cafe",
+    tag: "Noon-to-Night Social",
+    timing: "12:00 PM – 11:00 PM",
+    cuisine: "Gourmet Burgers, Platters & Coolers",
+    lead: "Lively social venue serving craft burgers, sharing platters, and chilled beverages from afternoon through late night.",
+    highlights: [
+      "Sharing platters, gourmet sliders, and loaded artisan nachos",
+      "Artisanal iced coolers, cold brew coffees & sparkling sodas",
+      "Vibrant indoor-outdoor seating overlooking resort promenades",
+    ],
+    serviceNotes: [
+      "Ideal casual venue for afternoon conversations & evening get-togethers",
+      "Illuminated open-display bottle racks and comfortable counter barstools",
+    ],
+    sceneId: "evening-bar-counter-p03",
+    imageAlt: "Resto-bar counter concept with illuminated bar shelves and barstool seating",
+    imageLabel: "Resto-Bar Social Counter",
+  },
+  {
+    name: "Courtyard Cafe",
+    tag: "Garden Coffee & Bakery",
+    timing: "07:00 AM – 11:00 PM",
+    cuisine: "Single-Origin Coffee & Patisserie",
+    lead: "Tranquil open-air cafe nestled in landscaped courtyards, serving artisan coffee and warm baked pastries.",
+    highlights: [
+      "Freshly brewed single-origin coffees & fragrant organic teas",
+      "Daily baked butter croissants, fruit Danish & sweet tarts",
+      "Peaceful outdoor tables surrounded by flowering tropical greenery",
+    ],
+    serviceNotes: [
+      "Perfect morning reading spot and afternoon high tea destination",
+      "Acoustic timber ceilings with soft warm illumination",
+    ],
+    sceneId: "dining-veg-central-aisle-p12",
+    imageAlt: "Courtyard cafe concept with timber ceiling acoustic panels and warm lighting",
+    imageLabel: "Courtyard Garden Cafe",
+  },
+  {
+    name: "Banquet & Day-Outing Dining",
+    tag: "Buffets & Group Catering",
+    timing: "Breakfast 07:00–10:30 AM · Lunch 12:30–03:30 PM",
+    cuisine: "Multi-Course Buffets & Group Spreads",
+    lead: "Expansive dining facility dedicated to all-inclusive guest breakfast spreads, day-outing buffets, and private celebrations.",
+    highlights: [
+      "All-inclusive morning breakfast buffet for in-house room guests",
+      "Multi-course lunch buffet with live counters for day-picnic groups",
+      "Customizable per-plate catering menus for destination weddings",
+    ],
+    serviceNotes: [
+      "Large-capacity banquet seating with round celebration tables",
+      "Full live counter support with dedicated banquet hospitality team",
+    ],
+    sceneId: "gatherings-banquet-p03",
+    imageAlt: "Conference hall concept with round banquet tables beneath a timber-framed ceiling",
+    imageLabel: "Banquet & Outing Buffet Hall",
+  },
+];
+

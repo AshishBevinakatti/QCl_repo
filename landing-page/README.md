@@ -1,8 +1,8 @@
-# Golden Hills Resort — local landing-page preview
+# Golden Hills Resort — local landing page
 
 Next.js App Router project using React, TypeScript, and ESLint. The application lives at this repository's root.
 
-The resort has not been built. The `/` route is a responsive **local preview** of the **Through the garden gate** redesign; it is not a published resort site. All property visuals are 3D artist's impressions, not photographs of a completed property. ERP development is future work.
+The `/` route presents Golden Hills Resort through rooms, cottages, dining, amenities, experiences and gatherings. All supplied property visuals are 3D artist's impressions; they are not photographs. ERP work is separate from this website.
 
 ## Requirements
 
@@ -29,7 +29,7 @@ npm start
 
 ## Structure
 
-- `src/app/`: root layout, local-preview page, navigation, and semantic design tokens in `globals.css`
+- `src/app/`: root layout, resort page, navigation, and semantic design tokens in `globals.css`
 - `DESIGN.md`: reference review, visual concept, responsive story, and source-render constraints
 - `review-shots/redesign/`: native screenshots, scroll recordings, and browser verification for the redesign
 - `next.config.ts`: Next.js configuration
@@ -44,11 +44,11 @@ See `source-assets/README.md` for the asset inventory. Source PDFs are not publi
 
 ## Local preview decisions
 
-- **Golden Hills Resort** is a provisional name from the merchandise logo. A reception concept uses **Golden Hills Resorts**; the name must be confirmed before publication.
+- **Golden Hills Resort** is the canonical public name used by this website.
 - The colored PNG logo in `public/assets/resort/logo/` is extracted from catalogue page 11 and cleaned to transparency without tracing. It is a provisional raster derivative, **not** an approved vector or brand master; the client's final SVG/AI is still required.
 - The core semantic palette in `src/app/globals.css` is sampled from the catalogue: forest `#104028`, muted gold `#B88828`, and warm cream `#F7F2EC`, with a separate legible ink token and supporting neutrals.
 - `public/assets/resort/asset-manifest.json` records each image's source PDF/page, dimensions, hashes, intended use, and unapproved status. The preview uses only a curated subset; alternatives remain concepts.
-- No opening date, confirmed amenities, room categories, prices, live booking, or enquiry form are implied. The sole primary action, **Explore the vision**, links to the introduction.
+- The public page presents 46 rooms and cottages, the documented room categories, six dining outlets, amenities, Mystery Experiences and Loyalty offers. Reservation and official enquiry details are intentionally left for the client’s verified channels.
 - Every displayed render has a visible artist's-impression disclosure. The marked pool image (rooms/cottages p. 36), conflicting reception signage (p. 8), and unconfirmed day/dusk transition are excluded.
 - Ask the client for approved brand assets, final scheme decisions, higher-resolution hero and portrait render exports, confirmed project details, and permission to publish the chosen images.
 

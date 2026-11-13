@@ -75,7 +75,7 @@ export default function CottageStory({ views }: { views: Scene[] }) {
           {chapters.map(chapter => <article className="story-beat" id={chapter.id} key={chapter.id}>
             <span className="chapter-line" aria-hidden="true" />
             <h3>{chapter.title}</h3><p>{chapter.copy}</p>
-            <span className="concept-note">Cottage concept · Design subject to change</span>
+            <span className="concept-note">Design study · See image disclosure</span>
           </article>)}
         </div>
         {cinematic ? <CinematicStage views={views} track={track} /> : (

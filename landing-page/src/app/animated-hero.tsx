@@ -18,13 +18,14 @@ export default function AnimatedHero({ slides, ready, revealed, revealOpacity, r
   const reduced = useMotionPreference();
   const [index, setIndex] = useState(0);
   const slide = slides[index];
+  const isGallery = slides.length > 1;
 
   function change(direction: number) {
     setIndex(value => (value + direction + slides.length) % slides.length);
   }
 
   return (
-    <section className="hero opening-slideshow" aria-roledescription="carousel" aria-label="Golden Hills resort design concepts" inert={ready && !revealed}>
+    <section className="hero opening-slideshow" aria-label={isGallery ? "Golden Hills resort design concepts" : "Golden Hills Resort"} aria-roledescription={isGallery ? "carousel" : undefined} inert={ready && !revealed}>
       <figure className="hero-figure">
         <div className="hero-window" id="hero-slides">
           {slides.map((item, position) => (
@@ -45,15 +46,16 @@ export default function AnimatedHero({ slides, ready, revealed, revealOpacity, r
       </figure>
 
       <motion.div className="hero-heading" style={ready ? { opacity: revealOpacity, y: revealY } : undefined}>
-        <p className="hero-status">A resort in the making</p>
-        <motion.h1 id="hero-title" key={index} initial={reduced ? false : { opacity: 0.6, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduced ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] }}>{slide.title}</motion.h1>
+        <p className="hero-status">Stay · Dine · Gather</p>
+        <motion.h1 id="hero-title" aria-live={isGallery ? "polite" : undefined} key={index} initial={reduced ? false : { opacity: 0.6, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduced ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] }}>{slide.title}</motion.h1>
       </motion.div>
 
       <motion.div className="hero-bottom" style={ready ? { opacity: revealOpacity, y: revealY } : undefined}>
-        <a className="explore-button" href="#vision">Explore the vision <ArrowDown size={16} /></a>
+        <a className="explore-button" href="#stay">Explore stays &amp; experiences <ArrowDown size={16} /></a>
+        <a className="hero-secondary-link" href="#gatherings">Plan a gathering <ArrowRight size={16} /></a>
       </motion.div>
 
-      <motion.div className="slideshow-controls" hidden={!ready} style={ready ? { opacity: revealOpacity } : undefined} onKeyDown={event => {
+      {isGallery && <motion.div className="slideshow-controls" hidden={!ready} style={ready ? { opacity: revealOpacity } : undefined} onKeyDown={event => {
         if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
           event.preventDefault();
           change(event.key === "ArrowRight" ? 1 : -1);
@@ -66,7 +68,7 @@ export default function AnimatedHero({ slides, ready, revealed, revealOpacity, r
           </span>
           <button type="button" aria-label="Next concept" aria-controls="hero-slides" onClick={() => change(1)}><ArrowRight size={18} /></button>
         </div>
-      </motion.div>
+      </motion.div>}
     </section>
   );
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import "@fontsource-variable/bodoni-moda";
-import "@fontsource-variable/manrope";
+import "./general-sans.css";
+import "@fontsource-variable/inter";
 import "./tokens.css";
 import "./base.css";
 import "./globals.css";
@@ -8,9 +8,9 @@ import "./opening.css";
 import "./plan-ahead.css";
 
 export const metadata: Metadata = {
-  title: "Golden Hills Resort | A resort in the making",
+  title: "Golden Hills Resort | Stay, dine and gather in Biligi",
   description:
-    "Explore the design vision for Golden Hills Resort through artist's impressions of a resort in development.",
+    "Explore rooms, cottages, dining, experiences and gatherings at Golden Hills Resort in Anagawadi, Biligi, Karnataka.",
 };
 
 export default function RootLayout({

@@ -4,17 +4,24 @@ import { logo } from "./resort-assets";
 import { ArrowUp } from "./icons";
 
 const exploreLinks = [
-  { href: "/#vision", label: "The vision" },
-  { href: "/#cottages", label: "Cottage studies" },
-  { href: "/#dining", label: "Dining" },
-  { href: "/#spaces", label: "Arrival & interiors" },
-  { href: "/#gatherings", label: "Gatherings" },
+  { href: "/#story", label: "Brand Story" },
+  { href: "/stay", label: "Accommodation" },
+  { href: "/#amenities", label: "Amenities" },
+  { href: "/dining", label: "Dining" },
+  { href: "/experiences", label: "Experiences & Activities" },
+  { href: "/gatherings", label: "Celebrations & Banquets" },
+  { href: "/membership", label: "Membership Privileges" },
+  { href: "/#gallery", label: "Gallery" },
+  { href: "/#location", label: "Location & Nearby" },
+  { href: "/#highlights", label: "Why Choose Us" },
+  { href: "/#reviews", label: "Hospitality Commitments" },
+  { href: "/#offers", label: "Offers & Packages" },
 ];
 
 const planLinks = [
-  { href: "/plan-ahead#bookings", label: "Book Now" },
-  { href: "/plan-ahead#login", label: "Login" },
-  { href: "/plan-ahead#enquiries", label: "Enquire" },
+  { href: "/plan-ahead#bookings", label: "Plan your stay" },
+  { href: "/membership", label: "Privilege Club intake" },
+  { href: "/plan-ahead#enquiries", label: "Group enquiries" },
 ];
 
 export default function SiteFooter() {
@@ -26,7 +33,7 @@ export default function SiteFooter() {
             <Link href="/" aria-label="Golden Hills Resort, home">
               <Image src={logo} alt="" width={2360} height={1120} sizes="132px" />
             </Link>
-            <p>Golden Hills Resort is a working name for this local concept preview. All property imagery is an artist&rsquo;s impression; designs remain subject to change.</p>
+            <p>Golden Hills Resort brings together stays, dining, recreation and event celebrations in Anagawadi Village, Biligi Taluk, Bagalkote District. All property imagery is an artist&rsquo;s impression by Astu Architects and Rajvi Jhaveri.</p>
           </div>
 
           <nav className="footer-col" aria-label="Explore the resort">
@@ -36,8 +43,8 @@ export default function SiteFooter() {
             </div>
           </nav>
 
-          <nav className="footer-col" aria-label="Plan ahead">
-            <h2>Plan ahead</h2>
+          <nav className="footer-col" aria-label="Plan your stay">
+            <h2>Plan your stay</h2>
             <div className="footer-list">
               {planLinks.map(link => <Link key={link.href} href={link.href}>{link.label}</Link>)}
             </div>
@@ -45,7 +52,7 @@ export default function SiteFooter() {
         </div>
 
         <div className="footer-bottom">
-          <p>Bookings, guest accounts and official enquiry channels are not open while the resort is in development.</p>
+          <p>Official direct booking and reservation channels will be activated here upon opening. For now, explore the accommodations, dining outlets, amenities and event venues.</p>
           <a className="back-top" href="#top">Back to top <ArrowUp /></a>
         </div>
       </div>
