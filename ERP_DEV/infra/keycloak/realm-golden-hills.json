@@ -55,6 +55,14 @@
       {
         "name": "OPS_APPROVER",
         "description": "Read-only oversight including audit search; approvals arrive in later phases"
+      },
+      {
+        "name": "SALES_EXEC",
+        "description": "Sales lead claim, follow-up, and ERP conversion"
+      },
+      {
+        "name": "SALES_SUPERVISOR",
+        "description": "Sales supervision, lead reassignment, SLA monitoring"
       }
     ]
   },
@@ -76,6 +84,16 @@
       "attributes": {
         "pkce.code.challenge.method": "S256"
       }
+    },
+    {
+      "clientId": "lead-service",
+      "name": "Lead service (reads sales staff contacts)",
+      "publicClient": false,
+      "secret": "change-me-dev-only",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": true
     }
   ],
   "users": [
@@ -192,6 +210,83 @@
       ],
       "requiredActions": [],
       "email": "housekeeping-staff@goldenhills.local"
+    },
+    {
+      "username": "sales-staff",
+      "enabled": true,
+      "emailVerified": false,
+      "firstName": "Sales",
+      "lastName": "Staff",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "change-me-dev-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "SALES_EXEC"
+      ],
+      "requiredActions": [],
+      "email": "sales-staff@goldenhills.local",
+      "attributes": {
+        "phone_number": [
+          "+910000000001"
+        ],
+        "whatsapp_on_duty": [
+          "true"
+        ]
+      }
+    },
+    {
+      "username": "sales-supervisor-staff",
+      "enabled": true,
+      "emailVerified": false,
+      "firstName": "Sales Supervisor",
+      "lastName": "Staff",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "change-me-dev-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "SALES_SUPERVISOR"
+      ],
+      "requiredActions": [],
+      "email": "sales-supervisor@goldenhills.local",
+      "attributes": {
+        "phone_number": [
+          "+910000000002"
+        ],
+        "whatsapp_on_duty": [
+          "true"
+        ]
+      }
+    },
+    {
+      "username": "service-account-lead-service",
+      "enabled": true,
+      "serviceAccountClientId": "lead-service",
+      "clientRoles": {
+        "realm-management": [
+          "view-users"
+        ]
+      }
     }
-  ]
+  ],
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\": [{\"name\": \"username\", \"displayName\": \"${username}\", \"validations\": {\"length\": {\"min\": 3, \"max\": 255}, \"username-prohibited-characters\": {}, \"up-username-not-idn-homograph\": {}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"email\", \"displayName\": \"${email}\", \"validations\": {\"email\": {}, \"length\": {\"max\": 255}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"firstName\", \"displayName\": \"${firstName}\", \"validations\": {\"length\": {\"max\": 255}, \"person-name-prohibited-characters\": {}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"lastName\", \"displayName\": \"${lastName}\", \"validations\": {\"length\": {\"max\": 255}, \"person-name-prohibited-characters\": {}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}], \"groups\": [{\"name\": \"user-metadata\", \"displayHeader\": \"User metadata\", \"displayDescription\": \"Attributes, which refer to user metadata\"}], \"unmanagedAttributePolicy\": \"ADMIN_EDIT\"}"
+          ]
+        }
+      }
+    ]
+  }
 }

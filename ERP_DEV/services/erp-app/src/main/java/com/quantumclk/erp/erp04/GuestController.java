@@ -53,7 +53,7 @@ public class GuestController {
     this.auditLog = auditLog;
   }
 
-  @PreAuthorize("hasAnyAuthority('RECEPTION','MANAGER','SUPERADMIN')")
+  @PreAuthorize("@perm.has('guests:edit')")
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public GuestDto create(@Valid @RequestBody CreateGuest body, HttpServletRequest req) {
@@ -80,18 +80,20 @@ public class GuestController {
     return toDto(g);
   }
 
+  @PreAuthorize("@perm.has('guests:view')")
   @GetMapping("/{id}")
   public GuestDto get(@PathVariable UUID id) {
     return toDto(or404(id));
   }
 
   /** Guest 360 read projection: one bounded request for the whole profile. */
+  @PreAuthorize("@perm.has('guests:view')")
   @GetMapping("/{id}/profile")
   public GuestProfileDto profile(@PathVariable UUID id) {
     return profiles.load(RoomCategoryController.GOLDEN_HILLS_PROPERTY_ID, or404(id));
   }
 
-  @PreAuthorize("hasAnyAuthority('RECEPTION','MANAGER','SUPERADMIN')")
+  @PreAuthorize("@perm.has('guests:edit')")
   @PatchMapping("/{id}")
   public GuestDto update(
       @PathVariable UUID id,
@@ -134,6 +136,7 @@ public class GuestController {
     return toDto(g);
   }
 
+  @PreAuthorize("@perm.has('guests:view')")
   @GetMapping
   public GuestPage search(
       @RequestParam(required = false) String search, @PageableDefault(size = 20) Pageable pageable) {
@@ -147,13 +150,14 @@ public class GuestController {
   }
 
   /** Stay history hook — populated by unit 3.2 reservations; contract stable now. */
+  @PreAuthorize("@perm.has('guests:view')")
   @GetMapping("/{id}/stays")
   public Map<String, Object> stays(@PathVariable UUID id) {
     or404(id);
     return Map.of("items", List.of(), "page", 0, "total", 0);
   }
 
-  @PreAuthorize("hasAnyAuthority('MANAGER','SUPERADMIN')")
+  @PreAuthorize("@perm.has('guests:merge')")
   @PostMapping("/merge")
   public GuestDto merge(@RequestBody Map<String, String> body, HttpServletRequest req) {
     UUID primaryId = UUID.fromString(body.get("primaryId"));

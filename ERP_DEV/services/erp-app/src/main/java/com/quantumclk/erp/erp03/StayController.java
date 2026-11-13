@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -73,6 +74,7 @@ public class StayController {
     this.payments = payments;
   }
 
+  @PreAuthorize("@perm.has('stays:checkin')")
   @PostMapping("/stays/check-in")
   public StayDto checkIn(@RequestBody CheckInBody body, HttpServletRequest req) {
     return toDto(
@@ -81,6 +83,7 @@ public class StayController {
             actor(req), req.getRemoteAddr()));
   }
 
+  @PreAuthorize("@perm.has('stays:checkin')")
   @PostMapping("/stays/{id}/check-out")
   public StayDto checkOut(
       @PathVariable UUID id,
@@ -92,6 +95,7 @@ public class StayController {
             body != null && body.managerOverride(), actor(req), req.getRemoteAddr()));
   }
 
+  @PreAuthorize("@perm.has('stays:checkin')")
   @PostMapping("/stays/{id}/transfer")
   public StayDto transfer(
       @PathVariable UUID id, @RequestBody TransferBody body, HttpServletRequest req) {
@@ -101,6 +105,7 @@ public class StayController {
             actor(req), req.getRemoteAddr()));
   }
 
+  @PreAuthorize("@perm.has('stays:checkin')")
   @PostMapping("/walk-ins")
   public StayDto walkIn(@RequestBody WalkInBody body, HttpServletRequest req) {
     return toDto(
@@ -110,6 +115,7 @@ public class StayController {
   }
 
   /** Reception dashboard: arrivals, departures, in-house, room grid, occupancy. */
+  @PreAuthorize("@perm.has('frontdesk:view')")
   @GetMapping("/front-office/dashboard")
   public Dashboard dashboard(
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
@@ -169,6 +175,7 @@ public class StayController {
         .toList();
   }
 
+  @PreAuthorize("@perm.has('frontdesk:view')")
   @GetMapping("/arrivals")
   public List<String> arrivals(
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
@@ -184,6 +191,7 @@ public class StayController {
    * with the folio outstanding that drives the Ready / Pending Payment badge
    * (same definition as the check-out settlement gate).
    */
+  @PreAuthorize("@perm.has('frontdesk:view')")
   @GetMapping("/departures")
   public List<DepartureDto> departures(
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
@@ -210,6 +218,7 @@ public class StayController {
   }
 
   /** In-house guests: every checked-in stay with guest, room and planned checkout. */
+  @PreAuthorize("@perm.has('frontdesk:view')")
   @GetMapping("/in-house")
   public List<InHouseDto> inHouse() {
     return stayRepository.findCheckedIn(RoomCategoryController.GOLDEN_HILLS_PROPERTY_ID).stream()
@@ -229,6 +238,7 @@ public class StayController {
    * pending payments (aged from their creation time), and overstays.
    * Guest requests / maintenance issues have no entities yet — not invented.
    */
+  @PreAuthorize("@perm.has('frontdesk:view')")
   @GetMapping("/alerts")
   public List<AlertDto> alerts() {
     UUID property = RoomCategoryController.GOLDEN_HILLS_PROPERTY_ID;

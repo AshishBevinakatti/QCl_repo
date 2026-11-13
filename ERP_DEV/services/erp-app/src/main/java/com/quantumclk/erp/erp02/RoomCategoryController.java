@@ -2,6 +2,7 @@ package com.quantumclk.erp.erp02;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -31,6 +32,7 @@ public class RoomCategoryController {
   }
 
   /** Contract envelope: { items, page, total } (see docs/02-architecture/api.md). */
+  @PreAuthorize("@perm.hasAny('bookings:view', 'frontdesk:view')")
   @GetMapping
   public CategoryPage list(@PageableDefault(size = 20) Pageable pageable) {
     Page<RoomCategory> page = repository.findByPropertyId(GOLDEN_HILLS_PROPERTY_ID, pageable);
@@ -44,6 +46,7 @@ public class RoomCategoryController {
     return new CategoryPage(items, page.getNumber(), page.getTotalElements());
   }
 
+  @PreAuthorize("@perm.hasAny('bookings:view', 'frontdesk:view')")
   @GetMapping("/{id}")
   public CategoryDto get(@PathVariable UUID id) {
     RoomCategory c =

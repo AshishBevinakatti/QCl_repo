@@ -34,7 +34,7 @@ public class MemberController {
     this.ledger = ledger;
   }
 
-  @PreAuthorize("hasAnyAuthority('RECEPTION','MEMBERSHIP','MANAGER','SUPERADMIN')")
+  @PreAuthorize("@perm.has('members:enroll')")
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public MemberDto enroll(@RequestBody EnrollBody body, HttpServletRequest req) {
@@ -44,6 +44,7 @@ public class MemberController {
             body.guestId(), actor(req), req.getRemoteAddr()));
   }
 
+  @PreAuthorize("@perm.has('members:view')")
   @GetMapping("/{id}")
   public MemberDto dashboard(@PathVariable UUID id) {
     Member member = owned(id);
@@ -51,6 +52,7 @@ public class MemberController {
         member.getTier(), member.getStatus(), member.getValidTo(), loyalty.balance(member.getId()));
   }
 
+  @PreAuthorize("@perm.has('members:view')")
   @GetMapping("/{id}/ledger")
   public List<LedgerDto> history(@PathVariable UUID id) {
     Member member = owned(id);
@@ -59,7 +61,7 @@ public class MemberController {
         .toList();
   }
 
-  @PreAuthorize("hasAnyAuthority('RECEPTION','MEMBERSHIP','MANAGER','SUPERADMIN','ACCOUNTS')")
+  @PreAuthorize("@perm.has('members:redeem')")
   @PostMapping("/{id}/redeem")
   public MemberDto redeem(@PathVariable UUID id, @RequestBody RedeemBody body,
       HttpServletRequest req) {
@@ -72,7 +74,7 @@ public class MemberController {
         member.getTier(), member.getStatus(), member.getValidTo(), balance);
   }
 
-  @PreAuthorize("hasAnyAuthority('MANAGER','SUPERADMIN')")
+  @PreAuthorize("@perm.has('members:approve')")
   @PostMapping("/{id}/adjust")
   public MemberDto adjust(@PathVariable UUID id, @RequestBody AdjustBody body,
       HttpServletRequest req) {
@@ -85,7 +87,7 @@ public class MemberController {
         member.getTier(), member.getStatus(), member.getValidTo(), balance);
   }
 
-  @PreAuthorize("hasAnyAuthority('MEMBERSHIP','MANAGER','SUPERADMIN')")
+  @PreAuthorize("@perm.has('members:renew')")
   @PostMapping("/{id}/renew")
   public MemberDto renew(@PathVariable UUID id, HttpServletRequest req) {
     Member member =

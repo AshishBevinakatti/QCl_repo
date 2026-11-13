@@ -13,6 +13,7 @@
 
   <modules>
     <module>services/erp-app</module>
+    <module>services/lead-service</module>
   </modules>
 
   <properties>

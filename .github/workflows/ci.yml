@@ -30,7 +30,7 @@ jobs:
           assert d['realm']=='resort';
           assert {r['name'] for r in d['roles']['realm']}>={'SUPERADMIN','MANAGER','RECEPTION','MEMBERSHIP','ACCOUNTS','HOUSEKEEPING','OPS'};
           c=d['clients'][0];assert c['clientId']=='erp-web' and c['publicClient'] and c['standardFlowEnabled'];
-          assert all(u.get('email') and u.get('realmRoles') for u in d['users']);
+          assert all(u.get('email') and u.get('realmRoles') for u in d['users'] if not u.get('serviceAccountClientId'));
           print('realm OK:', d['realm'])"
   dependency-review:
     if: github.event_name == 'pull_request'

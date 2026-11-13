@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -39,6 +40,7 @@ public class ReservationController {
     this.reservations = reservations;
   }
 
+  @PreAuthorize("@perm.has('bookings:view')")
   @GetMapping("/availability")
   public AvailabilityDto availability(
       @RequestParam UUID categoryId,
@@ -53,6 +55,7 @@ public class ReservationController {
         availability.available());
   }
 
+  @PreAuthorize("@perm.has('bookings:create')")
   @PostMapping("/reservations")
   @ResponseStatus(HttpStatus.CREATED)
   public org.springframework.http.ResponseEntity<ReservationDto> book(
@@ -90,6 +93,7 @@ public class ReservationController {
     return response.body(toDto(reservation));
   }
 
+  @PreAuthorize("@perm.has('bookings:view')")
   @GetMapping("/reservations/{id}")
   public ReservationDto get(@PathVariable UUID id) {
     return toDto(
@@ -97,6 +101,7 @@ public class ReservationController {
   }
 
   /** Reception dashboard feed: reservations overlapping a date, optional status. */
+  @PreAuthorize("@perm.has('bookings:view')")
   @GetMapping("/reservations")
   public ReservationPage dashboard(
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
@@ -114,6 +119,7 @@ public class ReservationController {
    * 3.8 short-ref search: the ref shown on every screen is the id's first 8
    * chars, so users type or paste that (ellipsis and case tolerated).
    */
+  @PreAuthorize("@perm.has('bookings:view')")
   @GetMapping("/reservations/search")
   public ReservationPage searchByRef(
       @RequestParam String ref, @PageableDefault(size = 5) Pageable pageable) {
@@ -132,6 +138,7 @@ public class ReservationController {
         page.getTotalElements());
   }
 
+  @PreAuthorize("@perm.has('bookings:edit')")
   @PatchMapping("/reservations/{id}")
   public ReservationDto modify(
       @PathVariable UUID id, @RequestBody ModifyBody body, HttpServletRequest req) {
@@ -141,6 +148,7 @@ public class ReservationController {
             body.checkoutDate(), actor(req), req.getRemoteAddr()));
   }
 
+  @PreAuthorize("@perm.has('bookings:edit')")
   @PostMapping("/reservations/{id}/confirm")
   public ReservationDto confirm(
       @PathVariable UUID id, @RequestBody(required = false) OverrideBody body,
@@ -156,6 +164,7 @@ public class ReservationController {
             actor(req), req.getRemoteAddr()));
   }
 
+  @PreAuthorize("@perm.has('bookings:edit')")
   @PostMapping("/reservations/{id}/cancel")
   public ReservationDto cancel(
       @PathVariable UUID id, @RequestBody(required = false) CancelBody body,

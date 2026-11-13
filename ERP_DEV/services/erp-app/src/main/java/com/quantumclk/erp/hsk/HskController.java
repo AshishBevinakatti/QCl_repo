@@ -35,6 +35,7 @@ public class HskController {
   }
 
   /** Board: every room with status + its open tasks (one call for the wall display). */
+  @PreAuthorize("@perm.hasAny('housekeeping:tasks', 'frontdesk:view')")
   @GetMapping("/board")
   public List<RoomBoard> board() {
     UUID property = RoomCategoryController.GOLDEN_HILLS_PROPERTY_ID;
@@ -49,7 +50,7 @@ public class HskController {
         .toList();
   }
 
-  @PreAuthorize("hasAnyAuthority('HOUSEKEEPING','MANAGER','SUPERADMIN')")
+  @PreAuthorize("@perm.has('housekeeping:tasks')")
   @PostMapping("/tasks")
   public TaskDto create(@RequestBody CreateTask body, HttpServletRequest req) {
     return toDto(
@@ -58,7 +59,7 @@ public class HskController {
             body.notes(), actor(req), req.getRemoteAddr()));
   }
 
-  @PreAuthorize("hasAnyAuthority('HOUSEKEEPING','MANAGER','SUPERADMIN')")
+  @PreAuthorize("@perm.has('housekeeping:tasks')")
   @PatchMapping("/tasks/{id}/advance")
   public TaskDto advance(@PathVariable UUID id, HttpServletRequest req) {
     return toDto(

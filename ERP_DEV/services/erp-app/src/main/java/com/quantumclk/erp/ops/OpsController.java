@@ -33,14 +33,14 @@ public class OpsController {
   }
 
   @GetMapping("/status")
-  @PreAuthorize("@opsAuth.has('ops.read')")
+  @PreAuthorize("@perm.has('ops.read')")
   public OpsStatusResponse status(Authentication authentication, HttpServletRequest request) {
     audit.recordRead(authentication, "ops.status.read", request);
     return telemetry.status();
   }
 
   @GetMapping("/integrations")
-  @PreAuthorize("@opsAuth.has('ops.integrations.read')")
+  @PreAuthorize("@perm.has('ops.integrations.read')")
   public TelemetryStatus integrations(
       Authentication authentication, HttpServletRequest request) {
     audit.recordRead(authentication, "ops.integrations.read", request);
@@ -48,14 +48,14 @@ public class OpsController {
   }
 
   @GetMapping("/flags")
-  @PreAuthorize("@opsAuth.has('ops.flags.read')")
+  @PreAuthorize("@perm.has('ops.flags.read')")
   public OpsFlagsResponse flags(Authentication authentication, HttpServletRequest request) {
     audit.recordRead(authentication, "ops.flags.read", request);
     return flags.flags();
   }
 
   @GetMapping("/audit")
-  @PreAuthorize("@opsAuth.has('ops.audit.read')")
+  @PreAuthorize("@perm.has('ops.audit.read')")
   public OpsAuditPage audit(
       Authentication authentication,
       HttpServletRequest request,

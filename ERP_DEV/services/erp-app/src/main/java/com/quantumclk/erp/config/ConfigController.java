@@ -31,6 +31,7 @@ public class ConfigController {
     this.auditLog = auditLog;
   }
 
+  @PreAuthorize("@perm.has('config:view')")
   @GetMapping
   public List<EntryDto> list() {
     return repository.findAll().stream()
@@ -38,7 +39,7 @@ public class ConfigController {
         .toList();
   }
 
-  @PreAuthorize("hasAuthority('SUPERADMIN')")
+  @PreAuthorize("@perm.has('config:manage')")
   @PatchMapping("/{key}")
   public EntryDto update(
       @PathVariable String key, @RequestBody Map<String, String> body, HttpServletRequest req) {

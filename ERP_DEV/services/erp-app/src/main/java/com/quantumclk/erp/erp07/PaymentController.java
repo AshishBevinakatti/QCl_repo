@@ -56,6 +56,7 @@ public class PaymentController {
   }
 
   /** Start a charge: reservation advance (amount defaults to advance_due) or folio top-up. */
+  @PreAuthorize("@perm.has('payments:collect')")
   @PostMapping("/payments/initiate")
   @ResponseStatus(HttpStatus.CREATED)
   public InitiateDto initiate(@RequestBody InitiateBody body, HttpServletRequest req) {
@@ -85,6 +86,7 @@ public class PaymentController {
             RoomCategoryController.GOLDEN_HILLS_PROPERTY_ID, body.gatewayRef(), body.signature(),
             req.getRemoteAddr()));
   }
+  @PreAuthorize("@perm.hasAny('payments:collect', 'invoices:manage')")
   @GetMapping("/folios/{id}")
   public FolioDto folio(@PathVariable UUID id) {
     Folio folioAccount =
@@ -99,6 +101,7 @@ public class PaymentController {
   }
 
   /** Desk lookup: folio for a stay (or first open folio for a guest). */
+  @PreAuthorize("@perm.hasAny('payments:collect', 'invoices:manage')")
   @GetMapping("/folios")
   public FolioDto lookup(
       @RequestParam(required = false) UUID stayId,
@@ -122,7 +125,7 @@ public class PaymentController {
     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "stayId or guestId required");
   }
 
-  @PreAuthorize("hasAnyAuthority('ACCOUNTS','MANAGER','SUPERADMIN')")
+  @PreAuthorize("@perm.has('invoices:manage')")
   @PostMapping("/folios/{id}/entries")
   public EntryDto postEntry(@PathVariable UUID id, @RequestBody EntryBody body,
       HttpServletRequest req) {
@@ -131,7 +134,7 @@ public class PaymentController {
     return new EntryDto(entry.getSourceType(), entry.getSourceId(), entry.getAmountPaise());
   }
 
-  @PreAuthorize("hasAnyAuthority('ACCOUNTS','MANAGER','SUPERADMIN')")
+  @PreAuthorize("@perm.has('invoices:manage')")
   @PostMapping("/invoices")
   @ResponseStatus(HttpStatus.CREATED)
   public InvoiceDto invoice(@RequestBody InvoiceBody body, HttpServletRequest req) {
@@ -142,6 +145,7 @@ public class PaymentController {
         invoice.getTotalPaise(), invoice.getStatus());
   }
 
+  @PreAuthorize("@perm.hasAny('payments:collect', 'invoices:manage')")
   @GetMapping("/invoices/{id}")
   public InvoiceDto getInvoice(@PathVariable UUID id) {
     // Invoices are read-only by design (immutable once issued — no update route exists).
@@ -152,7 +156,7 @@ public class PaymentController {
         invoice.getTotalPaise(), invoice.getStatus());
   }
 
-  @PreAuthorize("hasAnyAuthority('ACCOUNTS','MANAGER','SUPERADMIN')")
+  @PreAuthorize("@perm.has('refunds:manage')")
   @PostMapping("/refunds")
   @ResponseStatus(HttpStatus.CREATED)
   public RefundDto requestRefund(@RequestBody RefundBody body, HttpServletRequest req) {
@@ -163,7 +167,7 @@ public class PaymentController {
     return toRefund(refund);
   }
 
-  @PreAuthorize("hasAnyAuthority('MANAGER','SUPERADMIN')")
+  @PreAuthorize("@perm.has('refunds:approve')")
   @PostMapping("/refunds/{id}/approve")
   public RefundDto approveRefund(@PathVariable UUID id, HttpServletRequest req) {
     return toRefund(
@@ -171,7 +175,7 @@ public class PaymentController {
             req.getRemoteAddr()));
   }
 
-  @PreAuthorize("hasAnyAuthority('ACCOUNTS','MANAGER','SUPERADMIN')")
+  @PreAuthorize("@perm.has('refunds:manage')")
   @PostMapping("/refunds/{id}/process")
   public RefundDto processRefund(@PathVariable UUID id, HttpServletRequest req) {
     return toRefund(
@@ -179,7 +183,7 @@ public class PaymentController {
             req.getRemoteAddr()));
   }
 
-  @PreAuthorize("hasAnyAuthority('ACCOUNTS','MANAGER','SUPERADMIN')")
+  @PreAuthorize("@perm.has('reports:financial')")
   @GetMapping("/reconciliation")
   public List<ReconDto> reconcile(
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
