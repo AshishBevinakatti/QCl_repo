@@ -1,0 +1,41 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+credentials/
+
+# OS / Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Build outputs & dependencies
+node_modules/
+dist/
+build/
+target/
+.next/
+*.tsbuildinfo
+.vitest-cache/
+.gstack/
+
+# Local logs & runtimes
+*.log
+logs/
+*.db
+*.sqlite
+
+# Client raw documents & uploads
+*.docx
+*.pdf
+!docs/01-requirements/source-extracts/*.md
+uploads/
+media/
+backups/
+*.csv
+*.xlsx
