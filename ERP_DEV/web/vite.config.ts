@@ -8,6 +8,8 @@ export default defineConfig({
   // the built shell behind the same host as the API (VITE_API_URL blank).
   server: {
     proxy: {
+      '/api/v1/sales': 'http://localhost:8082',
+      '/api/v1/portal': 'http://localhost:8082',
       '/api': 'http://localhost:8080',
     },
   },

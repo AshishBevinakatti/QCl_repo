@@ -1,26 +1,34 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   apiHealth, availability, board, bookRoom, businessToday, checkIn, checkOut, confirmPayment,
-  folioByStay, initiatePayment, isAuthError,
+  folioByStay, initiatePayment, isAuthError, me,
   listCategories, listReservations, requestRefund, rupees, transferStay,
   walkIn,
-  type CategoryDto, type FolioDto,
+  type CategoryDto, type FolioDto, type MeDto,
   type ReservationSummary, type RoomBoard,
 } from './api';
 import { demoBoard, demoCategories, demoFolio } from './demo';
 import { Alert, Badge, Btn, Card, Field, PageHeader, Soon, statusTone } from './ui';
-import { DashboardView, RoomsView, Sidebar, Topbar, type Jump, type Mode, type View } from './dashboard';
+import { DashboardView, RoomsView, Sidebar, Topbar, viewLabel, type Jump, type Mode, type View } from './dashboard';
 import { initAuthOnce } from './auth';
+import { canSee, departmentLabel, landingView, PREVIEW_PERSONAS } from './access';
+import { AccessDenied, SignIn } from './SignIn';
 import { GuestsView } from './guests';
+import { LeadsView } from './leads';
 import { OpsView } from './ops/OpsView';
 
 /**
  * Golden Hills ERP workspace. Live mode talks to erp-app as the signed-in
- * staff member (Keycloak SSO); Preview mode runs on labeled sample data.
+ * staff member (Keycloak SSO) and shows only the screens /api/v1/me allows;
+ * Preview mode (dev builds only) runs on labeled sample data and personas.
  */
 export default function App() {
   const [view, setView] = useState<View>('dashboard');
-  const [mode, setMode] = useState<Mode>('preview');
+  const [mode, setMode] = useState<Mode>('live');
+  const [auth, setAuth] = useState<'checking' | 'in' | 'out'>('checking');
+  const [account, setAccount] = useState<MeDto | null>(null);
+  const [accountErr, setAccountErr] = useState('');
+  const [persona, setPersona] = useState(PREVIEW_PERSONAS[0].id);
   const [api, setApi] = useState('checking…');
   const [jump, setJump] = useState<(Jump & { nonce: number }) | null>(null);
   const [folioStay, setFolioStay] = useState<string | null>(null);
@@ -31,8 +39,29 @@ export default function App() {
     apiHealth()
       .then((h) => setApi(`${h.status}`))
       .catch(() => setApi('unreachable'));
-    initAuthOnce();
+    initAuthOnce().then((ok) => setAuth(ok ? 'in' : 'out'));
   }, []);
+
+  useEffect(() => {
+    if (auth !== 'in') return;
+    me()
+      .then(setAccount)
+      .catch((err) => setAccountErr(err instanceof Error ? err.message : 'Could not load your access.'));
+  }, [auth]);
+
+  const previewPersona = PREVIEW_PERSONAS.find((p) => p.id === persona) ?? PREVIEW_PERSONAS[0];
+  const perms = useMemo(
+    () => new Set(mode === 'preview' ? previewPersona.permissions : account?.permissions ?? []),
+    [mode, previewPersona, account],
+  );
+  const landing = landingView(perms);
+
+  // Land once per permission set (sign-in, persona switch), not on every navigation.
+  const [landedFor, setLandedFor] = useState<Set<string> | null>(null);
+  if (landedFor !== perms) {
+    setLandedFor(perms);
+    if (landing) setView(landing);
+  }
 
   function go(v: View) {
     setView(v);
@@ -45,6 +74,33 @@ export default function App() {
     setNavOpen(false);
   }
 
+  if (auth === 'checking') {
+    return <main className="signin"><p className="signin-note">Loading…</p></main>;
+  }
+  if (mode === 'live' && auth === 'out') {
+    return <SignIn onPreview={import.meta.env.DEV ? () => setMode('preview') : undefined} />;
+  }
+  if (mode === 'live' && !account) {
+    return (
+      <main className="signin">
+        <section className="signin-card">
+          {accountErr ? (
+            <>
+              <Alert kind="err">{accountErr}</Alert>
+              <Btn onClick={() => window.location.reload()}>Retry</Btn>
+            </>
+          ) : (
+            <p className="signin-note">Loading your workspace…</p>
+          )}
+        </section>
+      </main>
+    );
+  }
+
+  const who = mode === 'preview'
+    ? { name: 'Preview', dept: `${previewPersona.label} (sample)` }
+    : account && { name: account.username, dept: departmentLabel(account.roles) };
+
   return (
     <div className="erp">
       <Sidebar
@@ -54,9 +110,13 @@ export default function App() {
         setMode={setMode}
         mobileOpen={navOpen}
         onClose={() => setNavOpen(false)}
+        perms={perms}
+        who={who}
+        persona={persona}
+        setPersona={setPersona}
       />
       <main className="main">
-        <Topbar onJump={onJump} api={api} onMenu={() => setNavOpen(true)} />
+        <Topbar onJump={onJump} api={api} onMenu={() => setNavOpen(true)} perms={perms} />
         <div className="page-stack" key={mode}>
           {mode === 'preview' && view === 'dashboard' && (
             <p className="alert info">
@@ -64,6 +124,12 @@ export default function App() {
             </p>
           )}
 
+          {landing === null ? (
+            <AccessDenied what="any workspace yet (no permissions are assigned to your account)" />
+          ) : !canSee(view, perms) ? (
+            <AccessDenied what={viewLabel(view)} />
+          ) : (
+          <>
           {view === 'dashboard' && (
             <>
               <PageHeader title="Dashboard" subtitle="Today at a glance" />
@@ -78,6 +144,12 @@ export default function App() {
                 }}
               />
             </>
+          )}
+
+          {view === 'leads' && (
+            <LeadsView
+              onViewGuest={(guestId) => onJump({ view: 'guests', q: guestId })}
+            />
           )}
 
           {view === 'reservations' && (
@@ -161,6 +233,8 @@ export default function App() {
                 <Soon icon="settings" title="Coming soon" why="Property configuration editing arrives in a later unit." />
               </div>
             </>
+          )}
+          </>
           )}
         </div>
       </main>

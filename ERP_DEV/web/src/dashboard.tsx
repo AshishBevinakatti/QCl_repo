@@ -6,14 +6,15 @@ import {
   rupees, searchGuests, searchReservationsByRef,
   type AlertDto, type DashboardDto, type DepartureDto, type EnrichedReservation, type InHouseDto,
 } from './api';
-import { hasRole, isAuthenticated, login, logout, roles, username } from './auth';
+import { isAuthenticated, login, logout, username } from './auth';
+import { can, canSee, PREVIEW_PERSONAS, type Perms } from './access';
 import { demoBoard, demoDashboard } from './demo';
 import { currentTheme, toggleTheme, type Theme } from './theme';
 import { Badge, Btn, Donut, Icon, Kpi, statusTone } from './ui';
 
 export type View =
   | 'dashboard' | 'reservations' | 'guests' | 'rooms' | 'check'
-  | 'billing' | 'requests' | 'housekeeping' | 'reports' | 'ops' | 'settings';
+  | 'billing' | 'requests' | 'housekeeping' | 'reports' | 'ops' | 'settings' | 'leads';
 export type Mode = 'live' | 'preview';
 
 export interface Jump {
@@ -35,8 +36,9 @@ function bucket(status: string): 'available' | 'occupied' | 'maint' {
   return 'available';
 }
 
-const NAV: { id: View; label: string; icon: string; ops?: boolean }[] = [
+const NAV: { id: View; label: string; icon: string }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+  { id: 'leads', label: 'Sales Leads', icon: 'call' },
   { id: 'reservations', label: 'Reservations', icon: 'calendar_month' },
   { id: 'guests', label: 'Guests', icon: 'group' },
   { id: 'rooms', label: 'Room Management', icon: 'bed' },
@@ -45,8 +47,12 @@ const NAV: { id: View; label: string; icon: string; ops?: boolean }[] = [
   { id: 'requests', label: 'Service Requests', icon: 'build' },
   { id: 'housekeeping', label: 'Housekeeping', icon: 'cleaning_services' },
   { id: 'reports', label: 'Reports', icon: 'bar_chart' },
-  { id: 'ops', label: 'Ops Console', icon: 'monitoring', ops: true },
+  { id: 'ops', label: 'Ops Console', icon: 'monitoring' },
 ];
+
+export function viewLabel(v: View): string {
+  return NAV.find((n) => n.id === v)?.label ?? 'Settings';
+}
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -58,14 +64,13 @@ function greeting(): string {
 /* ---------------- Sidebar ---------------- */
 const SIDEBAR_KEY = 'gh-sidebar-collapsed';
 
-export function Sidebar({ view, go, mode, setMode, mobileOpen, onClose }: {
+export function Sidebar({ view, go, mode, setMode, mobileOpen, onClose, perms, who, persona, setPersona }: {
   view: View; go: (v: View) => void; mode: Mode; setMode: (m: Mode) => void;
   mobileOpen: boolean; onClose: () => void;
+  perms: Perms; who: { name: string; dept: string } | null;
+  persona: string; setPersona: (id: string) => void;
 }) {
   const authed = isAuthenticated();
-  const canOps = hasRole(
-    'SUPERADMIN', 'OPS_VIEWER', 'OPS_DEVELOPER', 'OPS_OPERATOR', 'OPS_ADMIN', 'OPS_APPROVER',
-  );
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem(SIDEBAR_KEY) === '1';
@@ -146,6 +151,7 @@ export function Sidebar({ view, go, mode, setMode, mobileOpen, onClose }: {
           </button>
         </div>
 
+        {import.meta.env.DEV && (
         <div className="mode-toggle" role="group" aria-label="Data mode">
           <button
             className={mode === 'live' ? 'active' : ''}
@@ -162,9 +168,18 @@ export function Sidebar({ view, go, mode, setMode, mobileOpen, onClose }: {
             Preview
           </button>
         </div>
+        )}
+        {import.meta.env.DEV && mode === 'preview' && (
+          <label className="persona-select">
+            Preview as (sample permissions)
+            <select value={persona} onChange={(e) => setPersona(e.target.value)}>
+              {PREVIEW_PERSONAS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+            </select>
+          </label>
+        )}
 
         <nav className="nav nav--primary">
-          {NAV.filter((n) => !n.ops || canOps).map((n) => (
+          {NAV.filter((n) => canSee(n.id, perms)).map((n) => (
             <button
               key={n.id}
               className={view === n.id ? 'active' : ''}
@@ -179,10 +194,10 @@ export function Sidebar({ view, go, mode, setMode, mobileOpen, onClose }: {
         </nav>
 
         <div className="side-foot">
-          {authed ? (
+          {who ? (
             <div className="usercard">
-              <span className="avatar">{(username() || '?').slice(0, 1).toUpperCase()}</span>
-              <span className="who"><strong>{username()}</strong><small>{roles().join(', ') || 'staff'}</small></span>
+              <span className="avatar">{(who.name || '?').slice(0, 1).toUpperCase()}</span>
+              <span className="who"><strong>{who.name}</strong><small>{who.dept}</small></span>
             </div>
           ) : (
             <div className="usercard">
@@ -191,6 +206,7 @@ export function Sidebar({ view, go, mode, setMode, mobileOpen, onClose }: {
             </div>
           )}
           <nav className="nav nav--utility">
+            {canSee('settings', perms) && (
             <button
               className={view === 'settings' ? 'active' : ''}
               onClick={() => choose('settings')}
@@ -200,13 +216,14 @@ export function Sidebar({ view, go, mode, setMode, mobileOpen, onClose }: {
               <Icon name="settings" size={18} />
               <span className="nav-label">Settings</span>
             </button>
+            )}
             {authed ? (
               <button onClick={logout} title={collapsed ? 'Logout' : undefined}>
                 <Icon name="logout" size={18} />
                 <span className="nav-label">Logout</span>
               </button>
             ) : (
-              <button onClick={login} title={collapsed ? 'Staff log in' : undefined}>
+              <button onClick={() => login()} title={collapsed ? 'Staff log in' : undefined}>
                 <Icon name="login" size={18} />
                 <span className="nav-label">Staff log in</span>
               </button>
@@ -219,9 +236,11 @@ export function Sidebar({ view, go, mode, setMode, mobileOpen, onClose }: {
 }
 
 /* ---------------- Topbar ---------------- */
-export function Topbar({ onJump, api, onMenu }: {
-  onJump: (j: Jump) => void; api: string; onMenu: () => void;
+export function Topbar({ onJump, api, onMenu, perms }: {
+  onJump: (j: Jump) => void; api: string; onMenu: () => void; perms: Perms;
 }) {
+  const searchGuestsOk = can(perms, 'guests:view');
+  const searchBookingsOk = can(perms, 'bookings:view');
   const [q, setQ] = useState('');
   const [hits, setHits] = useState<{ kind: string; label: string; sub: string; jump: Jump }[]>([]);
   const [msg, setMsg] = useState('');
@@ -277,17 +296,19 @@ export function Topbar({ onJump, api, onMenu }: {
     const out: { kind: string; label: string; sub: string; jump: Jump }[] = [];
     let anyOk = false;
     let anyErr = false;
-    try {
-      const g = await searchGuests(query);
-      anyOk = true;
-      for (const item of g.items.slice(0, 5)) {
-        out.push({
-          kind: 'Guest', label: item.name, sub: item.phone,
-          jump: { view: 'guests', q: item.phone },
-        });
-      }
-    } catch { anyErr = true; }
-    if (/^[0-9a-f-]{8,}$/i.test(query)) {
+    if (searchGuestsOk) {
+      try {
+        const g = await searchGuests(query);
+        anyOk = true;
+        for (const item of g.items.slice(0, 5)) {
+          out.push({
+            kind: 'Guest', label: item.name, sub: item.phone,
+            jump: { view: 'guests', q: item.phone },
+          });
+        }
+      } catch { anyErr = true; }
+    }
+    if (searchBookingsOk && /^[0-9a-f-]{8,}$/i.test(query)) {
       try {
         const found = await searchReservationsByRef(query);
         anyOk = true;
@@ -344,6 +365,7 @@ export function Topbar({ onJump, api, onMenu }: {
           <h1>Resort operations</h1>
           <span className="sub">{dateStr} · {timeStr}</span>
         </div>
+        {(searchGuestsOk || searchBookingsOk) && (
         <form className="searchbox" onSubmit={submit}>
           <Icon name="search" size={18} />
           <input
@@ -358,6 +380,7 @@ export function Topbar({ onJump, api, onMenu }: {
           />
           <kbd>⌘K</kbd>
         </form>
+        )}
         <span className={`api-pill${apiUp ? '' : ' is-down'}`} title={`API ${api}`}>
           <span className="api-dot" />
           {apiUp ? 'Online' : api}

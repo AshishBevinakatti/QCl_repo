@@ -15,13 +15,16 @@ function cfg() {
 
 let kc: Keycloak | null = null;
 let initPromise: Promise<boolean> | null = null;
+let reachable = false;
 
 export async function initAuthOnce(): Promise<boolean> {
   if (initPromise) return initPromise;
   initPromise = (async () => {
     try {
       kc = new Keycloak(cfg());
-      return await kc.init({ onLoad: 'check-sso', pkceMethod: 'S256', checkLoginIframe: false });
+      const authed = await kc.init({ onLoad: 'check-sso', pkceMethod: 'S256', checkLoginIframe: false });
+      reachable = true;
+      return authed;
     } catch {
       return false; // Keycloak down: shell stays usable in Preview mode.
     }
@@ -29,8 +32,14 @@ export async function initAuthOnce(): Promise<boolean> {
   return initPromise;
 }
 
-export function login() {
-  if (kc) void kc.login();
+/** Opens the Keycloak sign-in page; loginHint only pre-fills the username (dev shortcuts). */
+export function login(loginHint?: string) {
+  if (kc) void kc.login(loginHint ? { loginHint } : undefined);
+}
+
+/** False when Keycloak could not be reached at startup. */
+export function authReachable(): boolean {
+  return reachable;
 }
 
 export function logout() {

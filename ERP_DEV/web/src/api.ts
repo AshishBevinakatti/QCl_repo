@@ -115,6 +115,18 @@ export async function apiHealth(): Promise<{ status: string; service: string }> 
   return res.json();
 }
 
+/** The signed-in staff member's roles and permissions (erp-app role_permission, unit 3.15). */
+export interface MeDto {
+  username: string;
+  roles: string[];
+  permissions: string[];
+}
+
+export async function me(): Promise<MeDto> {
+  const res = await apiFetch(`${BASE}/api/v1/me`);
+  return res.json();
+}
+
 export async function listCategories(): Promise<CategoryPage> {
   const res = await apiFetch(`${BASE}/api/v1/room-categories`);
   if (!res.ok) throw new Error(`categories failed: ${res.status}`);
@@ -731,3 +743,134 @@ export async function opsAudit(
   const res = await apiFetch(`/api/v1/ops/audit?${params}`);
   return res.json();
 }
+
+/* ---------------- Lead Management & Guest Portal Microservice (:8082) ---------------- */
+
+export interface LeadActivityDto {
+  id: string;
+  actor: string;
+  activityType: string;
+  description: string;
+  createdAt: string;
+}
+
+export interface LeadDetailDto {
+  id: string;
+  publicReference: string;
+  portalGuestId?: string;
+  name: string;
+  email: string;
+  phone: string;
+  checkinDate: string;
+  checkoutDate: string;
+  roomCategory: string;
+  guestCount: number;
+  notes?: string;
+  status: 'NEW' | 'IN_PROGRESS' | 'CONVERTED' | 'LOST';
+  priority: string;
+  assignedTo?: string;
+  claimedBy?: string;
+  claimedAt?: string;
+  slaDeadline: string;
+  slaBreached: boolean;
+  voiceEscalationTriggered: boolean;
+  erpGuestId?: string;
+  erpReservationId?: string;
+  createdAt: string;
+  updatedAt: string;
+  activities: LeadActivityDto[];
+}
+
+export interface SalesDashboardSummary {
+  newLeadsCount: number;
+  inProgressCount: number;
+  convertedCount: number;
+  lostCount: number;
+  breachedCount: number;
+}
+
+export async function listSalesLeads(): Promise<LeadDetailDto[]> {
+  const res = await apiFetch('/api/v1/sales/leads');
+  if (!res.ok) throw new Error(`listSalesLeads failed: ${res.status}`);
+  return res.json();
+}
+
+export async function getSalesLead(id: string): Promise<LeadDetailDto> {
+  const res = await apiFetch(`/api/v1/sales/leads/${id}`);
+  if (!res.ok) throw new Error(`getSalesLead failed: ${res.status}`);
+  return res.json();
+}
+
+export async function claimSalesLead(id: string, actor: string): Promise<LeadDetailDto> {
+  const res = await apiFetch(`/api/v1/sales/leads/${id}/claim`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ actor }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? `claimSalesLead failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function addLeadActivity(
+  id: string,
+  actor: string,
+  activityType: string,
+  description: string
+): Promise<LeadDetailDto> {
+  const res = await apiFetch(`/api/v1/sales/leads/${id}/activities`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ actor, activityType, description }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? `addLeadActivity failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function updateLeadStatus(
+  id: string,
+  status: 'NEW' | 'IN_PROGRESS' | 'CONVERTED' | 'LOST',
+  actor: string,
+  reason?: string
+): Promise<LeadDetailDto> {
+  const res = await apiFetch(`/api/v1/sales/leads/${id}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, actor, reason }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? `updateLeadStatus failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function convertLeadToGuest(
+  id: string,
+  actor: string,
+  erpGuestId: string,
+  erpReservationId?: string
+): Promise<LeadDetailDto> {
+  const res = await apiFetch(`/api/v1/sales/leads/${id}/convert`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ actor, erpGuestId, erpReservationId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? `convertLeadToGuest failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function getSalesSummary(): Promise<SalesDashboardSummary> {
+  const res = await apiFetch('/api/v1/sales/dashboard/summary');
+  if (!res.ok) throw new Error(`getSalesSummary failed: ${res.status}`);
+  return res.json();
+}
+
