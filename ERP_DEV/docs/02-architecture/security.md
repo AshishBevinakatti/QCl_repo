@@ -49,6 +49,28 @@ Separate from the resort `OPS` (spa/facilities) role. Permissions are resolved f
 - Guest edits are audited with actor, before/after identity summary and optional reason. Live verification: membership read 200 / write 403; unknown guest 404; reception profile 200 and edit allowed; set/clear email recorded and the final value restored to `null`.
 - Email is optional PII, nullable and non-unique; it is not used as an identity key. Do not log email values in application logs; audit before/after retains the contact identity summary for traceability.
 
+## Lead Management & Guest Portal Microservice (3.14 Slice 1, as-built 2026-11-13)
+- **Service Isolation**: `services/lead-service` (:8082) operates with a dedicated `leads_mgmt` PostgreSQL schema and dual Spring Security filter chains:
+  - `@Order(1) portalFilterChain`: Public access for guest registration, login, and inquiry intake (`/api/v1/portal/**`).
+  - `@Order(2) salesFilterChain`: Keycloak OAuth2 Resource Server protecting `/api/v1/sales/**`.
+- **RBAC Enforcement**: All `/api/v1/sales/**` endpoints require one of `SALES_EXEC`, `SALES_SUPERVISOR`, `MANAGER`, or `SUPERADMIN`.
+  - Unauthorized roles (such as `HOUSEKEEPING`) are rejected with `403 FORBIDDEN`.
+  - Unauthenticated requests are rejected with `401 AUTH_REQUIRED`.
+- **Actor Provenance**: Client-supplied `actor` fields were completely removed from request DTOs (`ClaimLeadRequest`, `AddActivityRequest`, `UpdateLeadStatusRequest`, `ConvertLeadRequest`). The acting staff username is derived exclusively server-side from the verified Keycloak JWT (`preferred_username` claim).
+- **Keycloak Realm Roles**: Realm `resort` provisioned with `SALES_EXEC` and `SALES_SUPERVISOR`. Demo users `sales-staff` and `sales-supervisor-staff` added.
+- **Secret Hardening**: Fallback default for `JWT_SECRET` removed; startup fails fast if the variable is missing. Standalone `staff_user` table dropped via Flyway migration `V3__drop_staff_user.sql`.
+
+
+## Permission enforcement + staff workspaces (3.15, as-built 2026-11-13)
+- **One rule for every erp-app endpoint:** `@PreAuthorize("@perm.has('<permission>')")` (`auth/Permissions.java`). Roles come from the Keycloak token; what a role may do comes from the `role_permission` table (V2 + V9 + V11). SUPERADMIN holds `*`. No controller uses `hasAnyAuthority` any more; `ops/OpsAuthorization` was folded into `Permissions`.
+- **Closed gaps:** reservations, room categories, every front-office endpoint, guest/folio/invoice/member reads and the housekeeping board were open to any logged-in user before 3.15. Now e.g. HOUSEKEEPING gets 403 on `/api/v1/reservations`.
+- **Exception:** `POST /api/v1/payments/confirm` stays public (signed gateway callback).
+- **Placeholder matrix `[ASSUMED]` (Q-003):** V11 adds `frontdesk:view`, `bookings:view`, `guests:merge`, `members:view|redeem|renew`, `config:view`, `leads:manage`, sales rows (`leads:manage`, view-only `guests:view`), and MANAGER rows reproducing its previous access. Change access by editing rows, not code.
+- **UI:** `GET /api/v1/me` → `{username, roles, permissions}`; `web/src/access.ts` maps screen → permission, filters the sidebar and top-bar search, picks the landing screen, and shows "Restricted section" for any blocked jump. The UI only hides; the server decides.
+- **Sign-in:** passwords are typed only on the Keycloak page (PKCE). Dev builds add department tiles that pass `loginHint` (username only) and a "Preview as" persona switcher with sample permissions; neither exists in production builds. Direct Access Grants (password form in our app) were rejected (OAuth 2.1 deprecates it; bypasses Keycloak brute-force/MFA).
+- **Evidence:** `PermissionMatrixTest` (role × endpoint, 34 cases), `web/src/access.test.tsx` (12).
+- **Known:** lead-service still checks Keycloak roles itself (`leads:manage` only drives the menu); `ReservationController` manager-override check still reads the MANAGER role directly.
+
 ## Secrets (never in repo — names only)
 `KEYCLOAK_CLIENT_SECRET, DB_URL/USER/PASSWORD, REDIS_URL, KAFKA_BOOTSTRAP, GATEWAY_API_KEY, GATEWAY_WEBHOOK_SECRET, OTA_*_API_KEY, SMTP_* , SMS_* , WHATSAPP_* , TERMINAL_API_KEYS, S3_* , JWT_SIGNING (Keycloak-managed)`. Local: `.env` (git-ignored) from `.env.example` (fake values). Staging/prod: Vault or K8s Secrets; rotation runbook in `05-operations/`. CI scans for secrets pre-commit + pre-merge; logs never print secrets, card PANs, or full ID numbers (mask: `XXXX-XXXX-1234` style).
 

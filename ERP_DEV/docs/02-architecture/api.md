@@ -21,6 +21,8 @@
 
 ## Endpoints by module (resource → method + path)
 
+Identity (ERP-08, 3.15): `GET /api/v1/me` → `{ "username", "roles": [], "permissions": [] }` for the signed-in staff member (any authenticated user; 401 otherwise). Permissions are read from `role_permission`; the web app builds its menu from them.
+
 Booking (ERP-02):
 `GET /api/v1/availability?from&to&category_id` · `POST /api/v1/reservations` (idem) · `GET /api/v1/reservations/{id}` · `PATCH /api/v1/reservations/{id}` · `POST /api/v1/reservations/{id}/cancel` · `GET /api/v1/reservations?guest_id&date&status&page` · `GET /api/v1/room-categories` · `CRUD /api/v1/admin/rate-plans /promos` (config, ERP-08).
 
@@ -52,6 +54,16 @@ OTA (ERP-09):
 
 Facilities/housekeeping/maintenance:
 `CRUD /api/v1/facilities` · `POST /api/v1/facilities/{id}/entries` · `CRUD /api/v1/spa-services|spa-appointments` · `GET /api/v1/housekeeping/board` · `CRUD /api/v1/housekeeping/tasks` · `CRUD /api/v1/service-requests` (+ assign/resolve/close actions).
+
+Lead Management & Guest Portal Microservice (Port :8082, Unit 3.14):
+- Public Portal Auth:
+  `POST /api/v1/portal/auth/register` (name, email, phone, password -> JWT) · `POST /api/v1/portal/auth/login` (email, password -> JWT).
+- Public Portal Inquiries:
+  `POST /api/v1/portal/inquiries` (name, email, phone, dates, category, guests, notes -> public ref `GHR-XXXXXX`, instant WhatsApp alert) · `GET /api/v1/portal/inquiries/me` (Bearer token -> list inquiries).
+- Sales Executive ERP Workspace (Protected by Keycloak Bearer Token, roles: SALES_EXEC, SALES_SUPERVISOR, MANAGER, SUPERADMIN):
+  `GET /api/v1/sales/leads` (list all leads) · `GET /api/v1/sales/leads/{id}` (lead detail + activity log) · `POST /api/v1/sales/leads/{id}/claim` (atomic claim, disarms 5-min SLA alert; actor derived from JWT `preferred_username`) · `POST /api/v1/sales/leads/{id}/activities` (activityType, description; actor from JWT) · `PATCH /api/v1/sales/leads/{id}/status` (status, reason; actor from JWT) · `POST /api/v1/sales/leads/{id}/convert` (links ERP Guest ID & Reservation ID; actor from JWT) · `GET /api/v1/sales/dashboard/summary` (real-time badge counters).
+- Escalation & Notification Engine:
+  Instant Mock WhatsApp dispatch on creation; 5-minute delayed SLA scheduler triggering automated Mock Voice Telephony call when lead remains unattended > 300s.
 
 ## Frontend integration (React + website)
 - Typed client generated from OpenAPI (no ad-hoc fetch); auth via Keycloak JS adapter (PKCE); availability calendar polls `GET availability` per date change (debounced) — Redis-backed; WebSocket/STOMP topic `/topic/rooms` for live room-status flips (housekeeping → reception) with REST fallback.

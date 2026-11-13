@@ -538,3 +538,74 @@
 - Next architecture answers confirmed by user: true microservice architecture, mock notification adapters for dev before provider onboarding, landing page guest auth + inquiry form, same ERP webapp for Sales Executive.
 - Next: execute atomic commits for 3.13 and documentation, then prepare work unit branch for the lead microservice.
 
+## 2026-11-12T15:31:37+05:30 — Unit 3.14: Lead Management & Guest Portal Microservice (End-to-End Implementation)
+- Phase/unit: Phase 3 Core Development, Unit 3.14 Lead Management & Guest Portal Microservice.
+- Branch: `feature/3.14-lead-portal-microservice` (branched from `feature/3.13-guest-360-profile`).
+- What: implemented the entire visitor inquiry to sales conversion pipeline:
+  1. `services/lead-service`: Spring Boot 3.2.5 microservice on port 8082, dedicated `leads_mgmt` PostgreSQL schema, Flyway `V1__init_lead_schema.sql` (portal_guest, lead, lead_activity).
+  2. Public Portal Auth: `PortalAuthController` (`/api/v1/portal/auth/register`, `/login`) with BCrypt passwords and Nimbus JWT tokens.
+  3. Booking Inquiries: `PortalInquiryController` (`/api/v1/portal/inquiries`) generating references (e.g. `GHR-XXXXXX`).
+  4. Communication Engine: instant Mock WhatsApp alert on inquiry submission; durable `SlaEscalationScheduler` (checks every 10s) placing an automated Mock Voice Telephony call when a lead remains unattended > 5 minutes.
+  5. Landing Page (`Design-1`): Next.js components `portal-client.ts`, `portal-forms.tsx`, and `plan-ahead/page.tsx` with luxury Bodoni Moda / Manrope styling.
+  6. ERP Web Workspace: `web/src/leads.tsx` (KPI summary cards, SLA timers, atomic claim, call note logging, convert to official ERP guest via `createGuest` + `convertLeadToGuest`), navigation tab in `dashboard.tsx`, Vite proxy in `vite.config.ts`.
+- Verification:
+  - Backend `lead-service`: 5/5 tests pass (`PortalAuthTest` 3, `LeadWorkflowTest` 1, `SlaVoiceEscalationTest` 1); entire Maven reactor `mvn test-compile` SUCCESS.
+  - Landing page `Design-1`: `npm run typecheck` passes with 0 errors; `npm run build` succeeds and renders static route `/plan-ahead`.
+  - ERP web: `vitest run` passes 29/29 tests across 5 test suites (`leads.test.tsx` 3/3); `npm run build` builds production bundle cleanly (2,228 modules).
+- Next: present implementation summary to user for review and commit approval.
+
+## 2026-11-13T13:47:00+05:30 — Unit 3.14 Slice 1: Keycloak Integration, Dual Security Filter Chains & Dead Code Cleanup
+- Phase/unit: Phase 3 Core Development, Unit 3.14 Lead Management Microservice (Slice 1).
+- Branch: `feature/3.14-lead-portal-microservice`.
+- What: secured `lead-service` sales endpoints with Keycloak OAuth2 Resource Server and pruned standalone auth code:
+  1. `services/lead-service/pom.xml`: added `spring-boot-starter-oauth2-resource-server`.
+  2. `SecurityConfig.java`: split into dual security filter chains:
+     - `@Order(1) portalFilterChain`: public access for landing guest auth/inquiries intake (`/api/v1/portal/**`).
+     - `@Order(2) salesFilterChain`: Keycloak OAuth2 Resource Server for `/api/v1/sales/**` requiring any of `SALES_EXEC`, `SALES_SUPERVISOR`, `MANAGER`, `SUPERADMIN`. Included role mapper extracting roles from `roles` or `realm_access.roles`.
+  3. `SalesLeadController.java` & `SalesDtos.java`: removed client-provided `actor` from request bodies; securely injected actor from JWT (`preferred_username`, email, or subject).
+  4. Flyway `V3__drop_staff_user.sql`: dropped deprecated `staff_user` table; kept `V2__staff_user.sql` untouched for Flyway history integrity.
+  5. Deleted dead standalone staff code: `StaffAuthService.java`, `StaffDtos.java`, `StaffUser.java`, `StaffRole.java`, `StaffUserRepository.java`, and staff token generator in `JwtTokenService.java`.
+  6. Keycloak `realm-golden-hills.json`: added realm roles `SALES_EXEC` and `SALES_SUPERVISOR`, and demo users `sales-staff` and `sales-supervisor-staff`.
+  7. Configuration: enforced `${JWT_SECRET}` without default fallback in `application.yml`; added `JWT_SECRET`, `CORS_ORIGINS`, and `ERP_APP_URL` to `ERP_DEV/.env.example`.
+- Verification:
+  - `mvn test -pl services/lead-service`: 10/10 tests pass (including new `SalesSecurityTest`: 401 without token, 403 for `HOUSEKEEPING`, 200 for `SALES_EXEC`, and token username extraction on claim).
+  - Web test suite: 29/29 tests pass (`vitest run`).
+- Next: manual testing with user, followed by Slice 2 (server-side atomic conversion).
+
+## 2026-11-13T16:00:00+05:30 — Unit 3.14 Slice 1b: WhatsApp Cloud API lead alerts
+- Phase/unit: Phase 3 Core Development, Unit 3.14 (Slice 1b, inserted before Slice 2 at user request).
+- What: replaced the log-only WhatsApp adapter with a transactional outbox (`whatsapp_notification`, Flyway V4), provider switch `mock|meta` (Meta Cloud API template sender via RestClient, 5 s/10 s timeouts), Keycloak-backed staff directory (`phone_number`, `whatsapp_on_duty` attributes; client `lead-service` with `view-users`), signed webhook `/api/v1/webhooks/whatsapp` with forward-only status tracking. Details in PLAN-3.14 §Slice 1b.
+- Verification: `mvn -pl services/lead-service test` 27/27 pass. Not yet run: live Postgres boot of V4, Keycloak re-import of the realm, real Meta send (needs approved template + credentials).
+- Next: user recreates Keycloak container (realm import) and restarts lead-service for a local mock smoke test; Meta account steps; then plan Slice 2.
+
+## 2026-11-13T16:32:43+05:30 — Unit 3.15: Role-based staff workspaces + staff sign-in
+- Phase/unit: Phase 3, Unit 3.15 (ERP-08 RBAC). Plan: `docs/03-phases/phase-3/PLAN-3.15-role-workspaces.md`, approved by user 2026-11-13 with decisions: permissions end-to-end; Sales view-only guests; Keycloak-hosted sign-in + dev loginHint tiles; dev-only preview personas.
+- Branch: still `feature/3.14-lead-portal-microservice` (3.14 work is uncommitted, so no new branch was cut; see STATE).
+- erp-app: `auth/Permissions` (bean `perm`), `auth/MeController` (`GET /api/v1/me`), V11 permission seeds `[ASSUMED]` (Q-017), every controller endpoint annotated with `@perm.has/hasAny`; `ops/OpsAuthorization` removed.
+- web: `access.ts`, `SignIn.tsx` (+ AccessDenied), `auth.login(loginHint?)`, `api.me()`; App loads `/me`, lands per department, renders "Restricted section" for blocked views; Sidebar/Topbar filtered by permission; Live/Preview toggle + persona switcher dev builds only. Fixed stale `GuestDto` mock in `leads.test.tsx` (blocked `npm run build`).
+- Verification: erp-app 112 tests, 109 pass; `PermissionMatrixTest` 34/34. The 3 failures (`BookingApiTest.modifyRequotes`, `BillingApiTest.*`) are pre-existing: they book fixed dates 2026-11-09 that are now in the past ("checkin cannot be in the past"). Web: vitest 41/41, `npm run build` OK, lint 0 errors; production bundle contains no dev tiles. Not yet run: live Keycloak sign-in per department.
+- Next: user live check per department; fix the date-bound booking tests; commit review (Rule 7).
+
+## 2026-11-13T17:00:00+05:30 — 3.14 Slice 1b: preparing real Meta WhatsApp (user-approved plan)
+- User decisions: Meta test number; Keycloak changes live via kcadm (no wipe); cloudflared tunnel for the webhook.
+- Done: lead-service `spring.config.import` of git-ignored `ERP_DEV/.env`; `.env` created with DB/JWT + Keycloak client secret + empty WHATSAPP_* placeholders (provider still `mock`); Keycloak `lead-service` client/view-users/ADMIN_EDIT verified (already present from a realm re-import); service-account lookup lists 2 on-duty demo users (fake numbers); cloudflared 2026.11.0 installed to `~/.local/bin`, quick tunnel to :8082 running; webhook through tunnel answers 403 (no verify token yet) / 401 (unsigned POST) as designed.
+- Note: the DATA drive mounts every file 0777, so `.env` is readable by all local users; it is git-ignored.
+- Waiting on user: Meta app + template approval + values in `.env`, real phone on `sales-staff`, webhook registration in Meta.
+
+
+## 2026-11-13T17:00:10+05:30 — Sign-in screen UI polish (Unit 3.15 follow-up)
+- User request: "improve the ui of login screen of the erp". Layout/visual only; no behaviour, text or auth flow change.
+- web: `SignIn.tsx` now uses a split layout: the existing `assets/banner.jpg` photo with a short caption on the left, and the sign-in card on the right. `screens.css` adds `.signin-split` / `.signin-photo*`, a card shadow, a larger primary button and a gold accent on the GH mark. Below 860px the photo is hidden and the card stays centred. Loading screens in App.tsx still use plain `.signin` and are unchanged.
+- Verification: `vitest run src/access.test.tsx` 12/12, `tsc -b` clean, oxlint clean. Not verified visually: Brave remote debugging was unavailable for a screenshot.
+- Not committed (Rule 7).
+
+## 2026-11-13T21:38:00+05:30 — Phase 3 & Landing Page Consolidated Push to ashish/backend_phase_1
+- Phase/unit: Phase 3 Core Development (Units 3.14, 3.15) & Public Landing Page integration.
+- Branch: `ashish/backend_phase_1`.
+- User approval: explicit instruction "yes i confirm and make a ashish/backend_phase_1 branch and push it" on 2026-11-13.
+- What:
+  1. Created root `.gitignore` to prevent editor files (`.vscode/`), local env files, and build outputs from polluting the repository.
+  2. Imported connected Next.js public landing page (`Design-1`) into `landing-page/` (with luxury Bodoni Moda styling, `/plan-ahead` booking inquiry form, and `portal-client.ts` wired to `lead-service`).
+  3. Committed Unit 3.14: `services/lead-service` Spring Boot microservice, Flyway V1-V4 migrations, Keycloak OAuth2 Resource Server dual filter chains, SLA escalation scheduler, mock WhatsApp/voice adapters.
+  4. Committed Unit 3.15: RBAC workspace permissions (`Permissions.java`, `MeController.java`, Flyway V11), department landing, split-layout sign-in screen, and UI role filtering.
+  5. Pushed branch `ashish/backend_phase_1` to `origin` (`https://github.com/AshishBevinakatti/QCl_repo.git`).
