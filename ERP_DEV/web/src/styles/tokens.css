@@ -1,171 +1,204 @@
-/* Design tokens — warm resort palette, light and dark.
- * Billzova supplies the structural language (spacing, radii, typography);
- * the Golden Hills green/gold palette remains the brand. */
+/* Design tokens — Golden Hills Resort ERP.
+ *
+ * The palette and the type are the property's own, taken from the public site
+ * (landing-page/src/app/tokens.css and general-sans.css) so the site and the
+ * staff workspace read as one product:
+ *
+ *   forest #104028 · brass #b88828 · cream #f7f2ec · ink #18241d
+ *   chalk  #fffaf3 · limestone #e8e1d7 · garden #e0e2d3 · line #c3c9bd
+ *   Inter for the interface, General Sans for display
+ *
+ * The staff workspace is read for whole shifts, so it uses the same hues at
+ * workspace density: surfaces stay neutral, the richness lives in the key rack.
+ *
+ * Rules this file keeps:
+ *   - Surfaces, borders and text all come from the one neutral ramp.
+ *   - Exactly one accent (brass) in the chrome, used rarely.
+ *   - Semantic colours carry meaning only, and are toned to sit inside the ramp.
+ *   - No hue gradients, no glows, no coloured shadows.
+ *   - Every text role clears WCAG AA (4.5:1) on every surface it is used on.
+ */
 :root {
   color-scheme: light;
 
   --font-sans: 'Inter Variable', Inter, ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'General Sans', 'Inter Variable', Inter, ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
+    'Liberation Mono', monospace;
 
-  --bg: #f6f4ee;
-  --surface: #fffdf8;
-  --surface-raised: #fffefb;
-  --surface-soft: #faf8f1;
-  --surface-hover: #f4f0e5;
-  --surface-active: #eef4ea;
-  --input-bg: #ffffff;
+  /* ---- Neutral ramp: the site's cream/chalk/limestone, 0 = page, up = raised ---- */
+  --bg: #f7f2ec;           /* brand cream */
+  --surface: #fdfaf5;
+  --surface-raised: #fffaf3; /* chalk */
+  --surface-soft: #f3ede5;
+  --surface-hover: #ebe4d9;
+  --surface-active: #e8e1d7; /* limestone */
+  --input-bg: #fffaf3;
 
-  --ink: #22301f;
-  --ink-strong: #182315;
-  --muted: #6b7263;
-  --muted-strong: #505748;
-  --line: #e4ddcd;
-  --line-strong: #d4cab7;
+  /* ---- Three text roles, no more ----
+   * --muted is a step darker than the site's #596a5e: the same hue, but the
+   * workspace sets it at 11-13px on limestone, where #596a5e lands at 4.4:1.
+   * This clears 4.5:1 on every surface above. */
+  --ink-strong: #18241d;   /* brand ink */
+  --ink: #2a362e;
+  --muted: #556150;
+  --muted-strong: #3f4a3e;
 
-  --brand: #2e5d3a;
-  --brand-dark: #1f4228;
-  --brand-soft: #e9efe2;
-  --brand-soft-2: #dff0dc;
-  --brand-ink: #1f4228;
+  /* ---- Hairlines: the site's line colour, carried as ink at low opacity ---- */
+  --line: rgba(24, 36, 29, 0.12);
+  --line-strong: rgba(24, 36, 29, 0.2);
 
-  --btn-bg: #2e5d3a;
-  --btn-bg-hover: #1f4228;
-  --btn-ink: #ffffff;
+  /* ---- Brand: estate forest. The primary action, nothing else. ---- */
+  --brand: #104028;
+  --brand-dark: #0a2c1b;
+  --brand-soft: #e0e2d3;   /* garden */
+  --brand-ink: #104028;
 
-  --gold: #b98a2f;
-  --gold-dark: #8a5f00;
-  --gold-soft: #f7efd9;
-  --gold-soft-2: #fbeecb;
-  --gold-ink: #8a5f00;
-  --on-gold: #1f2a1a;
-  --on-photo: #ffffff;
+  --btn-bg: #104028;
+  --btn-bg-hover: #0a2c1b;
+  --btn-ink: #fffaf3;
 
-  --danger: #b3261e;
-  --danger-soft: #fbe3e1;
-  --ok: #2e7d32;
-  --ok-soft: #e7f0e4;
-  --info: #274b9b;
-  --info-soft: #e8eefb;
-  --neutral: #8a8f85;
-  --neutral-soft: #eee9d8;
+  /* ---- Accent: brass. --brass fills, --brass-ink is the readable shade. ---- */
+  --brass: #b88828;
+  --brass-ink: #74540f;
+  --brass-soft: #f1e7d1;
+  --on-brass: #1b1407;
 
-  --badge-bg: #eee9d8;
-  --badge-ink: #5f5945;
-  --avatar-bg: #e6ecdf;
-  --avatar-ink: #1f4228;
-  --code-bg: #f4f0e5;
-  --scrollbar: #d4cab7;
-  --scrollbar-hover: #b9ad96;
+  /* Key-tag material — the signature detail, built from the brass ramp. */
+  --tag-face: #e7dcc1;
+  --tag-face-hi: #f3ebd8;
+  --tag-edge: rgba(116, 84, 15, 0.36);
+  --tag-ink: #4a3a16;
 
-  --focus: rgba(46, 93, 58, 0.35);
-  --ring: rgba(46, 93, 58, 0.14);
-  --overlay: rgba(20, 30, 20, 0.5);
-  --shadow-overlay: 0 24px 64px rgba(20, 30, 20, 0.26);
+  /* ---- Semantic: meaning only, toned into the ramp ---- */
+  --ok: #2c6438;
+  --ok-soft: #dfe8dc;
+  --danger: #992e26;
+  --danger-soft: #f2e0dd;
+  --info: #27456f;
+  --info-soft: #e1e7f0;
+  --neutral: #556150;
+  --neutral-soft: #e8e1d7;
 
-  --hero-shade: linear-gradient(
-    90deg,
-    rgba(246, 244, 238, 0.97) 18%,
-    rgba(246, 244, 238, 0.74) 55%,
-    rgba(31, 66, 40, 0.42)
-  );
-  --promo-shade: linear-gradient(0deg, rgba(20, 30, 20, 0.82), rgba(20, 30, 20, 0.12));
+  --badge-bg: #e8e1d7;
+  --badge-ink: #3f4a3e;
+  --avatar-bg: #e0e2d3;
+  --avatar-ink: #104028;
+  --code-bg: #f0e9df;
+  --scrollbar: rgba(24, 36, 29, 0.22);
+  --scrollbar-hover: rgba(24, 36, 29, 0.36);
 
-  --sidebar-bg: #1f4228;
-  --sidebar-ink: #f2efe4;
-  --sidebar-muted: #cfc9ae;
-  --sidebar-border: rgba(255, 255, 255, 0.12);
-  --sidebar-hover: rgba(255, 255, 255, 0.08);
-  --sidebar-active-bg: rgba(185, 138, 47, 0.2);
-  --sidebar-active-ink: #f2d58f;
+  --focus: #104028;
+  --ring: rgba(16, 64, 40, 0.16);
+  --overlay: rgba(24, 36, 29, 0.46);
+  --shadow-overlay: 0 20px 56px rgba(24, 36, 29, 0.18);
 
-  --chart-available: #2e7d32;
-  --chart-occupied: #d84a4a;
-  --chart-maintenance: #b98a2f;
-  --chart-reserved: #274b9b;
+  /* ---- Room status. One accent leads; the rest are ramp steps. ---- */
+  --room-ready: #2c6438;
+  --room-occupied: #a3761f;
+  --room-attention: #992e26;
+  --room-idle: rgba(24, 36, 29, 0.22);
 
-  --sidebar-w: 264px;
-  --sidebar-w-collapsed: 76px;
-  --radius-card: 16px;
-  --radius-control: 12px;
-  --radius-sm: 8px;
+  /* ---- Sidebar: the site's forest, one step deeper ---- */
+  --sidebar-bg: #0e2e1d;
+  --sidebar-ink: #f7f2ec;
+  --sidebar-muted: #a9b8a6;
+  --sidebar-border: rgba(247, 242, 236, 0.12);
+  --sidebar-hover: rgba(247, 242, 236, 0.07);
+  --sidebar-active-bg: rgba(247, 242, 236, 0.11);
+  --sidebar-active-ink: #fffaf3;
+
+  /* ---- Metrics ---- */
+  --sidebar-w: 248px;
+  --sidebar-w-collapsed: 72px;
+  --radius-panel: 16px;
+  --radius-card: 12px;
+  --radius-control: 8px;
+  --radius-sm: 6px;
+
+  /* ---- Motion: one curve, three durations (the site's ease-out) ---- */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 160ms;
+  --dur-base: 200ms;
+  --dur-enter: 300ms;
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --bg: #10140d;
-  --surface: #181e14;
-  --surface-raised: #1d2519;
-  --surface-soft: #1b2217;
-  --surface-hover: #232c1d;
-  --surface-active: #263520;
-  --input-bg: #141a10;
+  /* The night shift of the same palette: forest-black ground, cream ink,
+   * brass unchanged in meaning but lifted so it reads on a dark ground. */
+  --bg: #0d1510;
+  --surface: #141d17;
+  --surface-raised: #19231b;
+  --surface-soft: #17201a;
+  --surface-hover: #1f2a21;
+  --surface-active: #263227;
+  --input-bg: #101810;
 
-  --ink: #f2efe4;
-  --ink-strong: #fffdf8;
-  --muted: #a8af9c;
-  --muted-strong: #c3c9b9;
-  --line: #303a29;
-  --line-strong: #3f4a36;
+  --ink-strong: #f7f2ec;   /* brand cream */
+  --ink: #e3e0d6;
+  --muted: #9dab99;
+  --muted-strong: #bcc5b6;
 
-  --brand: #6aa978;
-  --brand-dark: #74b183;
-  --brand-soft: #243524;
-  --brand-soft-2: #2d442d;
-  --brand-ink: #a9d3a9;
+  --line: rgba(247, 242, 236, 0.12);
+  --line-strong: rgba(247, 242, 236, 0.2);
 
-  --btn-bg: #5f9c6d;
-  --btn-bg-hover: #74b183;
-  --btn-ink: #0c1209;
+  --brand: #78ad88;
+  --brand-dark: #8fbf9c;
+  --brand-soft: #1d2c21;
+  --brand-ink: #a8cfb3;
 
-  --gold: #d6a94a;
-  --gold-dark: #f0c66e;
-  --gold-soft: #332b18;
-  --gold-soft-2: #3d3117;
-  --gold-ink: #f0c66e;
-  --on-gold: #17200f;
-  --on-photo: #ffffff;
+  /* On dark the primary action is an off-white from the ramp with dark ink —
+   * the accent stays for selection and the one figure that matters. */
+  --btn-bg: #ece7dd;
+  --btn-bg-hover: #f7f2ec;
+  --btn-ink: #14231a;
 
-  --danger: #e07a72;
-  --danger-soft: #3a1f1d;
-  --ok: #7fc38a;
-  --ok-soft: #1e3322;
-  --info: #8fb0f0;
-  --info-soft: #1d2844;
-  --neutral: #9aa394;
-  --neutral-soft: #2b3324;
+  --brass: #d6a94a;
+  --brass-ink: #e8c278;
+  --brass-soft: #2d2615;
+  --on-brass: #17120a;
 
-  --badge-bg: #2b3324;
-  --badge-ink: #e4dec9;
-  --avatar-bg: #2d442d;
-  --avatar-ink: #d7e8d3;
-  --code-bg: #11160e;
-  --scrollbar: #3f4a36;
-  --scrollbar-hover: #566349;
+  --tag-face: #352f1f;
+  --tag-face-hi: #443d28;
+  --tag-edge: rgba(214, 169, 74, 0.32);
+  --tag-ink: #e7d7af;
 
-  --focus: rgba(214, 169, 74, 0.45);
-  --ring: rgba(214, 169, 74, 0.2);
-  --overlay: rgba(0, 0, 0, 0.64);
-  --shadow-overlay: 0 26px 70px rgba(0, 0, 0, 0.65);
+  --ok: #7fbc8c;
+  --ok-soft: #1a291d;
+  --danger: #d98d83;
+  --danger-soft: #2f1c19;
+  --info: #92b0d8;
+  --info-soft: #1a2333;
+  --neutral: #9dab99;
+  --neutral-soft: #242f26;
 
-  --hero-shade: linear-gradient(
-    90deg,
-    rgba(16, 20, 13, 0.96) 18%,
-    rgba(16, 20, 13, 0.76) 55%,
-    rgba(12, 27, 17, 0.52)
-  );
-  --promo-shade: linear-gradient(0deg, rgba(8, 14, 9, 0.86), rgba(8, 14, 9, 0.18));
+  --badge-bg: #242f26;
+  --badge-ink: #cbd3c5;
+  --avatar-bg: #223020;
+  --avatar-ink: #bfd9c5;
+  --code-bg: #0c130d;
+  --scrollbar: rgba(247, 242, 236, 0.2);
+  --scrollbar-hover: rgba(247, 242, 236, 0.32);
 
-  --sidebar-bg: #0c1b11;
-  --sidebar-ink: #f2efe4;
-  --sidebar-muted: #aab8a0;
-  --sidebar-border: rgba(255, 255, 255, 0.1);
-  --sidebar-hover: rgba(255, 255, 255, 0.07);
-  --sidebar-active-bg: rgba(214, 169, 74, 0.16);
-  --sidebar-active-ink: #f0c66e;
+  --focus: #a8cfb3;
+  --ring: rgba(168, 207, 179, 0.22);
+  --overlay: rgba(0, 0, 0, 0.62);
+  --shadow-overlay: 0 22px 60px rgba(0, 0, 0, 0.6);
 
-  --chart-available: #7fc38a;
-  --chart-occupied: #e07a72;
-  --chart-maintenance: #d6a94a;
-  --chart-reserved: #8fb0f0;
+  --room-ready: #7fbc8c;
+  --room-occupied: #d6a94a;
+  --room-attention: #d98d83;
+  --room-idle: rgba(247, 242, 236, 0.2);
+
+  --sidebar-bg: #091610;
+  --sidebar-ink: #f7f2ec;
+  --sidebar-muted: #93a291;
+  --sidebar-border: rgba(247, 242, 236, 0.1);
+  --sidebar-hover: rgba(247, 242, 236, 0.06);
+  --sidebar-active-bg: rgba(247, 242, 236, 0.1);
+  --sidebar-active-ink: #fffaf3;
 }

@@ -11,6 +11,20 @@ export function storedTheme(): Theme | null {
   }
 }
 
+/** What the staff member's own device asks for, when they have not chosen. */
+export function preferredTheme(): Theme {
+  try {
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  } catch {
+    return 'light';
+  }
+}
+
+/** The theme to start on: an explicit choice first, otherwise the device's. */
+export function initialTheme(): Theme {
+  return storedTheme() ?? preferredTheme();
+}
+
 export function currentTheme(): Theme {
   return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
 }

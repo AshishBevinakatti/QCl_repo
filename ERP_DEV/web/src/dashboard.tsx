@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import bannerImg from './assets/banner.jpg';
 import {
   alerts, board, businessToday, checkIn, checkOut, confirmPayment, confirmReservation, dashboard, departures,
   enrichSummaries, guestById, inHouseGuests, initiatePayment, isAuthError, listCategories, listReservations,
@@ -10,7 +9,7 @@ import { isAuthenticated, login, logout, username } from './auth';
 import { can, canSee, PREVIEW_PERSONAS, type Perms } from './access';
 import { demoBoard, demoDashboard } from './demo';
 import { currentTheme, toggleTheme, type Theme } from './theme';
-import { Badge, Btn, Donut, Icon, Kpi, statusTone } from './ui';
+import { Badge, Btn, Icon, KeyTag, ShareBar, Stat, statusLabel, statusTone } from './ui';
 
 export type View =
   | 'dashboard' | 'reservations' | 'guests' | 'rooms' | 'check'
@@ -26,39 +25,46 @@ export interface Jump {
   bookingStatus?: string;
 }
 
-/* Room-status → donut bucket. Backend stores free-form lowercase strings;
- * anything unknown counts as Available (ready-like) — mapping is documented
- * in docs/04-modules/erp-03-front-office.md, not hidden. */
+/* Room-status → board bucket. Backend stores free-form lowercase strings;
+ * anything unknown counts as ready — mapping is documented in
+ * docs/04-modules/erp-03-front-office.md, not hidden. */
 const MAINT = new Set(['dirty', 'cleaning', 'inspect', 'out_of_order', 'maintenance']);
-function bucket(status: string): 'available' | 'occupied' | 'maint' {
+function bucket(status: string): 'ready' | 'occupied' | 'attention' {
   if (status === 'occupied') return 'occupied';
-  if (MAINT.has(status)) return 'maint';
-  return 'available';
+  if (MAINT.has(status)) return 'attention';
+  return 'ready';
 }
+
+/* What the board says about a room, in the words the desk would use. */
+const SLOT_STATE: Record<'ready' | 'occupied' | 'attention', string> = {
+  ready: 'Ready',
+  occupied: 'With guest',
+  attention: 'Needs work',
+};
 
 const NAV: { id: View; label: string; icon: string }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: 'home' },
-  { id: 'leads', label: 'Sales Leads', icon: 'call' },
+  { id: 'leads', label: 'Sales leads', icon: 'call' },
   { id: 'reservations', label: 'Reservations', icon: 'calendar_month' },
   { id: 'guests', label: 'Guests', icon: 'group' },
-  { id: 'rooms', label: 'Room Management', icon: 'bed' },
-  { id: 'check', label: 'Check-in / Check-out', icon: 'swap_horiz' },
-  { id: 'billing', label: 'Billing & Payments', icon: 'receipt_long' },
-  { id: 'requests', label: 'Service Requests', icon: 'build' },
+  { id: 'rooms', label: 'Room management', icon: 'bed' },
+  { id: 'check', label: 'Front office', icon: 'swap_horiz' },
+  { id: 'billing', label: 'Billing & payments', icon: 'receipt_long' },
+  { id: 'requests', label: 'Service requests', icon: 'build' },
   { id: 'housekeeping', label: 'Housekeeping', icon: 'cleaning_services' },
   { id: 'reports', label: 'Reports', icon: 'bar_chart' },
-  { id: 'ops', label: 'Ops Console', icon: 'monitoring' },
+  { id: 'ops', label: 'Ops console', icon: 'monitoring' },
 ];
 
 export function viewLabel(v: View): string {
   return NAV.find((n) => n.id === v)?.label ?? 'Settings';
 }
 
-function greeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
+/* The keycap shows the modifier this machine actually has. The desk runs
+ * Windows; showing ⌘ there is a shortcut nobody can press. */
+function shortcutKey(): string {
+  const mac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || '');
+  return mac ? '⌘K' : 'Ctrl K';
 }
 
 /* ---------------- Sidebar ---------------- */
@@ -171,7 +177,7 @@ export function Sidebar({ view, go, mode, setMode, mobileOpen, onClose, perms, w
         )}
         {import.meta.env.DEV && mode === 'preview' && (
           <label className="persona-select">
-            Preview as (sample permissions)
+            Preview as
             <select value={persona} onChange={(e) => setPersona(e.target.value)}>
               {PREVIEW_PERSONAS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
             </select>
@@ -202,7 +208,7 @@ export function Sidebar({ view, go, mode, setMode, mobileOpen, onClose, perms, w
           ) : (
             <div className="usercard">
               <span className="avatar">?</span>
-              <span className="who"><strong>Not signed in</strong><small>{mode === 'preview' ? 'preview data' : 'live needs login'}</small></span>
+              <span className="who"><strong>Not signed in</strong><small>{mode === 'preview' ? 'Sample data' : 'Live needs sign-in'}</small></span>
             </div>
           )}
           <nav className="nav nav--utility">
@@ -223,9 +229,9 @@ export function Sidebar({ view, go, mode, setMode, mobileOpen, onClose, perms, w
                 <span className="nav-label">Logout</span>
               </button>
             ) : (
-              <button onClick={() => login()} title={collapsed ? 'Staff log in' : undefined}>
+              <button onClick={() => login()} title={collapsed ? 'Staff sign-in' : undefined}>
                 <Icon name="login" size={18} />
-                <span className="nav-label">Staff log in</span>
+                <span className="nav-label">Staff sign-in</span>
               </button>
             )}
           </nav>
@@ -357,12 +363,12 @@ export function Topbar({ onJump, api, onMenu, perms }: {
 
   return (
     <div className="topbar-wrap">
-      <header className="topbar-new">
+      <header className="topbar">
         <button type="button" className="menu-btn" onClick={onMenu} aria-label="Open navigation" aria-controls="erp-sidebar">
           <Icon name="menu" size={20} />
         </button>
         <div className="topbar-title">
-          <h1>Resort operations</h1>
+          <strong>Golden Hills Resort</strong>
           <span className="sub">{dateStr} · {timeStr}</span>
         </div>
         {(searchGuestsOk || searchBookingsOk) && (
@@ -375,10 +381,10 @@ export function Topbar({ onJump, api, onMenu, perms }: {
             onKeyDown={(e) => {
               if (e.key === 'Escape') clearSearch();
             }}
-            placeholder="Search guest, booking, room…"
+            placeholder="Search"
             aria-label="Search guests, bookings and rooms"
           />
-          <kbd>⌘K</kbd>
+          <kbd>{shortcutKey()}</kbd>
         </form>
         )}
         <span className={`api-pill${apiUp ? '' : ' is-down'}`} title={`API ${api}`}>
@@ -453,7 +459,6 @@ export function DashboardView({ mode, go, viewFolio, onJump = () => {} }: {
     if (mode === 'preview') {
       setDash(demoDashboard);
       setArrivals([]); setBookings([]);
-      setDeparturesList([]); setInhouseList([]); setAlertList([]);
       return;
     }
     setLoading(true);
@@ -539,8 +544,8 @@ export function DashboardView({ mode, go, viewFolio, onJump = () => {} }: {
   if (mode === 'live' && !dash && denied) {
     return (
       <div className="panel">
-        <p>This dashboard needs sign-in — use the <strong>Staff log in</strong> button in the sidebar.</p>
-        <p className="muted">Meanwhile, switch to Preview above to review the layout.</p>
+        <p>This dashboard needs sign-in — use Staff sign-in in the sidebar.</p>
+        <p className="muted">To look at the layout without a backend, switch to Preview.</p>
       </div>
     );
   }
@@ -551,61 +556,137 @@ export function DashboardView({ mode, go, viewFolio, onJump = () => {} }: {
   if (!dash) return null;
 
   const total = dash.rooms.length;
-  const avail = dash.rooms.filter((r) => bucket(r.status) === 'available').length;
+  const avail = dash.rooms.filter((r) => bucket(r.status) === 'ready').length;
   const occ = dash.rooms.filter((r) => bucket(r.status) === 'occupied').length;
-  const maint = total - avail - occ;
-  const ready = dash.rooms.filter((r) => bucket(r.status) === 'maint').length;
-  const pct = (n: number) => (total === 0 ? 0 : Math.round((n / total) * 100));
+  const attention = total - avail - occ;
+
+  const dayStr = new Intl.DateTimeFormat('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  }).format(new Date(`${today}T00:00:00`));
 
   return (
     <>
-      <div className="banner">
-        <img src={bannerImg} alt="" />
-        <div className="shade" />
-        <div className="txt">
-          <h2>{greeting()}, {isAuthenticated() ? username() : 'there'}</h2>
-          <p>Here&apos;s what&apos;s happening at Golden Hills Resort today.</p>
+      {/* The date names the shift. No greeting, no tagline. */}
+      <div className="day-head">
+        <div>
+          <h1>{dayStr}</h1>
+          <p>
+            {isAuthenticated() ? `Signed in as ${username()}` : 'Preview — no live data'} · business date {today}
+          </p>
         </div>
-        <div className="tag">Make every stay<br />a memorable experience.</div>
       </div>
 
-      <div className="kpis">
-        <Kpi icon="bed" tone="brand" num={avail} lbl="Rooms Available" sub={`out of ${total} rooms`} />
-        <Kpi icon="event_available" tone="gold" num={dash.arrivals.length} lbl="Expected Arrivals" sub="Today" />
-        <Kpi icon="event_busy" tone="neutral" num={mode === 'preview' ? '—' : departuresList.length} lbl="Expected Departures" sub="Today" />
-        <Kpi icon="groups" tone="info" num={dash.inHouse.length} lbl="In-House Guests" sub="Currently staying" />
-        <Kpi icon="cleaning_services" tone="danger" num={ready} lbl="Rooms Awaiting Readiness" sub="Housekeeping in progress" />
+      {/* A label, a figure, what it is out of. Nothing else. */}
+      <div className="stats">
+        <Stat label="Arriving" num={dash.arrivals.length} sub="expected today" />
+        <Stat label="Leaving" num={departuresList.length} sub="expected today" />
+        <Stat label="In house" num={dash.inHouse.length} sub="guests staying now" />
+        <Stat label="Ready to let" num={avail} sub={`of ${total} rooms`} lead />
+        <Stat label="Needs work" num={attention} sub="before it can be let" />
       </div>
 
-      {ok && <div className="panel" style={{ marginBottom: '0.9rem' }}>{ok}</div>}
-      {msg && <div className="panel" style={{ marginBottom: '0.9rem' }}>{msg}</div>}
+      {ok && <p className="alert ok">{ok}</p>}
+      {msg && <p className="alert err">{msg}</p>}
+
+      {/* The board and what needs a person: the one wide object, and a narrow
+        * list of a different kind beside it. */}
+      <div className="dash-board-row">
+      {/* The key rack — every room as a tag on the board behind reception.
+        * A hung tag is a room you can let; a tag that is out is with a guest. */}
+      <div className="keyrack">
+        <div className="phead">
+          <h3>Key rack</h3>
+          <span className="phead-count">{total} rooms</span>
+          <button type="button" className="phead-link" onClick={() => go('rooms')}>
+            Open rooms <Icon name="arrow_forward" size={14} />
+          </button>
+        </div>
+        {total === 0 ? (
+          <p className="keyrack-empty">No rooms configured for this property yet.</p>
+        ) : (
+          <>
+            <div className="keyrack-board">
+              {dash.rooms.map((r) => {
+                const b = bucket(r.status);
+                return (
+                  <div
+                    key={r.id}
+                    className={`keytag-slot is-${b}${b === 'occupied' ? ' is-out' : ''}`}
+                    title={`Room ${r.roomNo} — ${r.status}`}
+                  >
+                    <KeyTag no={r.roomNo} large />
+                    <span className="keytag-state">{SLOT_STATE[b]}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="keyrack-share">
+              <ShareBar
+                total={total}
+                parts={[
+                  { label: 'Ready', value: avail, color: 'var(--room-ready)' },
+                  { label: 'With guest', value: occ, color: 'var(--room-occupied)' },
+                  { label: 'Needs work', value: attention, color: 'var(--room-attention)' },
+                ]}
+              />
+            </div>
+          </>
+        )}
+        <p className="keyrack-foot">
+          Rooms carry no reserved state — a reservation holds a category, not a room, so a
+          room shows as ready until someone is checked into it.
+        </p>
+      </div>
+
+      <div className="panel dash-panel dash-panel--alerts">
+        <div className="phead"><h3>Needs attention</h3></div>
+        {alertList.length === 0 ? (
+          <p className="muted">Nothing outstanding.</p>
+        ) : (
+          <ul className="alert-list">
+            {alertList.map((a) => (
+              <li key={a.ref + a.text} className={`is-${a.severity}`}>
+                <span className="dot" />
+                <span>{a.text}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="panel-foot">
+          Guest requests and maintenance issues arrive in a later unit — no source system yet.
+        </p>
+      </div>
+      </div>
 
       <div className="dash-columns">
         <div className="dash-column">
+          {/* Columns the backend cannot fill (arrival time, party size) are not
+            * shipped as a column of dashes — they are simply not columns. */}
           <div className="panel dash-panel dash-panel--arrivals">
-            <div className="phead"><h3>Today&apos;s Arrivals ({dash.arrivals.length})</h3><a onClick={() => onJump({ view: 'check', bookingStatus: 'confirmed' })}>View all <Icon name="arrow_forward" size={14} /></a></div>
-            {mode === 'preview' ? (
-              <p className="muted">Preview shows the layout only — guest rows are never invented. Log in for live arrivals.</p>
-            ) : arrivals.length === 0 ? (
+            <div className="phead">
+              <h3>Arriving today</h3>
+              <span className="phead-count">{dash.arrivals.length}</span>
+              <button type="button" className="phead-link" onClick={() => onJump({ view: 'check', bookingStatus: 'confirmed' })}>
+                Open front office <Icon name="arrow_forward" size={14} />
+              </button>
+            </div>
+            {arrivals.length === 0 ? (
               <p className="muted">No arrivals expected today.</p>
             ) : (
               <div className="tbl-wrap dtbl-wrap"><table className="dtbl dtbl-arrivals">
-                <thead><tr><th>Time</th><th>Guest Name</th><th>Booking ID</th><th>Room Type</th><th>Guests</th><th>Status</th><th>Action</th></tr></thead>
+                <thead><tr><th>Guest</th><th>Booking</th><th>Room type</th><th>Status</th><th>Action</th></tr></thead>
                 <tbody>
                   {arrivals.map((a) => (
                     <tr key={a.id}>
-                      <td data-label="Time" title="Check-in times are not stored — dates only">—</td>
-                      <td data-label="Guest Name" title={a.guestName}>{a.guestName}</td>
-                      <td data-label="Booking ID" title={a.id}>{a.ref}</td>
-                      <td data-label="Room Type">{a.category}</td>
-                      <td data-label="Guests" title="Party size is not stored on a reservation">—</td>
-                      <td data-label="Status"><Badge tone={statusTone(a.status)}>{a.status === 'confirmed' ? 'Confirmed' : a.status}</Badge></td>
+                      <td data-label="Guest" title={a.guestName}>{a.guestName}</td>
+                      <td data-label="Booking" className="ref" title={a.id}>{a.ref}</td>
+                      <td data-label="Room type">{a.category}</td>
+                      <td data-label="Status"><Badge tone={statusTone(a.status)}>{statusLabel(a.status)}</Badge></td>
                       <td data-label="Action">
                         <span className="row-actions">
-                          <button className="mini-btn" disabled={acting === a.id} onClick={() => doCheckIn(a.id)}>
-                            {acting === a.id ? '…' : 'Check In'}
+                          <button className="mini-btn primary" disabled={acting === a.id} onClick={() => doCheckIn(a.id)}>
+                            {acting === a.id ? 'Checking in' : 'Check in'}
                           </button>
-                          <button className="mini-btn" title="Row actions — coming soon">…</button>
                         </span>
                       </td>
                     </tr>
@@ -616,33 +697,35 @@ export function DashboardView({ mode, go, viewFolio, onJump = () => {} }: {
           </div>
 
           <div className="panel dash-panel dash-panel--departures">
-            <div className="phead"><h3>Today&apos;s Departures ({mode === 'preview' ? 0 : departuresList.length})</h3><a onClick={() => onJump({ view: 'check', bookingStatus: 'checked-in' })}>View all <Icon name="arrow_forward" size={14} /></a></div>
-            {mode === 'preview' ? (
-              <p className="muted">Preview shows the layout only — log in for live departures.</p>
-            ) : departuresList.length === 0 ? (
+            <div className="phead">
+              <h3>Leaving today</h3>
+              <span className="phead-count">{departuresList.length}</span>
+              <button type="button" className="phead-link" onClick={() => onJump({ view: 'check', bookingStatus: 'checked-in' })}>
+                Open front office <Icon name="arrow_forward" size={14} />
+              </button>
+            </div>
+            {departuresList.length === 0 ? (
               <p className="muted">No departures expected today.</p>
             ) : (
               <div className="tbl-wrap dtbl-wrap"><table className="dtbl dtbl-departures">
-                <thead><tr><th>Time</th><th>Guest Name</th><th>Room</th><th>Stay Duration</th><th>Outstanding</th><th>Status</th><th>Action</th></tr></thead>
+                <thead><tr><th>Guest</th><th>Room</th><th>Nights</th><th className="num">Outstanding</th><th>Status</th><th>Action</th></tr></thead>
                 <tbody>
                   {departuresList.map((d) => (
                     <tr key={d.stayId}>
-                      <td data-label="Time" title="Check-out times are not stored — dates only">—</td>
-                      <td data-label="Guest Name" title={d.guestName}>{d.guestName}</td>
-                      <td data-label="Room">{d.roomNo}</td>
-                      <td data-label="Stay Duration">{d.nights} night{d.nights === 1 ? '' : 's'}</td>
-                      <td data-label="Outstanding">{rupees(d.outstandingPaise)}</td>
-                      <td data-label="Status"><Badge tone={d.status === 'Ready' ? 'green' : 'amber'}>{d.status}</Badge></td>
+                      <td data-label="Guest" title={d.guestName}>{d.guestName}</td>
+                      <td data-label="Room"><KeyTag no={d.roomNo} /></td>
+                      <td data-label="Nights">{d.nights}</td>
+                      <td data-label="Outstanding" className="num">{rupees(d.outstandingPaise)}</td>
+                      <td data-label="Status"><Badge tone={d.status === 'Ready' ? 'green' : 'amber'}>{d.status === 'Ready' ? 'Settled' : d.status}</Badge></td>
                       <td data-label="Action">
                         <span className="row-actions">
                           {d.status === 'Ready' ? (
-                            <button className="mini-btn" disabled={acting === d.stayId} onClick={() => doCheckOut(d.stayId)}>
-                              {acting === d.stayId ? '…' : 'Check Out'}
+                            <button className="mini-btn primary" disabled={acting === d.stayId} onClick={() => doCheckOut(d.stayId)}>
+                              {acting === d.stayId ? 'Checking out' : 'Check out'}
                             </button>
                           ) : (
-                            <button className="mini-btn" onClick={() => viewFolio(d.stayId)}>View Folio</button>
+                            <button className="mini-btn" onClick={() => viewFolio(d.stayId)}>Open folio</button>
                           )}
-                          <button className="mini-btn" title="Row actions — coming soon">…</button>
                         </span>
                       </td>
                     </tr>
@@ -653,44 +736,54 @@ export function DashboardView({ mode, go, viewFolio, onJump = () => {} }: {
           </div>
 
           <div className="panel dash-panel dash-panel--recent">
-            <div className="phead"><h3>Recent Bookings</h3><a onClick={() => onJump({ view: 'check', bookingStatus: '' })}>View all <Icon name="arrow_forward" size={14} /></a></div>
-            {mode === 'preview' || bookings.length === 0 ? (
-              <p className="muted">{mode === 'preview' ? 'Preview shows the layout only — log in for live bookings.' : 'No bookings on this date.'}</p>
+            <div className="phead">
+              <h3>Booked today</h3>
+              <span className="phead-count">{bookings.length}</span>
+              <button type="button" className="phead-link" onClick={() => onJump({ view: 'check', bookingStatus: '' })}>
+                Open front office <Icon name="arrow_forward" size={14} />
+              </button>
+            </div>
+            {bookings.length === 0 ? (
+              <p className="muted">No bookings on this date.</p>
             ) : (
               <div className="tbl-wrap dtbl-wrap"><table className="dtbl dtbl-bookings">
-                <thead><tr><th>Guest Name</th><th>Booking ID</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Action</th></tr></thead>
+                <thead><tr><th>Guest</th><th>Booking</th><th>Stay</th><th>Status</th><th>Action</th></tr></thead>
                 <tbody>
                   {bookings.map((b) => (
                     <tr key={b.id}>
-                      <td data-label="Guest Name" title={b.guestName}>{b.guestName}</td>
-                      <td data-label="Booking ID" title={b.id}>{b.ref}</td>
-                      <td data-label="Check-in">{b.checkinDate}</td>
-                      <td data-label="Check-out">{b.checkoutDate}</td>
-                      <td data-label="Status"><Badge tone={statusTone(b.status)}>{b.status}</Badge></td>
+                      <td data-label="Guest" title={b.guestName}>{b.guestName}</td>
+                      <td data-label="Booking" className="ref" title={b.id}>{b.ref}</td>
+                      <td data-label="Stay">{b.checkinDate} → {b.checkoutDate}</td>
+                      <td data-label="Status"><Badge tone={statusTone(b.status)}>{statusLabel(b.status)}</Badge></td>
                       <td data-label="Action">
                         <span className="row-actions">
                           {b.status === 'hold' ? (
                             b.advanceDuePaise > 0 && !receipts[b.id] ? (
                               <>
-                                <button className="mini-btn" disabled={acting === b.id} onClick={() => collectAdvance(b)}>
-                                  {acting === b.id ? '…' : `Collect advance ${rupees(b.advanceDuePaise)}`}
+                                <button className="mini-btn primary" disabled={acting === b.id} onClick={() => collectAdvance(b)}>
+                                  {acting === b.id ? 'Collecting' : `Collect ${rupees(b.advanceDuePaise)}`}
                                 </button>
-                                <button className="mini-btn" disabled title="Collect the advance first">Confirm</button>
+                                <button className="mini-btn" disabled title="The advance has to be collected before a hold can be confirmed">Confirm</button>
                               </>
                             ) : (
                               <>
-                                {receipts[b.id] && <span className="muted" title={receipts[b.id]}>✓ Advance captured</span>}
-                                <button className="mini-btn" disabled={acting === b.id} onClick={() => doConfirm(b.id)}>
-                                  {acting === b.id ? '…' : 'Confirm'}
+                                {receipts[b.id] && <span className="muted" title={receipts[b.id]}>Advance captured</span>}
+                                <button className="mini-btn primary" disabled={acting === b.id} onClick={() => doConfirm(b.id)}>
+                                  {acting === b.id ? 'Confirming' : 'Confirm'}
                                 </button>
                               </>
                             )
                           ) : b.status === 'expired' ? (
-                            <a className="muted" title="Expired before the advance was collected — expired holds are terminal" onClick={() => go('reservations')}>
-                              expired — rebook
-                            </a>
+                            <button
+                              type="button"
+                              className="mini-btn"
+                              title="This hold expired before the advance was collected, and an expired hold cannot be revived"
+                              onClick={() => go('reservations')}
+                            >
+                              Rebook
+                            </button>
                           ) : (
-                            <span className="muted">—</span>
+                            <span className="muted">No action</span>
                           )}
                         </span>
                       </td>
@@ -702,20 +795,21 @@ export function DashboardView({ mode, go, viewFolio, onJump = () => {} }: {
           </div>
 
           <div className="panel dash-panel dash-panel--inhouse">
-            <div className="phead"><h3>In-House Guests ({mode === 'preview' ? 0 : inhouseList.length})</h3></div>
-            {mode === 'preview' ? (
-              <p className="muted">Preview shows the layout only — log in for live rows.</p>
-            ) : inhouseList.length === 0 ? (
+            <div className="phead">
+              <h3>In house</h3>
+              <span className="phead-count">{inhouseList.length}</span>
+            </div>
+            {inhouseList.length === 0 ? (
               <p className="muted">No guests currently staying.</p>
             ) : (
               <div className="tbl-wrap dtbl-wrap"><table className="dtbl dtbl-inhouse">
-                <thead><tr><th>Guest Name</th><th>Room</th><th>Check-out</th><th>Status</th></tr></thead>
+                <thead><tr><th>Guest</th><th>Room</th><th>Leaving</th><th>Status</th></tr></thead>
                 <tbody>
                   {inhouseList.map((s) => (
                     <tr key={s.stayId}>
-                      <td data-label="Guest Name" title={s.guestName}>{s.guestName}</td>
-                      <td data-label="Room">{s.roomNo}</td>
-                      <td data-label="Check-out">{s.checkoutDate ?? '—'}</td>
+                      <td data-label="Guest" title={s.guestName}>{s.guestName}</td>
+                      <td data-label="Room"><KeyTag no={s.roomNo} /></td>
+                      <td data-label="Leaving">{s.checkoutDate ?? 'Open ended'}</td>
                       <td data-label="Status"><Badge tone="green">{s.status}</Badge></td>
                     </tr>
                   ))}
@@ -724,65 +818,7 @@ export function DashboardView({ mode, go, viewFolio, onJump = () => {} }: {
             )}
           </div>
         </div>
-
-        <div className="dash-column dash-column--side">
-          <div className="panel dash-panel dash-panel--rooms">
-            <div className="phead"><h3>Room Status Overview</h3><a onClick={() => go('rooms')}>View all <Icon name="arrow_forward" size={14} /></a></div>
-            <div className="donut-wrap">
-              <Donut
-                total={total} label="Total Rooms"
-                slices={[
-                  { value: avail, color: 'var(--chart-available)' },
-                  { value: occ, color: 'var(--chart-occupied)' },
-                  { value: maint, color: 'var(--chart-maintenance)' },
-                ]}
-              />
-              <div className="donut-legend">
-                <span className="rowline"><span className="dot" style={{ background: 'var(--chart-available)' }} />Available<span className="n">{avail} ({pct(avail)}%)</span></span>
-                <span className="rowline"><span className="dot" style={{ background: 'var(--chart-occupied)' }} />Occupied<span className="n">{occ} ({pct(occ)}%)</span></span>
-                <span className="rowline" title="Rooms carry no reserved status — reservations hold categories, not rooms"><span className="dot" style={{ background: 'var(--info)' }} />Reserved<span className="n">—</span></span>
-                <span className="rowline"><span className="dot" style={{ background: 'var(--chart-maintenance)' }} />Maintenance<span className="n">{maint} ({pct(maint)}%)</span></span>
-              </div>
-            </div>
-            <div className="minis">
-              <div className="mini"><Icon name="bed" /><span><span className="num">{avail}</span><div className="lbl">Available</div></span></div>
-              <div className="mini"><Icon name="hotel" /><span><span className="num">{occ}</span><div className="lbl">Occupied</div></span></div>
-              <div className="mini"><Icon name="event_busy" /><span><span className="num">—</span><div className="lbl">Reserved</div></span></div>
-              <div className="mini"><Icon name="build" /><span><span className="num">{maint}</span><div className="lbl">Maintenance</div></span></div>
-            </div>
-          </div>
-
-          <div className="panel dash-panel dash-panel--alerts">
-            <div className="phead"><h3>Alerts &amp; Pending Tasks</h3></div>
-            {mode === 'preview' ? (
-              <p className="muted">Preview shows the layout only — log in for live alerts.</p>
-            ) : alertList.length === 0 ? (
-              <p className="muted">All clear — no pending alerts.</p>
-            ) : (
-              <div className="donut-legend">
-                {alertList.map((a) => (
-                  <span className="rowline" key={a.ref + a.text}>
-                    <span className="dot" style={{ background: a.severity === 'high' ? 'var(--danger)' : a.severity === 'medium' ? 'var(--gold)' : 'var(--info)' }} />
-                    {a.text}
-                  </span>
-                ))}
-              </div>
-            )}
-            <p className="muted">Guest requests and maintenance issues arrive in a later unit — no source system yet.</p>
-          </div>
-
-          <div className="promo dash-promo">
-            <img src={bannerImg} alt="" />
-            <div className="shade" />
-            <div className="txt">
-              <strong>Need to assign a room quickly?</strong>
-              <p>Check available rooms and assign to a guest.</p>
-              <button className="go" onClick={() => go('rooms')}>Manage Rooms <Icon name="arrow_forward" size={15} /></button>
-            </div>
-          </div>
-        </div>
       </div>
-
     </>
   );
 }
@@ -804,24 +840,41 @@ export function RoomsView({ mode, initialFilter }: { mode: Mode; initialFilter?:
   }, [mode]);
 
   const shown = rooms.filter((r) => r.roomNo.toLowerCase().includes(filter.toLowerCase()));
+  const count = (b: 'ready' | 'occupied' | 'attention') =>
+    shown.filter((r) => bucket(r.status) === b).length;
+
   return (
     <div className="panel">
-      <div className="phead"><h3>Rooms ({shown.length})</h3></div>
+      <div className="phead">
+        <h3>Key rack</h3>
+        <span className="phead-count">{shown.length} of {rooms.length}</span>
+      </div>
       <div className="search-inline">
         <Icon name="search" size={18} />
-        <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filter by room number…" aria-label="Filter rooms" />
-        <span className="muted">{shown.length} shown</span>
+        <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Room number" aria-label="Filter rooms by number" />
       </div>
       {msg && <p className="alert err">{msg}</p>}
-      <div className="roomgrid">
-        {shown.map((r) => (
-          <div className="roomcell" key={r.id}>
-            <div className="no">{r.roomNo}</div>
-            <Badge tone={statusTone(r.status)}>{r.status}</Badge>
-          </div>
-        ))}
+      <div className="rooms-legend" style={{ marginTop: 16 }}>
+        <span className="rowline"><span className="dot" style={{ background: 'var(--room-ready)' }} />Ready {count('ready')}</span>
+        <span className="rowline"><span className="dot" style={{ background: 'var(--room-occupied)' }} />With guest {count('occupied')}</span>
+        <span className="rowline"><span className="dot" style={{ background: 'var(--room-attention)' }} />Needs work {count('attention')}</span>
       </div>
-      {shown.length === 0 && <p className="muted">No rooms match.</p>}
+      <div className="roomgrid">
+        {shown.map((r) => {
+          const b = bucket(r.status);
+          return (
+            <div
+              className={`keytag-slot is-${b}${b === 'occupied' ? ' is-out' : ''}`}
+              key={r.id}
+              title={`Room ${r.roomNo} — ${r.status}`}
+            >
+              <KeyTag no={r.roomNo} large />
+              <span className="keytag-state">{statusLabel(r.status)}</span>
+            </div>
+          );
+        })}
+      </div>
+      {shown.length === 0 && <p className="muted">No room matches that number.</p>}
     </div>
   );
 }

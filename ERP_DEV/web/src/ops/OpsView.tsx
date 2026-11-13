@@ -12,7 +12,7 @@ import {
   type OpsStatus,
 } from '../api';
 import { hasRole, isAuthenticated } from '../auth';
-import { Alert, Badge, Btn, Card, Icon, Kpi, PageHeader, Soon } from '../ui';
+import { Alert, Badge, Btn, Card, Icon, PageHeader, Soon, Stat } from '../ui';
 
 type Tab =
   | 'overview'
@@ -177,33 +177,21 @@ export function OpsView({ mode }: { mode: 'live' | 'preview' }) {
 
       {tab === 'overview' && status && (
         <>
-          <div className="grid">
-            <Kpi
-              icon="monitor_heart"
-              tone={status.state === 'OK' ? 'brand' : 'gold'}
-              num={status.state}
-              lbl="Overall"
-              sub={status.environment}
-            />
-            <Kpi
-              icon="dns"
-              tone="info"
+          <div className="stats">
+            <Stat label="Overall" num={status.state} sub={status.environment} lead />
+            <Stat
+              label="Application"
               num={status.service.state}
-              lbl="Application"
               sub={`${status.service.name} ${status.service.version}`}
             />
-            <Kpi
-              icon="database"
-              tone="neutral"
+            <Stat
+              label="Database"
               num={`${status.service.database.latencyMs} ms`}
-              lbl="Database"
               sub={status.service.database.state}
             />
-            <Kpi
-              icon="schedule"
-              tone="neutral"
+            <Stat
+              label="Uptime"
               num={uptime(status.service.uptimeSeconds)}
-              lbl="Uptime"
               sub={`checked ${when(status.service.observedAt)}`}
             />
           </div>

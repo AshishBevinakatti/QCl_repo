@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { ArrowRight } from "./icons";
-import { ViewOnMap } from "../components/watermelon/view-on-map";
 
 export default function LocationActions() {
   const [copied, setCopied] = useState(false);
@@ -15,7 +14,6 @@ export default function LocationActions() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2400);
     } catch {
-      // fallback
       setCopied(true);
       setTimeout(() => setCopied(false), 2400);
     }
@@ -44,14 +42,7 @@ export default function LocationActions() {
         >
           Open in Google Maps <ArrowRight size={14} />
         </a>
-        <ViewOnMap
-          address="16.239532, 75.625928"
-          locationName="Golden Hills Resort, Biligi"
-          mapImageUrl="/assets/resort/cottage-pool-overhead-p33.webp"
-        />
       </div>
     </div>
   );
 }
-
-

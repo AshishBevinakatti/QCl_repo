@@ -156,8 +156,8 @@ export const resortExperiences: ExperienceCategory[] = [
       "Operating daily from 10:00 AM to 05:00 PM",
       "Included in select corporate retreat and full-day outing packages",
     ],
-    image: "/assets/resort/amenities/adventure-sports.jpg",
-    imageAlt: "Ziplining and aerial canopy adventure sports installation",
+    image: "/assets/resort/amenities/adventure-sports-circuit.jpg",
+    imageAlt: "Aerial sky cycling and adventure sports circuit suspended above resort grounds",
   },
   {
     name: "Full-Day Outing Experience",

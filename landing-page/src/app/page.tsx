@@ -6,12 +6,12 @@ import GallerySlider from "./gallery-slider";
 import MotionProvider from "./motion-provider";
 import SiteFooter from "./site-footer";
 import { ArrowRight, ArrowDown, Sparkles } from "./icons";
-import { getScene, impression } from "./resort-assets";
+import { getScene } from "./resort-assets";
 import Reveal from "./reveal";
 import LocationActions from "./location-actions";
+import LocationMapCard from "./location-map-card";
 import HighlightsCards from "./highlights-cards";
 import AmenitiesCards from "./amenities-cards";
-import ReviewStandardsCards from "./review-standards-cards";
 
 /* =========================================================================
    1. Data grounded in Resort ERP SRS, Project Report & Loyalty Documents
@@ -114,7 +114,7 @@ const amenitiesList = [
     rating: "4.8",
     statValue: "10 AM – 05 PM",
     statLabel: "Hours",
-    image: "/assets/resort/amenities/adventure-sports.jpg",
+    image: "/assets/resort/amenities/adventure-sports-arena.jpg",
     iconKey: "adventure" as const,
     lead: "Adrenaline-filled outdoor adventure installations across landscaped resort grounds.",
     highlights: [
@@ -201,29 +201,6 @@ const nearbyAttractions = [
   },
 ];
 
-const hospitalityStandards = [
-  {
-    tag: "Family Hospitality",
-    title: "Serene & Family-Friendly Atmosphere",
-    desc: "Carefully designed for peaceful retreats, with quiet family zones, dedicated kids pool, manicured gardens, and comprehensive 24/7 on-site security.",
-  },
-  {
-    tag: "Kitchen Standards",
-    title: "Segregated Kitchens & Culinary Discipline",
-    desc: "Distinct pure vegetarian and non-vegetarian kitchens and preparation areas, guaranteeing complete dietary peace of mind for all guests.",
-  },
-  {
-    tag: "Transparent Pricing",
-    title: "Zero Hall Rental & Clear Inclusions",
-    desc: "Banquets and celebrations are billed exclusively on transparent per-plate dining packages with zero hidden room-rental surcharges.",
-  },
-  {
-    tag: "Universal Access",
-    title: "Barrier-Free Accessibility Throughout",
-    desc: "Thoughtfully engineered with wheelchair ramps, anti-slip outdoor paving, wide doorways, accessible parking, and dedicated driver dormitories.",
-  },
-];
-
 /* =========================================================================
    2. Main Home Page (13 Sections in Strict Sequence)
    ========================================================================= */
@@ -241,7 +218,7 @@ export default function Home() {
             mobile: getScene("hero-pool-arch-mobile-p35"),
             title: "A stay shaped around time together.",
             label: "Private pool cottage concept",
-            alt: "Artist’s impression of a pool courtyard and illuminated arched seat",
+            alt: "Pool courtyard and illuminated arched seating pavilion at Golden Hills Resort",
             focalPoint: "center 54%",
             mobileFocalPoint: "51% center",
           },
@@ -506,13 +483,8 @@ export default function Home() {
               ))}
             </ul>
           </div>
-          <div className="location-note">
-            <span>Property imagery notice</span>
-            <p>Every render on this page is an artist’s impression. Final layouts, finishes and facilities remain subject to operational completion.</p>
-            <div className="contact-state">
-              <strong>Official reservation and enquiry details</strong>
-              <span>Will be published here once booking channels launch.</span>
-            </div>
+          <div className="location-aside">
+            <LocationMapCard />
           </div>
         </section>
 
@@ -527,22 +499,6 @@ export default function Home() {
             <p>Everything you need for a restful holiday, milestone gathering, or refreshing day outing in northern Karnataka.</p>
           </div>
           <HighlightsCards items={whyChooseUsHighlights} />
-        </section>
-
-        {/* 10. Guest Reviews & Hospitality Standards */}
-        <section id="reviews" className="reviews-section wrap" aria-labelledby="reviews-title" tabIndex={-1}>
-          <div className="reviews-heading">
-            <div className="status-line">
-              <p className="section-note">Hospitality charter</p>
-              <span className="section-status">Guest commitments</span>
-            </div>
-            <h2 id="reviews-title">Our hospitality standards &amp; commitments.</h2>
-            <p>As Golden Hills Resort prepares for its grand opening, our operational charter is grounded in family-centered care, culinary purity, and honest commercial practices.</p>
-          </div>
-          <div className="reviews-notice-banner">
-            <strong>Guest Review Registry Notice:</strong> Verified guestbook testimonials, guest scores, and traveler reviews will activate here once the resort opens its doors to staying guests. Below are the operational standards that guide our team.
-          </div>
-          <ReviewStandardsCards items={hospitalityStandards} />
         </section>
 
         {/* 11. Membership Privileges Teaser (Short, High-Impact & Direct) */}
@@ -619,14 +575,13 @@ export default function Home() {
             <div className="closing-copy">
               <p>Stays · Dining · Celebrations · Recreation</p>
               <h2 id="closing-title">Plan your stay in northern Karnataka.</h2>
-              <p style={{ marginTop: "12px", color: "var(--color-chalk-82)", fontSize: "14px", maxWidth: "440px" }}>Official reservation channels and direct WhatsApp booking will open upon property launch. In the meantime, explore our accommodations and gathering options.</p>
+              <p style={{ marginTop: "12px", color: "var(--color-chalk-82)", fontSize: "14px", maxWidth: "440px" }}>Connect with our concierge or explore our accommodations, dining, and celebration venues to plan your visit to northern Karnataka.</p>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "flex-end" }}>
               <Link className="explore-button closing-cta" href="/plan-ahead#bookings">Explore planning options <ArrowRight size={16} /></Link>
               <a href="#location" style={{ color: "var(--color-chalk)", fontSize: "13px", display: "inline-flex", alignItems: "center", gap: "6px" }}>Find us on map <ArrowDown size={14} /></a>
             </div>
           </div>
-          <p className="closing-meta">Dusk pool concept · Artist’s impression. Design subject to change.</p>
         </section>
 
         {/* 13. Footer */}

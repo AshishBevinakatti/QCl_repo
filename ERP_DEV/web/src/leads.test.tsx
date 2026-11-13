@@ -1,7 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { LeadsView } from './leads';
 import * as api from './api';
+
+afterEach(cleanup);
 
 describe('LeadsView', () => {
   const mockLead: api.LeadDetailDto = {
@@ -62,10 +64,10 @@ describe('LeadsView', () => {
     render(<LeadsView />);
 
     await waitFor(() => {
-      expect(screen.getAllByText(/Claim & Attend/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/^Claim$/).length).toBeGreaterThan(0);
     });
 
-    const claimButtons = screen.getAllByText(/Claim & Attend/i);
+    const claimButtons = screen.getAllByText(/^Claim$/);
     fireEvent.click(claimButtons[0]);
 
     await waitFor(() => {
@@ -106,10 +108,10 @@ describe('LeadsView', () => {
     fireEvent.click(screen.getByText('View'));
 
     await waitFor(() => {
-      expect(screen.getAllByText('Convert to ERP Guest Record').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Create guest record').length).toBeGreaterThan(0);
     });
 
-    const convertButtons = screen.getAllByText('Convert to ERP Guest Record');
+    const convertButtons = screen.getAllByText('Create guest record');
     fireEvent.click(convertButtons[0]);
 
     await waitFor(() => {

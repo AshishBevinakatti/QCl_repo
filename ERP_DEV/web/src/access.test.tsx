@@ -74,7 +74,7 @@ describe('access rules (unit 3.15)', () => {
 describe('navigation and search follow permissions', () => {
   it('sidebar shows only the sales workspace for sales staff', () => {
     const labels = sidebarLabels(SALES).join('|');
-    expect(labels).toContain('Sales Leads');
+    expect(labels).toContain('Sales leads');
     expect(labels).toContain('Guests');
     expect(labels).not.toContain('Billing');
     expect(labels).not.toContain('Housekeeping');
@@ -83,12 +83,12 @@ describe('navigation and search follow permissions', () => {
 
   it('housekeeping staff get no guest/booking search', () => {
     render(<Topbar onJump={() => {}} api="UP" onMenu={() => {}} perms={HOUSEKEEPING} />);
-    expect(screen.queryByPlaceholderText(/Search guest/)).toBeNull();
+    expect(screen.queryByPlaceholderText(/Search/)).toBeNull();
   });
 
   it('reception staff keep the search', () => {
     render(<Topbar onJump={() => {}} api="UP" onMenu={() => {}} perms={RECEPTION} />);
-    expect(screen.getByPlaceholderText(/Search guest/)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Search/)).toBeInTheDocument();
   });
 });
 
@@ -102,7 +102,7 @@ describe('App sign-in and access gate', () => {
   it('shows the sign-in screen when nobody is signed in; dev tiles pre-fill the username', async () => {
     auth.signedIn = false;
     render(<App />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Sign in' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Continue to single sign-on' }));
     expect(auth.login).toHaveBeenCalledWith();
     fireEvent.click(screen.getByRole('button', { name: /Housekeeping/ }));
     expect(auth.login).toHaveBeenCalledWith('housekeeping-staff');
@@ -113,7 +113,7 @@ describe('App sign-in and access gate', () => {
     vi.spyOn(api, 'me').mockResolvedValue({ username: 'newbie', roles: ['offline_access'], permissions: [] });
     render(<App />);
     expect(await screen.findByText('Restricted section')).toBeInTheDocument();
-    expect(screen.queryByText('Sales Leads')).toBeNull();
+    expect(screen.queryByText('Sales leads')).toBeNull();
   });
 
   it('sales staff land on the leads workspace with their department shown', async () => {
@@ -122,7 +122,7 @@ describe('App sign-in and access gate', () => {
     vi.spyOn(api, 'listSalesLeads').mockResolvedValue([]);
     render(<App />);
     expect(await screen.findByText('Sales')).toBeInTheDocument();
-    expect(screen.queryByText('Billing & Payments')).toBeNull();
+    expect(screen.queryByText('Billing & payments')).toBeNull();
     await waitFor(() => expect(api.listSalesLeads).toHaveBeenCalled());
   });
 });

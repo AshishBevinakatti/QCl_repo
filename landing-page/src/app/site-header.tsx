@@ -30,7 +30,6 @@ const mobileLinks = [
   { href: "/#location", label: "Location & Heritage" },
   { href: "/#story", label: "Brand Story" },
   { href: "/#highlights", label: "Why Choose Us" },
-  { href: "/#reviews", label: "Hospitality Standards" },
   { href: "/#offers", label: "Offers & Packages" },
 ];
 

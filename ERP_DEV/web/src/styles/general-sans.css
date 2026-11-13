@@ -1,0 +1,29 @@
+/* General Sans — the display face, self-hosted, same files the public site uses
+ * (landing-page/public/fonts/general-sans). Only the three weights this
+ * workspace sets are shipped: 400, 500 and 600. */
+@font-face {
+  font-family: 'General Sans';
+  src: url('/fonts/general-sans/7YY3ZAAE3TRV2LANYOLXNHTPHLXVWTKH.woff2') format('woff2'),
+       url('/fonts/general-sans/7YY3ZAAE3TRV2LANYOLXNHTPHLXVWTKH.woff') format('woff');
+  font-weight: 400;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'General Sans';
+  src: url('/fonts/general-sans/SB2OEB6IKZPRR6JT4GFJ2TFT6HBB6AZN.woff2') format('woff2'),
+       url('/fonts/general-sans/SB2OEB6IKZPRR6JT4GFJ2TFT6HBB6AZN.woff') format('woff');
+  font-weight: 500;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'General Sans';
+  src: url('/fonts/general-sans/3ZLMEXZEQPLTEPMHTQDAUXP5ZZXCZAEN.woff2') format('woff2'),
+       url('/fonts/general-sans/3ZLMEXZEQPLTEPMHTQDAUXP5ZZXCZAEN.woff') format('woff');
+  font-weight: 600;
+  font-display: swap;
+  font-style: normal;
+}

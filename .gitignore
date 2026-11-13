@@ -26,7 +26,8 @@ target/
 
 # Local logs & runtimes
 *.log
-logs/
+/logs/
+!ERP_DEV/docs/logs/
 *.db
 *.sqlite
 
@@ -39,3 +40,18 @@ media/
 backups/
 *.csv
 *.xlsx
+
+# Agent tooling installed locally (skills, prompts, editor hooks) — not product code
+.agents/
+.claude/
+.opencode/*
+!.opencode/skills/
+.opencode/skills/*
+!.opencode/skills/erp-prp/
+
+# Stray npm lockfile at the service root; the web app's real one is ERP_DEV/web/package-lock.json
+/ERP_DEV/package-lock.json
+
+# Local work artefacts
+*.patch
+preview-work.patch

@@ -6,10 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
     <script>
+      // Runs before paint so the workspace never flashes the wrong theme.
+      // An explicit choice wins; otherwise follow the device (see src/theme.ts).
       (function () {
         try {
           var stored = localStorage.getItem('gh-theme');
-          document.documentElement.dataset.theme = stored === 'dark' ? 'dark' : 'light';
+          if (stored !== 'dark' && stored !== 'light') {
+            stored = window.matchMedia
+              && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          document.documentElement.dataset.theme = stored;
         } catch (error) {
           document.documentElement.dataset.theme = 'light';
         }

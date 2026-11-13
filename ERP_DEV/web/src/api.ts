@@ -134,7 +134,9 @@ export async function listCategories(): Promise<CategoryPage> {
 }
 
 export function rupees(paise: number): string {
-  return `₹${(paise / 100).toLocaleString('en-IN')}`;
+  /* The sign belongs in front of the symbol: a credit reads -₹3,000, not ₹-3,000. */
+  const sign = paise < 0 ? '-' : '';
+  return `${sign}₹${(Math.abs(paise) / 100).toLocaleString('en-IN')}`;
 }
 
 export interface GuestDto {

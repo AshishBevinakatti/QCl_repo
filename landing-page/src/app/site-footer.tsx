@@ -14,7 +14,6 @@ const exploreLinks = [
   { href: "/#gallery", label: "Gallery" },
   { href: "/#location", label: "Location & Nearby" },
   { href: "/#highlights", label: "Why Choose Us" },
-  { href: "/#reviews", label: "Hospitality Commitments" },
   { href: "/#offers", label: "Offers & Packages" },
 ];
 

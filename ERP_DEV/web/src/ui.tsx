@@ -23,6 +23,7 @@ import {
   FileText,
   HeartPulse,
   Info,
+  KeyRound,
   Mail,
   Pencil,
   Phone,
@@ -42,7 +43,7 @@ import {
   Search,
   Server,
   Settings,
-  Sparkles,
+  SprayCan,
   Sun,
   ToggleRight,
   TriangleAlert,
@@ -80,13 +81,14 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 }
 
 export function Btn({
-  children, onClick, ghost, type, disabled,
+  children, onClick, ghost, type, disabled, title,
 }: {
   children: ReactNode;
   onClick?: () => void;
   ghost?: boolean;
   type?: 'submit' | 'button';
   disabled?: boolean;
+  title?: string;
 }) {
   return (
     <button
@@ -94,23 +96,41 @@ export function Btn({
       className={ghost ? 'btn ghost' : 'btn'}
       onClick={onClick}
       disabled={disabled}
+      title={title}
     >
       {children}
     </button>
   );
 }
 
-export function Stat({ num, lbl }: { num: ReactNode; lbl: string }) {
+/**
+ * A figure, what it is, and what it is out of. Deliberately only those three —
+ * icons, sparklines and mini bars in a stat card read as decoration.
+ * `lead` marks the single figure that matters most on a screen.
+ */
+export function Stat({ label, num, sub, lead }: {
+  label: string; num: ReactNode; sub?: string; lead?: boolean;
+}) {
   return (
-    <div className="card stat">
-      <div className="num">{num}</div>
-      <div className="lbl">{lbl}</div>
+    <div className={lead ? 'stat is-lead' : 'stat'}>
+      <span className="stat-label">{label}</span>
+      <span className="stat-num">{num}</span>
+      {sub && <span className="stat-sub">{sub}</span>}
     </div>
   );
 }
 
 export function Badge({ tone, children }: { tone?: 'green' | 'amber' | 'red'; children: ReactNode }) {
   return <span className={tone ? `badge ${tone}` : 'badge'}>{children}</span>;
+}
+
+/**
+ * Backend statuses are lowercase tokens (`checked-in`, `out_of_order`). They are
+ * the API contract, so they stay as they are in the data and read as words here.
+ */
+export function statusLabel(status: string): string {
+  const words = status.replace(/[_-]+/g, ' ').trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 export function statusTone(status: string): 'green' | 'amber' | 'red' | undefined {
@@ -120,6 +140,48 @@ export function statusTone(status: string): 'green' | 'amber' | 'red' | undefine
   return undefined;
 }
 
+/**
+ * The signature detail: a room number is always a brass key tag, and a room
+ * number is never set any other way.
+ */
+export function KeyTag({ no, large }: { no: string; large?: boolean }) {
+  return <span className={large ? 'keytag keytag--lg' : 'keytag'}>{no}</span>;
+}
+
+/**
+ * A share of a whole as one stacked bar. Replaces a donut whose slices each
+ * shouted equally: here one series leads and the rest are steps of the ramp.
+ */
+export function ShareBar({ parts, total }: {
+  parts: { label: string; value: number; color: string }[]; total: number;
+}) {
+  const pct = (n: number) => (total === 0 ? 0 : Math.round((n / total) * 100));
+  return (
+    <div>
+      <div className="sharebar">
+        {parts.map((p) => (
+          <span
+            key={p.label}
+            style={{ width: `${total === 0 ? 0 : (p.value / total) * 100}%`, background: p.color }}
+          />
+        ))}
+      </div>
+      <div className="sharebar-legend">
+        {parts.map((p) => (
+          <span className="rowline" key={p.label}>
+            <span className="dot" style={{ background: p.color }} />
+            {p.label}
+            <span className="n">{p.value} · {pct(p.value)}%</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* One icon set, one size, one stroke. Icons take the colour of their text
+ * role and never carry a colour of their own. The Material-style keys are kept
+ * so call sites and tests stay valid. */
 const MATERIAL_ICONS: Record<string, ComponentType<LucideProps>> = {
   home: LayoutDashboard,
   calendar_month: CalendarDays,
@@ -127,10 +189,12 @@ const MATERIAL_ICONS: Record<string, ComponentType<LucideProps>> = {
   groups: UsersRound,
   bed: BedDouble,
   hotel: Hotel,
+  key: KeyRound,
   swap_horiz: ArrowLeftRight,
   receipt_long: ReceiptText,
   build: Wrench,
-  cleaning_services: Sparkles,
+  /* Housekeeping is cleaning, not sparkle. */
+  cleaning_services: SprayCan,
   bar_chart: BarChart3,
   monitoring: Activity,
   monitor_heart: HeartPulse,
@@ -178,7 +242,7 @@ const MATERIAL_ICONS: Record<string, ComponentType<LucideProps>> = {
 /** Material-name compatible icon wrapper backed by Lucide (local SVG, no CDN). */
 export function Icon({ name, size }: { name: string; size?: number }) {
   const Component = MATERIAL_ICONS[name] ?? CircleHelp;
-  return <Component className="icon" size={size ?? 20} strokeWidth={2} aria-hidden data-icon={name} />;
+  return <Component className="icon" size={size ?? 18} strokeWidth={1.5} aria-hidden data-icon={name} />;
 }
 
 /** Honest placeholder where no backend endpoint exists yet (never fake rows). */
@@ -187,7 +251,7 @@ export function EmptyState({ icon, title, description, action }: {
 }) {
   return (
     <div className="empty-state">
-      {icon && <span className="empty-state__icon"><Icon name={icon} size={22} /></span>}
+      {icon && <span className="empty-state__icon"><Icon name={icon} size={18} /></span>}
       <strong>{title}</strong>
       {description && <p>{description}</p>}
       {action && <div className="empty-state__action">{action}</div>}
@@ -197,29 +261,6 @@ export function EmptyState({ icon, title, description, action }: {
 
 export function Soon({ icon, title, why }: { icon: string; title: string; why: string }) {
   return <EmptyState icon={icon} title={title} description={why} />;
-}
-
-export type KpiTone = 'brand' | 'gold' | 'info' | 'danger' | 'neutral';
-
-/** KPI stat card with a tinted icon tile (theme palette only). */
-export function Kpi({ icon, tone = 'brand', tint, num, lbl, sub }: {
-  icon: string; tone?: KpiTone; tint?: string; num: ReactNode; lbl: string; sub: string;
-}) {
-  return (
-    <div className="kpi">
-      <span
-        className={`ic ic--${tone}`}
-        style={tint ? { background: tint, color: 'var(--ink)' } : undefined}
-      >
-        <Icon name={icon} size={18} />
-      </span>
-      <span className="kpi-copy">
-        <span className="num">{num}</span>
-        <div className="lbl">{lbl}</div>
-        <div className="sub">{sub}</div>
-      </span>
-    </div>
-  );
 }
 
 /** Page heading used consistently across every screen. */
@@ -233,36 +274,6 @@ export function PageHeader({ title, subtitle, actions }: {
         {subtitle && <p>{subtitle}</p>}
       </div>
       {actions && <div className="page-header__actions">{actions}</div>}
-    </div>
-  );
-}
-
-/** Room-status donut (pure SVG, no chart dependency). */
-export function Donut({ slices, total, label }: {
-  slices: { value: number; color: string }[]; total: number; label: string;
-}) {
-  const R = 54;
-  const C = 2 * Math.PI * R;
-  let acc = 0;
-  const segs = slices.map((s, i) => {
-    const frac = total === 0 ? 0 : s.value / total;
-    const el = (
-      <circle
-        key={i} cx="70" cy="70" r={R} fill="none" stroke={s.color} strokeWidth="18"
-        strokeDasharray={`${frac * C} ${C}`} strokeDashoffset={-acc * C}
-        transform="rotate(-90 70 70)"
-      />
-    );
-    acc += frac;
-    return el;
-  });
-  return (
-    <div style={{ position: 'relative', width: 140, height: 140, flex: 'none' }}>
-      <svg width="140" height="140" viewBox="0 0 140 140">{segs}</svg>
-      <div className="donut-center">
-        <strong>{total}</strong>
-        <small>{label}</small>
-      </div>
     </div>
   );
 }

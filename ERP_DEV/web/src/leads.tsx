@@ -5,16 +5,52 @@ import {
   type LeadDetailDto,
 } from './api';
 import { username } from './auth';
-import { Badge, Btn, Icon, PageHeader } from './ui';
+import { Alert, Badge, Btn, Icon, PageHeader, Stat } from './ui';
 
 interface LeadsViewProps {
   onViewGuest?: (guestId: string) => void;
 }
 
+type LeadFilter = 'ALL' | 'NEW' | 'IN_PROGRESS' | 'CONVERTED' | 'LOST';
+
+/* The service's enum values are the API contract and stay as they are; these
+ * are only how they read on screen. IN_PROGRESS is not a word. */
+const LEAD_FILTERS: { id: LeadFilter; label: string }[] = [
+  { id: 'ALL', label: 'All' },
+  { id: 'NEW', label: 'New' },
+  { id: 'IN_PROGRESS', label: 'In follow-up' },
+  { id: 'CONVERTED', label: 'Converted' },
+  { id: 'LOST', label: 'Lost' },
+];
+
+const LEAD_STATE: Record<string, string> = {
+  NEW: 'New',
+  IN_PROGRESS: 'In follow-up',
+  CONVERTED: 'Converted',
+  LOST: 'Lost',
+};
+
+function leadState(status: string): string {
+  return LEAD_STATE[status] ?? status;
+}
+
+/* How an activity reads in the log. */
+const ACTIVITY_LABEL: Record<string, string> = {
+  CALL: 'Call',
+  WHATSAPP: 'WhatsApp',
+  NOTE: 'Note',
+  CLAIMED: 'Claimed',
+  CONVERTED: 'Converted',
+};
+
+function activityLabel(type: string): string {
+  return ACTIVITY_LABEL[type] ?? type.toLowerCase();
+}
+
 export function LeadsView({ onViewGuest }: LeadsViewProps) {
   const [leads, setLeads] = useState<LeadDetailDto[]>([]);
   const [selectedLead, setSelectedLead] = useState<LeadDetailDto | null>(null);
-  const [filter, setFilter] = useState<'ALL' | 'NEW' | 'IN_PROGRESS' | 'CONVERTED' | 'LOST'>('ALL');
+  const [filter, setFilter] = useState<LeadFilter>('ALL');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
@@ -26,6 +62,9 @@ export function LeadsView({ onViewGuest }: LeadsViewProps) {
   // Conversion state
   const [converting, setConverting] = useState(false);
   const [conversionMessage, setConversionMessage] = useState<string | null>(null);
+  /* Failures belong on the screen next to the thing that failed, not in a
+   * browser dialog the user has to dismiss before they can read the row. */
+  const [error, setError] = useState<string | null>(null);
 
   const actor = username() || 'sales_executive';
 
@@ -33,6 +72,7 @@ export function LeadsView({ onViewGuest }: LeadsViewProps) {
     refreshLeads();
     const interval = setInterval(refreshLeads, 10000); // Poll every 10s for new leads & timer updates
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function refreshLeads() {
@@ -52,12 +92,13 @@ export function LeadsView({ onViewGuest }: LeadsViewProps) {
 
   function handleClaim(leadId: string) {
     startTransition(async () => {
+      setError(null);
       try {
         const updated = await claimSalesLead(leadId, actor);
         refreshLeads();
         setSelectedLead(updated);
       } catch (err: unknown) {
-        alert(err instanceof Error ? err.message : 'Claim failed');
+        setError(err instanceof Error ? err.message : 'Could not claim this inquiry.');
       }
     });
   }
@@ -67,13 +108,14 @@ export function LeadsView({ onViewGuest }: LeadsViewProps) {
     if (!selectedLead || !noteText.trim()) return;
 
     startTransition(async () => {
+      setError(null);
       try {
         const updated = await addLeadActivity(selectedLead.id, actor, noteType, noteText.trim());
         setSelectedLead(updated);
         setNoteText('');
         refreshLeads();
       } catch (err: unknown) {
-        alert(err instanceof Error ? err.message : 'Failed to add activity');
+        setError(err instanceof Error ? err.message : 'Could not add that to the log.');
       }
     });
   }
@@ -93,10 +135,10 @@ export function LeadsView({ onViewGuest }: LeadsViewProps) {
         setSelectedLead(updatedLead);
         refreshLeads();
         setConverting(false);
-        setConversionMessage(`Successfully converted! Created ERP Guest: ${erpGuest.name} (ID: ${erpGuest.id})`);
+        setConversionMessage(`${erpGuest.name} now has a guest record — reception can book against it`);
       } catch (err: unknown) {
         setConverting(false);
-        alert(err instanceof Error ? err.message : 'Conversion to ERP Guest failed');
+        setError(err instanceof Error ? err.message : 'Could not create a guest record.');
       }
     });
   }
@@ -124,104 +166,84 @@ export function LeadsView({ onViewGuest }: LeadsViewProps) {
   return (
     <div className="leads-workspace">
       <PageHeader
-        title="Sales Leads &amp; Guest Inquiries"
-        subtitle="Landing page booking intents, instant WhatsApp alerts, and 5-minute SLA monitoring"
+        title="Sales leads"
+        subtitle="Booking inquiries from the public site, with a five-minute response clock on each new one"
       />
 
-      {/* KPI Summary Cards */}
-      <div className="kpi-grid">
-        <div className="card kpi-card">
-          <div className="kpi-top">
-            <span className="kpi-label">Unattended Inquiries</span>
-            <Icon name="notifications" size={18} />
-          </div>
-          <div className="kpi-value">{newCount}</div>
-          <span className="kpi-sub">Awaiting Sales claim</span>
-        </div>
-
-        <div className="card kpi-card">
-          <div className="kpi-top">
-            <span className="kpi-label">5-Min SLA Breached</span>
-            <Icon name="warning" size={18} />
-          </div>
-          <div className="kpi-value" style={{ color: breachedCount > 0 ? '#b91c1c' : 'inherit' }}>
-            {breachedCount}
-          </div>
-          <span className="kpi-sub">{breachedCount > 0 ? 'Automated voice calls triggered' : 'All within SLA'}</span>
-        </div>
-
-        <div className="card kpi-card">
-          <div className="kpi-top">
-            <span className="kpi-label">In Follow-Up</span>
-            <Icon name="call" size={18} />
-          </div>
-          <div className="kpi-value">{inProgressCount}</div>
-          <span className="kpi-sub">Active conversations</span>
-        </div>
-
-        <div className="card kpi-card">
-          <div className="kpi-top">
-            <span className="kpi-label">Converted to ERP</span>
-            <Icon name="badge_check" size={18} />
-          </div>
-          <div className="kpi-value">{convertedCount}</div>
-          <span className="kpi-sub">Ready for Front Office</span>
-        </div>
+      {/* One stat row on the shared grid, so these cannot stack full width again. */}
+      <div className="stats">
+        <Stat
+          label="Unattended"
+          num={newCount}
+          sub="waiting to be claimed"
+          lead={newCount > 0}
+        />
+        <Stat
+          label="Past five minutes"
+          num={breachedCount}
+          sub={breachedCount > 0 ? 'call placed automatically' : 'all answered in time'}
+        />
+        <Stat label="In follow-up" num={inProgressCount} sub="conversation open" />
+        <Stat label="Converted" num={convertedCount} sub="now a guest record" />
       </div>
 
-      {/* Filters and Controls */}
       <div className="leads-controls">
         <div className="leads-search">
-          <Icon name="search" size={16} />
+          <Icon name="search" size={18} />
           <input
             type="text"
-            placeholder="Search by guest name, phone, or ref (GHR-...)..."
+            placeholder="Name, phone or reference"
+            aria-label="Search leads by name, phone or reference"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
         <div className="leads-filter-pills">
-          {(['ALL', 'NEW', 'IN_PROGRESS', 'CONVERTED', 'LOST'] as const).map((st) => (
-            <button
-              key={st}
-              className={`filter-pill ${filter === st ? 'active' : ''}`}
-              onClick={() => setFilter(st)}
-            >
-              {st}
-            </button>
-          ))}
-          <Btn ghost onClick={refreshLeads}>
-            Refresh
-          </Btn>
+          <div className="leads-filters" role="group" aria-label="Filter leads by state">
+            {LEAD_FILTERS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                className={`filter-pill ${filter === f.id ? 'active' : ''}`}
+                aria-pressed={filter === f.id}
+                onClick={() => setFilter(f.id)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <Btn ghost onClick={refreshLeads}>Refresh</Btn>
         </div>
       </div>
 
+      {error && <Alert kind="err">{error}</Alert>}
+
       {/* Main Split: Leads Table + Detail Panel */}
-      <div className="leads-split">
+      <div className={`leads-split${selectedLead ? ' has-selection' : ''}`}>
         <div className="card leads-table-card">
           {loading ? (
-            <p className="loading-state">Loading sales leads from microservice (:8082)...</p>
+            <p className="muted" style={{ padding: 20 }}>Loading leads…</p>
           ) : filtered.length === 0 ? (
             <div className="empty-state">
-              <Icon name="person_search" size={32} />
-              <p>No leads found matching your criteria.</p>
-              {leads.length === 0 && (
-                <span className="empty-sub">
-                  Submit a test inquiry on the Landing Page at <code>http://localhost:3000/plan-ahead</code>.
-                </span>
-              )}
+              <span className="empty-state__icon"><Icon name="person_search" size={18} /></span>
+              <strong>No leads to show</strong>
+              <p>
+                {leads.length === 0
+                  ? 'Nothing has come in from the public site yet. An inquiry submitted there appears here within a few seconds.'
+                  : 'No lead matches this filter or search.'}
+              </p>
             </div>
           ) : (
-            <div className="table-wrap">
-              <table className="data-table">
+            <div className="tbl-wrap">
+              <table className="tbl tbl--pick">
                 <thead>
                   <tr>
                     <th>Reference</th>
                     <th>Guest</th>
-                    <th>Cottage / Dates</th>
+                    <th>Stay</th>
                     <th>Received</th>
-                    <th>SLA Status</th>
+                    <th>Response clock</th>
                     <th>State</th>
                     <th>Action</th>
                   </tr>
@@ -237,12 +259,15 @@ export function LeadsView({ onViewGuest }: LeadsViewProps) {
                     return (
                       <tr
                         key={lead.id}
-                        className={`lead-row ${isSelected ? 'selected' : ''}`}
+                        tabIndex={0}
+                        className={isSelected ? 'is-selected' : ''}
+                        aria-selected={isSelected}
                         onClick={() => setSelectedLead(lead)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedLead(lead); }
+                        }}
                       >
-                        <td>
-                          <strong>{lead.publicReference}</strong>
-                        </td>
+                        <td><span className="lead-ref">{lead.publicReference}</span></td>
                         <td>
                           <div className="lead-guest-cell">
                             <span className="guest-name">{lead.name}</span>
@@ -255,40 +280,47 @@ export function LeadsView({ onViewGuest }: LeadsViewProps) {
                             <span className="stay-dates">{lead.checkinDate} → {lead.checkoutDate}</span>
                           </div>
                         </td>
-                        <td>{new Date(lead.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                        <td className="num">
+                          {new Date(lead.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </td>
                         <td>
                           {lead.status === 'NEW' ? (
                             isOverdue || lead.slaBreached ? (
-                              <Badge tone="red">
-                                <Icon name="warning" size={12} /> BREACHED (Call Placed)
-                              </Badge>
+                              <Badge tone="red">Call placed</Badge>
                             ) : (
                               <Badge tone="amber">
-                                <Icon name="schedule" size={12} /> {Math.floor(secondsLeft / 60)}m {secondsLeft % 60}s left
+                                <span className="lead-countdown">
+                                  {Math.floor(secondsLeft / 60)}m {String(secondsLeft % 60).padStart(2, '0')}s
+                                </span>
+                                {' '}left
                               </Badge>
                             )
                           ) : (
-                            <span className="text-muted">Disarmed</span>
+                            <span className="muted">Answered</span>
                           )}
                         </td>
                         <td>
-                          <Badge tone={lead.status === 'CONVERTED' ? 'green' : lead.status === 'IN_PROGRESS' ? 'amber' : 'amber'}>
-                            {lead.status}
+                          <Badge tone={lead.status === 'CONVERTED' ? 'green' : lead.status === 'LOST' ? 'red' : 'amber'}>
+                            {leadState(lead.status)}
                           </Badge>
                         </td>
                         <td>
                           {lead.status === 'NEW' ? (
-                            <Btn
-                              onClick={() => {
-                                handleClaim(lead.id);
-                              }}
+                            <button
+                              type="button"
+                              className="mini-btn primary"
+                              onClick={(e) => { e.stopPropagation(); handleClaim(lead.id); }}
                             >
-                              Claim &amp; Attend
-                            </Btn>
+                              Claim
+                            </button>
                           ) : (
-                            <Btn ghost onClick={() => setSelectedLead(lead)}>
+                            <button
+                              type="button"
+                              className="mini-btn"
+                              onClick={(e) => { e.stopPropagation(); setSelectedLead(lead); }}
+                            >
                               View
-                            </Btn>
+                            </button>
                           )}
                         </td>
                       </tr>
@@ -305,29 +337,30 @@ export function LeadsView({ onViewGuest }: LeadsViewProps) {
           <div className="card lead-detail-card">
             <div className="detail-header">
               <div>
-                <span className="detail-eyebrow">Lead Detail</span>
+                <span className="detail-eyebrow">Inquiry</span>
                 <h3>{selectedLead.publicReference}</h3>
               </div>
-              <Badge tone={selectedLead.status === 'CONVERTED' ? 'green' : selectedLead.status === 'IN_PROGRESS' ? 'amber' : 'amber'}>
-                {selectedLead.status}
+              <Badge tone={selectedLead.status === 'CONVERTED' ? 'green' : selectedLead.status === 'LOST' ? 'red' : 'amber'}>
+                {leadState(selectedLead.status)}
               </Badge>
             </div>
 
             <div className="detail-guest-info">
               <h4>{selectedLead.name}</h4>
               <p>
-                <Icon name="call" size={14} /> <a href={`tel:${selectedLead.phone}`}>{selectedLead.phone}</a>
+                <Icon name="call" size={18} /> <a href={`tel:${selectedLead.phone}`}>{selectedLead.phone}</a>
               </p>
               <p>
-                <Icon name="mail" size={14} /> <a href={`mailto:${selectedLead.email}`}>{selectedLead.email}</a>
+                <Icon name="mail" size={18} /> <a href={`mailto:${selectedLead.email}`}>{selectedLead.email}</a>
               </p>
               <div className="stay-spec">
-                <strong>{selectedLead.roomCategory}</strong> • {selectedLead.guestCount} guests<br />
+                <strong>{selectedLead.roomCategory}</strong> for {selectedLead.guestCount}{' '}
+                {selectedLead.guestCount === 1 ? 'guest' : 'guests'}<br />
                 <span>{selectedLead.checkinDate} to {selectedLead.checkoutDate}</span>
               </div>
               {selectedLead.notes && (
                 <div className="detail-guest-notes">
-                  <em>"{selectedLead.notes}"</em>
+                  <p>{selectedLead.notes}</p>
                 </div>
               )}
             </div>
@@ -338,8 +371,9 @@ export function LeadsView({ onViewGuest }: LeadsViewProps) {
                 <Btn
                   onClick={() => handleClaim(selectedLead.id)}
                   disabled={isPending}
+                  title="Claiming stops the five-minute clock and the automatic call that follows it"
                 >
-                  Claim Lead (Disarms 5-Min Alert)
+                  Claim this inquiry
                 </Btn>
               )}
 
@@ -349,28 +383,22 @@ export function LeadsView({ onViewGuest }: LeadsViewProps) {
                     onClick={handleConvertToGuest}
                     disabled={converting || isPending}
                   >
-                    {converting ? 'Creating in ERP...' : 'Convert to ERP Guest Record'}
+                    {converting ? 'Creating guest' : 'Create guest record'}
                   </Btn>
                   <span className="convert-hint">
-                    Saves profile to Core ERP database. Receptionist will immediately see it in Guest 360.
+                    Saves the profile to the resort database, where reception can find it and
+                    book against it.
                   </span>
                 </div>
               )}
 
               {selectedLead.status === 'CONVERTED' && (
                 <div className="converted-success-box">
-                  <Badge tone="green">
-                    Converted to ERP Guest
-                  </Badge>
+                  <Badge tone="green">Guest record created</Badge>
                   {selectedLead.erpGuestId && (
-                    <div style={{ marginTop: 8 }}>
-                      <Btn
-                        ghost
-                        onClick={() => onViewGuest?.(selectedLead.erpGuestId!)}
-                      >
-                        View in Guest 360 Workspace →
-                      </Btn>
-                    </div>
+                    <Btn ghost onClick={() => onViewGuest?.(selectedLead.erpGuestId!)}>
+                      Open guest
+                    </Btn>
                   )}
                 </div>
               )}
@@ -382,25 +410,28 @@ export function LeadsView({ onViewGuest }: LeadsViewProps) {
 
             {/* Activity History & Log Call Form */}
             <div className="detail-timeline">
-              <h4>Activity &amp; Interactions</h4>
+              <h4>What has happened</h4>
 
               <form onSubmit={handleAddActivity} className="activity-form">
                 <div className="activity-inputs">
-                  <select value={noteType} onChange={(e) => setNoteType(e.target.value)}>
-                    <option value="CALL">Phone Call</option>
+                  <select
+                    value={noteType}
+                    onChange={(e) => setNoteType(e.target.value)}
+                    aria-label="Kind of contact"
+                  >
+                    <option value="CALL">Call</option>
                     <option value="WHATSAPP">WhatsApp</option>
-                    <option value="NOTE">Internal Note</option>
+                    <option value="NOTE">Note</option>
                   </select>
                   <input
                     type="text"
-                    placeholder="Log conversation outcome..."
+                    placeholder="What was said"
+                    aria-label="What was said"
                     value={noteText}
                     onChange={(e) => setNoteText(e.target.value)}
                     required
                   />
-                  <Btn type="submit" disabled={isPending}>
-                    Save
-                  </Btn>
+                  <Btn type="submit" disabled={isPending}>Add to log</Btn>
                 </div>
               </form>
 
@@ -408,9 +439,11 @@ export function LeadsView({ onViewGuest }: LeadsViewProps) {
                 {selectedLead.activities?.map((act) => (
                   <div key={act.id} className="activity-item">
                     <div className="act-meta">
-                      <span className="act-type">{act.activityType}</span>
+                      <span className="act-type">{activityLabel(act.activityType)}</span>
                       <span className="act-actor">{act.actor}</span>
-                      <span className="act-time">{new Date(act.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="act-time">
+                        {new Date(act.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
                     <p className="act-desc">{act.description}</p>
                   </div>

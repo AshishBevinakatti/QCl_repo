@@ -16,10 +16,13 @@ body {
   color: var(--ink);
   font-family: var(--font-sans);
   font-size: 14px;
+  font-weight: 400;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  transition: background-color 160ms ease, color 160ms ease;
+  /* Figures line up in every column by default; this is a workspace full of them. */
+  font-variant-numeric: tabular-nums;
+  transition: background-color var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
 }
 
 #root {
@@ -32,6 +35,23 @@ h3,
 h4,
 p {
   margin-top: 0;
+}
+
+/* Headings are set in the display face, as on the public site. Body text,
+ * labels, tables and figures stay in Inter, which is built for small sizes.
+ * Hierarchy comes from size and colour. Weight never passes 600. */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* Display sizes only: tight tracking is never applied to small text. */
+h1 {
+  letter-spacing: -0.02em;
 }
 
 a {
@@ -67,21 +87,21 @@ img {
 code,
 pre,
 kbd {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  font-family: var(--font-mono);
 }
 
 code {
-  font-size: 0.92em;
-  background: var(--code-bg);
-  border-radius: 6px;
   padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  background: var(--code-bg);
+  font-size: 0.92em;
 }
 
 details summary {
-  cursor: pointer;
   color: var(--brand);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
+  cursor: pointer;
 }
 
 .icon {
@@ -90,12 +110,12 @@ details summary {
 }
 
 :focus-visible {
-  outline: 2px solid var(--brand);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
 ::selection {
-  background: var(--gold-soft-2);
+  background: var(--brass-soft);
   color: var(--ink-strong);
 }
 
@@ -124,4 +144,15 @@ details summary {
 
 html[data-theme='dark'] input[type='date']::-webkit-calendar-picker-indicator {
   filter: invert(0.8);
+}
+
+/* One entrance on load for the page body, and nothing else moves on its own. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

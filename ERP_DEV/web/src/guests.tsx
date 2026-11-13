@@ -40,11 +40,12 @@ function errorText(err: unknown): LoadError {
   };
 }
 
+/* Backend tokens (`checked-in`, `not_enrolled`) read as words. Sentence case,
+ * not Title Case — a status is a label, not a heading. */
 function label(value: string | null | undefined): string {
   if (!value) return '—';
-  return value
-    .replace(/[-_]/g, ' ')
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  const words = value.replace(/[-_]+/g, ' ').trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 function shortRef(id: string | null | undefined): string {
@@ -851,13 +852,17 @@ export function GuestsView({
                         <span>{guest.phone}</span>
                       </span>
                     </span>
+                    {/* A badge on every row that always reads the same carries
+                      * nothing. Only an unusual status is worth the ink. */}
                     <span className="guest-row-status">
-                      <Badge tone={statusTone(guest.status)}>{label(guest.status)}</Badge>
+                      {guest.status !== 'active' && (
+                        <Badge tone={statusTone(guest.status)}>{label(guest.status)}</Badge>
+                      )}
                     </span>
                     <span className="guest-row-member">
                       {guest.memberId ? (
                         <span className="guest-member-chip">
-                          <Icon name="workspace_premium" /> Member
+                          <span className="dot" /> Member
                         </span>
                       ) : (
                         <span className="muted">Not a member</span>
