@@ -26,18 +26,8 @@ An ADMIN onboards an employee from the ERP. The employee gets Keycloak's email (
 - MFA (Q-021);
 - branded Keycloak theme (Q-018).
 
-## 3. Versions (D-112: same products, current supported releases)
-Before the first `pom.xml`/`package.json`, look up and record the newest **stable, supported** release of:
-- Spring Boot, plus the matching Spring Cloud train for Gateway;
-- Keycloak server and `keycloak-js`;
-- PostgreSQL 16+;
-- Redis;
-- Mailpit;
-- React, Vite, TypeScript, Vitest.
-
-Sources: official release pages only (spring.io, keycloak.org, GitHub releases, npm). That needs **web access, which I'm asking you to approve once for this increment**. The URLs will be logged in the DEVLOG.
-
-⚠ **One sub-decision may come up:** the Blueprint says "Spring Boot 3". If only Spring Boot 4.x still gets open-source fixes, I'll stop and ask you: Boot 4 (newer, deviates from the Blueprint wording) or the last 3.x (Blueprint wording, maybe out of support). I won't choose that myself.
+## 3. Versions (D-112, D-115)
+Fixed on 2026-11-15 from official sources and approved by Ashish: see [ADR-001, update "versions fixed"](../../02-architecture/adr/ADR-001-microservices-and-stack.md). Headlines: **Spring Boot 4.1.2** (every 3.x line is out of open-source support), Spring Cloud 2025.1.4, Keycloak 26.8.2, PostgreSQL 18.7, Redis 8.10.3, React 19.3.1, TypeScript 7.0.2, Vite 8.3.8.
 
 ## 4. Dependencies to approve (Q-023)
 | Dependency | Where | Why |
@@ -74,11 +64,11 @@ R-001 setup work (Compose kept small: 4 containers); R-002 is resolved by D-112;
 Q-017 (extra employee fields), Q-019 (session lengths), Q-021 (MFA), Q-022 (retention), Q-023 (§4 above), Q-024 (SMTP for staging), Q-026 (password policy). Their proposed defaults apply until answered.
 
 ## 9. Definition of done
-- [ ] Slices S1–S7 done, with test output shown.
-- [ ] `mvn -B verify` green for access-service and api-gateway; web `lint`, `test` and `build` green; CI green on GitHub.
-- [ ] No password, OTP, token or secret in code, logs, DB or git (gitleaks).
-- [ ] Docs updated in the same commits; DEVLOG, STATE and TRACEABILITY updated.
-- [ ] You approve each commit; push and merge are asked for separately.
+- [x] Slices S1–S7 done, with test output shown (inc1-REPORT).
+- [x] `./mvnw -B verify` green for access-service (26) and api-gateway (10); web lint/test (18)/build green. - [ ] CI on GitHub: not run (push blocked by token scope).
+- [x] No password, OTP, token or secret in code, logs, DB or git (checked; gitleaks runs in CI).
+- [x] Docs updated in the same commits; DEVLOG, STATE and TRACEABILITY updated.
+- [x] You approve each commit; push and merge are asked for separately.
 
 ## 10. Branch
 `feature/phase1-inc1-identity`, branched from `feature/phase1-fresh-start`.

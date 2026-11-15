@@ -73,7 +73,13 @@ Create request:
   "whatsappOptIn": false }
 ```
 
+`whatsappOptIn` is optional (default `false`). Response (`EmployeeView`): `{ id, firstName, lastName, email, username, mobile, jobRole, whatsappOptIn, status, statusReason, identityLinked, createdAt, updatedAt, version }`. Email and username are stored lowercase; spaces and dashes are removed from the mobile. Duplicate email/username/mobile → 409 with the field named in `message`.
+
 (Example values are illustrative, not client data. Extra fields such as staff code and joining date: Q-017.)
+
+Account changes return the updated `EmployeeView`. Errors: 400 without a reason; 409 for the guards (self, last admin, not set up yet, row busy); 429 after 3 resends in an hour; 502 `UPSTREAM_FAILED` if Keycloak is down (nothing changed) or the email failed (status kept as `INVITE_EMAIL_FAILED`).
+
+Audit response: page of `{ id, occurredAt, actorId, actor, actorIp, action, entityType, entityId, before, after, reason, correlationId, outcome }`, newest first; `size` at most 200.
 
 ## 4. Staff — lead-service (increment 2)
 

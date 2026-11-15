@@ -10,7 +10,7 @@
 |---|---|---|---|---|---|
 | REQ-IAM-001 | Keycloak is the only authentication and credential store for employees; the ERP stores no passwords, OTPs or tokens | BP §2 ADR-006, §18; AB | Must | 1 | No password/OTP/token column in any ERP schema; code review + schema test |
 | REQ-IAM-002 | An Admin creates an employee (first/last name, email, username, mobile, job role, WhatsApp preference); the profile is stored in `access_db` | AB; BP §13 | Must | 1 | POST creates a row; validation errors return 400 with fields; duplicate email/username/mobile → 409 |
-| REQ-IAM-003 | Creating an employee creates and links the Keycloak user (both directions) and assigns its realm role | AB; BP §13 | Must | 1 | Keycloak user exists with attribute `erp_employee_id`; row has `keycloak_user_id`; role mapped |
+| REQ-IAM-003 | Creating an employee creates and links the Keycloak user and assigns its realm role | AB; BP §13 | Must | 1 | Keycloak user exists with required actions; row has `keycloak_user_id`; role mapped |
 | REQ-IAM-004 | Keycloak sends the verify-email + set-password email over the configured SMTP; no custom OTP or password page | AB; BP §9 | Must | 1 | Email arrives in Mailpit; link verifies email and sets password |
 | REQ-IAM-005 | Admin sees each employee's account status (`PENDING_PROVISIONING`, `INVITED`, `INVITE_EMAIL_FAILED`, `ACTIVE`, `DISABLED`), kept in sync with Keycloak | AB | Must | 1 | Status becomes ACTIVE after setup without manual steps; job fixes drift within 5 min |
 | REQ-IAM-006 | Employees log in with Keycloak OIDC Authorization Code + PKCE; wrong password, disabled or locked accounts are refused | AB; BP §3 | Must | 1 | Password grant disabled; PKCE required; lockout after 5 failures |

@@ -40,6 +40,39 @@ jobs:
       # Lint is not run: 4 errors already exist and the landing page is frozen in Phase 1 (OPEN_QUESTIONS Q-004).
       - run: npm run build
 
+  realm-check:
+    # Guards the security settings of the staff realm (docs/02-architecture/identity/KEYCLOAK-SETUP.md).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate gh-staff realm import
+        run: |
+          python3 - <<'EOF'
+          import json, re
+          r = json.load(open("ERP_DEV/infra/keycloak/gh-staff-realm.json"))
+          c = {x["clientId"]: x for x in r["clients"]}
+          w, s = c["erp-web"], c["access-service"]
+          checks = {
+            "no self-registration": r["registrationAllowed"] is False,
+            "email verification on": r["verifyEmail"] is True,
+            "brute-force protection on": r["bruteForceProtected"] is True,
+            "refresh token rotation": r["revokeRefreshToken"] is True and r["refreshTokenMaxReuse"] == 0,
+            "access token <= 300 s": r["accessTokenLifespan"] <= 300,
+            "erp-web public + PKCE S256": w["publicClient"] and w["attributes"]["pkce.code.challenge.method"] == "S256",
+            "erp-web no password/implicit grant": not w["directAccessGrantsEnabled"] and not w["implicitFlowEnabled"],
+            "erp-web audience erp-api": any(m["config"].get("included.client.audience") == "erp-api" for m in w["protocolMappers"]),
+            "no full-scope clients": not any(x.get("fullScopeAllowed", True) for x in r["clients"]),
+            "access-service secret is a placeholder": re.fullmatch(r"\$\{[A-Z_]+\}", s["secret"]) is not None,
+            "SMTP password is a placeholder": re.fullmatch(r"\$\{[A-Z_]+\}", r["smtpServer"]["password"]) is not None,
+            "service account least privilege": set(r["users"][0]["clientRoles"]["realm-management"]) == {"manage-users", "view-users", "query-users"},
+            "job roles present": {x["name"] for x in r["roles"]["realm"]} >= {"ADMIN", "MANAGER", "SALES_EXECUTIVE"},
+            "MANAGER cannot manage employees (D-113)": "employees.manage" not in next(x for x in r["roles"]["realm"] if x["name"] == "MANAGER")["composites"]["client"]["erp-api"],
+          }
+          bad = [k for k, v in checks.items() if not v]
+          print("\n".join(("FAIL " if k in bad else "ok   ") + k for k in checks))
+          assert not bad, bad
+          EOF
+
   service:
     runs-on: ubuntu-latest
     strategy:
@@ -60,7 +93,8 @@ jobs:
           cache: maven
       - if: steps.present.outputs.yes == 'true'
         name: Build + test ${{ matrix.service }}
-        run: mvn -B verify -f ERP_DEV/services/${{ matrix.service }}/pom.xml
+        working-directory: ERP_DEV/services/${{ matrix.service }}
+        run: ./mvnw -B verify   # Maven Wrapper pins Maven 3.10.0 (sha256-checked); Testcontainers uses the runner's Docker
 
   web:
     runs-on: ubuntu-latest

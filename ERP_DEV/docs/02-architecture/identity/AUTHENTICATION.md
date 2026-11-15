@@ -84,7 +84,7 @@ sequenceDiagram
   G->>S: forward (JWT already checked)
   S->>S: check JWT again + permission employees.manage; validate input
   S->>DB: INSERT employee (status PENDING_PROVISIONING)  — commit
-  S->>K: POST /admin/realms/gh-staff/users (enabled, emailVerified=false, requiredActions=[VERIFY_EMAIL, UPDATE_PASSWORD], attribute erp_employee_id)
+  S->>K: POST /admin/realms/gh-staff/users (enabled, emailVerified=false, requiredActions=[VERIFY_EMAIL, UPDATE_PASSWORD])
   K-->>S: 201 Location: …/users/{kcId}
   S->>K: POST …/users/{kcId}/role-mappings/realm  [SALES_EXECUTIVE]
   S->>K: PUT …/users/{kcId}/execute-actions-email?client_id=erp-web&redirect_uri=…&lifespan=86400  ["VERIFY_EMAIL","UPDATE_PASSWORD"]
@@ -109,7 +109,7 @@ Step by step (this matches Ashish's steps 1–5):
    - The request carries an `Idempotency-Key` header, so a double-click returns the first result.
 2. **Keycloak creates the account.**
    - `access-service` creates the user through the Admin REST API with the `access-service` confidential client (client-credentials grant; see KEYCLOAK-SETUP §5).
-   - It stores the Keycloak user id, and writes `erp_employee_id` onto the Keycloak user as an attribute, so the link works both ways.
+   - It stores the Keycloak user id on the employee row (one-way link). A custom attribute on the Keycloak user was dropped in S5: Keycloak 26's user profile discards unmanaged attributes unless the realm allows them (DEVLOG 2026-11-15).
    - It assigns the realm role.
 3. **The verification email is sent by Keycloak.** We use Keycloak's built-in `execute-actions-email` with `VERIFY_EMAIL` + `UPDATE_PASSWORD`. Keycloak's SMTP settings are in KEYCLOAK-SETUP §4. The ERP never sends this email itself.
 4. **The employee verifies the email and sets a password on Keycloak's own pages.**
@@ -167,8 +167,8 @@ sequenceDiagram
 6. **Dashboard.** `GET /api/v1/me` (access-service) returns the employee profile from `access_db`, plus the roles and permissions from the token. React builds the menu from it. Modules the employee can't use are hidden, and the backend refuses them anyway.
 
 ### React token and session handling
-- Library: `keycloak-js`, the same library the earlier ERP used, with its version matched to the Keycloak server (ADR-001). `init({ onLoad: 'login-required', pkceMethod: 'S256', checkLoginIframe: false })`.
-- Tokens are kept **in memory only**: no localStorage or sessionStorage, so XSS can't read them. A page reload re-authenticates silently while the Keycloak SSO session is alive.
+- Library: `keycloak-js` 26.2.5 (D-115). `init({ pkceMethod: 'S256', checkLoginIframe: false })` with **no forced login**: the ERP shows its own sign-in page (Ashish's step 1) and its button calls `keycloak.login()`. After the redirect back, `init` finishes the code exchange.
+- Tokens are kept **in memory only**: no localStorage or sessionStorage, so XSS can't read them. After a page reload the sign-in page shows again; pressing Sign in returns without a password prompt while the Keycloak SSO session is alive.
 - Before each API call: `updateToken(30)` refreshes the token if it expires within 30 s. If the refresh fails, the session has ended → `login()`.
 - A 401 from the API → one refresh and retry → if still 401, log in again. A 403 → show a "You don't have access to this" page, with no retry.
 - Strict Content-Security-Policy on the web app; no third-party scripts on ERP pages.
@@ -204,15 +204,16 @@ Known limit: an access token that was already issued stays valid until it expire
 
 **Reactivate:** `{active:true}` → Keycloak `enabled=true` → status becomes `ACTIVE`, or `INVITED` if their setup was never finished. If the link has expired, the admin uses "Resend invite".
 
-**Resend invite:** `POST /api/v1/admin/employees/{id}/resend-invite` calls `execute-actions-email` again. Allowed for `INVITED` and `INVITE_EMAIL_FAILED`. Limited to 3 per hour per employee.
+**Resend invite:** `POST /api/v1/admin/employees/{id}/resend-invite` calls `execute-actions-email` again. Allowed for `INVITED` and `INVITE_EMAIL_FAILED` once the Keycloak user exists. Limited to 3 per hour per employee, counted from the audit trail, so the limit survives restarts → 429. If the email fails, the status becomes `INVITE_EMAIL_FAILED` and the API returns 502; the status change is kept.
 
-**Change role:** replace the realm-role mapping in Keycloak, then audit. The new role takes effect on the next token refresh (≤ 5 min). To apply it at once, also run the `logout` call. Changing a role needs `roles.assign`.
+**Change role:** `PUT /api/v1/admin/employees/{id}/role {role, reason}` (needs `roles.assign`, i.e. ADMIN). Removes the other job roles in Keycloak, adds the new one, then **always logs the user out**, so the new permissions apply at their next sign-in (verified live in S6). Audited with before/after and the reason.
 
 **Change email:** update it in Keycloak with `emailVerified=false` and add the `VERIFY_EMAIL` required action, then send the actions email.
 
-**Safety guards:**
+**Safety guards (409):**
 - An admin can't deactivate themself or remove their own ADMIN role.
-- The last active ADMIN can't be deactivated or demoted.
+- The last active ADMIN can't be deactivated or demoted. Checks run under a PostgreSQL advisory lock, so two admins can't remove each other at the same moment.
+- Changes need a reason (400 without one). A row that the sync job is working on returns 409 "try again" instead of waiting.
 - Employees are never deleted, and the ERP offers no delete action in Phase 1: deactivate instead. This follows the engineering "no hard deletes" rule and SRS §11.1, where delete is reserved for the Owner/MD.
 
 **Status sync (Keycloak → access_db):**
@@ -248,8 +249,9 @@ employee
   created_at, updated_at  TIMESTAMPTZ NOT NULL
   version            INT NOT NULL           -- optimistic locking
 
-audit_event (append-only; no UPDATE/DELETE grants for the app user)
-  id, occurred_at, actor_id, actor_ip, action, entity_type, entity_id, before_json, after_json, correlation_id, outcome
+audit_event (append-only, enforced by a trigger that rejects UPDATE/DELETE/TRUNCATE, because the app user owns the table)
+  id, occurred_at, actor_id (null for SYSTEM_* actors), actor_label, actor_ip, action, entity_type, entity_id,
+  before_json, after_json, reason, correlation_id, outcome
 
 idempotency_key
   key, actor_id, request_hash, response_json, created_at   -- 24 h retention
@@ -262,7 +264,7 @@ idempotency_key
 | # | Scenario | What happens | Admin sees / action |
 |---|---|---|---|
 | F1 | Keycloak down when an employee is created | Row stays `PENDING_PROVISIONING`; API returns 202 with that status. The reconciliation job retries with backoff | "Provisioning pending" + Retry button |
-| F2 | Keycloak returns 409 (email/username taken) | If the existing Keycloak user has our `erp_employee_id` → adopt it (a safe retry). Otherwise → status `PENDING_PROVISIONING`, reason "conflict", API 409 | "Email or username already exists in identity system" |
+| F2 | Keycloak returns 409 (email/username taken) | Adopt the existing Keycloak user **only** if its username **and** email match this employee and no other employee is linked to it (our own earlier, half-finished attempt). Otherwise the row stays `PENDING_PROVISIONING` with the reason, and the API returns 202 | "Email or username already exists in identity system" + Retry after it is resolved |
 | F3 | User created, role assignment fails | Keep `keycloak_user_id`; retry role assignment (idempotent) | Retry |
 | F4 | SMTP down / invite email fails | `INVITE_EMAIL_FAILED`; the Keycloak user stays created | "Invite email failed" + Resend |
 | F5 | Invite link expired (after 24 h) | Keycloak shows "link expired" | Admin → Resend invite |
@@ -278,8 +280,8 @@ idempotency_key
 ## 11. Security considerations
 
 - **Least-privilege admin client:** the `access-service` service account gets only `realm-management` → `manage-users`, `view-users`, `query-users`.
-  - Risk: `manage-users` in Keycloak 24 can also map *any* realm role, including `ADMIN`.
-  - Mitigation: access-service only assigns roles from an allow-list, and only callers with `roles.assign` can ask; audited. With Keycloak ≥ 26.2, Fine-Grained Admin Permissions v2 can enforce this inside Keycloak (R-005, part of the version question Q-020).
+  - Risk: `manage-users` can also map *any* realm role, including `ADMIN`.
+  - Mitigation: access-service only assigns roles from an allow-list, and only callers with `roles.assign` can ask; audited. Keycloak 26.8 (D-115) supports Fine-Grained Admin Permissions v2, which could enforce this inside Keycloak too. Evaluate it in S6 (R-005).
 - Separate realms for staff (`gh-staff`) and guests (`gh-guests`, Q-003). A guest token has the wrong issuer, so it gets 401 on every staff endpoint (Blueprint §16 negative test).
 - Audience check (`aud=erp-api`) stops a token issued to another client from being replayed against the API.
 - Direct Access Grants (password grant) and Implicit flow are **off** on `erp-web`. Exact redirect URIs only, no wildcards.

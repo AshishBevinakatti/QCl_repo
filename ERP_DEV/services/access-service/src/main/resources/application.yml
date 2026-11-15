@@ -1,0 +1,50 @@
+# Configuration names: docs/02-architecture/identity/KEYCLOAK-SETUP.md §9. Secrets come from the environment only.
+server:
+  port: ${PORT:8091}
+
+spring:
+  application:
+    name: access-service
+  datasource:
+    url: ${ACCESS_DB_URL:jdbc:postgresql://localhost:5433/access_db}
+    username: ${ACCESS_DB_USER:access_svc}
+    password: ${ACCESS_DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate   # Flyway owns the schema
+  flyway:
+    enabled: true
+
+erp:
+  keycloak:
+    url: ${KEYCLOAK_URL:http://localhost:8081}
+    realm: ${KEYCLOAK_REALM:gh-staff}
+    issuer: ${erp.keycloak.url}/realms/${erp.keycloak.realm}
+    admin-client-id: access-service
+    admin-client-secret: ${KC_ACCESS_SERVICE_CLIENT_SECRET}
+  web:
+    origin: ${ERP_WEB_ORIGIN:http://localhost:5173}   # where the setup email's link returns to
+  sync:
+    interval: ${ACCOUNT_SYNC_INTERVAL:PT5M}
+  bootstrap-admin:   # used only while no ADMIN exists (KEYCLOAK-SETUP §10)
+    email: ${BOOTSTRAP_ADMIN_EMAIL:}
+    username: ${BOOTSTRAP_ADMIN_USERNAME:}
+    first-name: ${BOOTSTRAP_ADMIN_FIRST_NAME:}
+    last-name: ${BOOTSTRAP_ADMIN_LAST_NAME:}
+    mobile: ${BOOTSTRAP_ADMIN_MOBILE:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  structured:
+    format:
+      console: ecs   # JSON logs; correlationId comes from the MDC (CorrelationIdFilter)

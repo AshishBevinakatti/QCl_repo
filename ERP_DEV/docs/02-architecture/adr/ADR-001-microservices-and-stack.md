@@ -28,8 +28,25 @@ The ERP restarts from scratch (ADR-003). Ashish's first draft plan had one `lead
 
 ## Consequences
 - More moving parts than one service: local dev needs Compose with 5 infrastructure containers. Mitigation: one `docker compose up` and a checked DAY-ONE guide.
-- ⚠ **Version risk (R-002, Q-020):** by our records, Spring Boot 3.2.x left open-source support in Nov 2024 and Keycloak 24 is also past its support window. Today (Nov 2026) they get no security fixes. Ashish asked for the *same* stack, so this ADR keeps the versions. **Recommendation:** keep the same products but move to the current supported releases at the start of increment 1. That is a version bump, not a stack change, and it needs Ashish's yes (Q-020).
+- ⚠ **Version risk (R-002, Q-020):** Spring Boot 3.2.x left open-source support on 2024-12-31 (spring.io support data; this ADR first said "Nov 2024", which was wrong) and Keycloak 24 is also past its support window. Today (Nov 2026) they get no security fixes. Ashish asked for the *same* stack, so this ADR keeps the versions. **Recommendation:** keep the same products but move to the current supported releases at the start of increment 1. That is a version bump, not a stack change, and it needs Ashish's yes (Q-020).
 - New libraries beyond those listed (Testcontainers, Keycloak Testcontainers module, Mailpit image, ShedLock) need approval before they are added (Q-023).
 
 ## Update — 2026-11-15
 Q-020 answered (D-112): keep the same products but use their **current supported releases**. The version column above is the historical baseline. The versions actually used are fixed in `03-phases/phase-1/inc1-PLAN.md` §3 after checking the official release pages.
+
+## Update — 2026-11-15 (versions fixed, D-115)
+Checked on 2026-11-15 against official sources (api.spring.io generations, GitHub releases of the official repos, npm registry, Docker Hub official images). Every Spring Boot 3.x line lost open-source support on 2026-06-30, so Ashish chose **Spring Boot 4.1.2**. This departs from the Blueprint's wording "Spring Boot 3" (Blueprint ADR-003) in order to stay on supported software.
+
+| Product | Version | Free support until |
+|---|---|---|
+| Java | 21 (LTS) | — |
+| Spring Boot | 4.1.2 | 2027-07-31 |
+| Spring Cloud (Gateway) | 2025.1.4 (built and checked with Boot 4.1 in slice S3; if it fails → report, don't silently downgrade) | 2027-07-31 |
+| Keycloak server / keycloak-js | 26.8.2 / 26.2.5 | current |
+| PostgreSQL | 18.7 | — |
+| Redis | 8.10.3 (AGPLv3/RSALv2/SSPLv1 tri-licence; stock image used unmodified, internally) | — |
+| Mailpit | 1.33.1 (dev only) | — |
+| Testcontainers / testcontainers-keycloak | 2.0.5 / 4.4.0 | — |
+| React / Vite / TypeScript / Vitest / oxlint / Testing Library | 19.3.1 / 8.3.8 / 7.0.2 / 5.1.0 / 1.93.0 / 16.3.3 | — |
+
+Kafka's version is fixed when increment 2 starts.
