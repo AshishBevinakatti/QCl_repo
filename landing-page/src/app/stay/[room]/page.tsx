@@ -13,6 +13,8 @@ import RoomGallery, { type GalleryImage } from "../../room-gallery";
 import BookingCard from "../../booking-card";
 import ShareButton from "../../share-button";
 import { roomTypes } from "../../stay-data";
+import { MealPlans, RoomCard } from "../../stay-shared";
+import { Sketch } from "../../pencil";
 import type { RoomFeatureIcon } from "../../stay-cards";
 import { getScene, impression } from "../../resort-assets";
 import {
@@ -29,11 +31,6 @@ const FEATURE_ICONS: Record<RoomFeatureIcon, typeof BedDouble> = {
 /** "Up to 2 Adults" -> "Up to 2 adults"; the data is written in Title Case. */
 const sentence = (text: string) => text.charAt(0) + text.slice(1).toLowerCase();
 
-/** "EP (Room Only)" -> ["EP", "Room only"]. */
-function mealPlanParts(plan: string): [string, string] {
-  const match = plan.match(/^(\w+)\s*\((.+)\)$/);
-  return match ? [match[1], sentence(match[2])] : [plan, ""];
-}
 
 function findRoom(slug: string) {
   return roomTypes.find((room) => room.slug === slug);
@@ -108,15 +105,11 @@ export default async function RoomPage({ params }: { params: Promise<{ room: str
 
             <section className="room-meals" aria-labelledby="room-meals-title">
               <h3 id="room-meals-title">Meal plans</h3>
-              <ul>
-                {room.mealPlans.map((plan) => {
-                  const [code, label] = mealPlanParts(plan);
-                  return <li key={plan}><strong>{code}</strong>{label && <span>{label}</span>}</li>;
-                })}
-              </ul>
+              <MealPlans plans={room.mealPlans} />
             </section>
 
             <section className="room-about" aria-labelledby="room-about-title">
+              <Sketch name={room.zone.startsWith("Hotel") ? "hotel" : room.zone.startsWith("Poolside") ? "pool" : "cottage"} className="room-about-sketch" />
               <h3 id="room-about-title">About this {kind}</h3>
               <p>{room.lead}</p>
             </section>
@@ -134,6 +127,18 @@ export default async function RoomPage({ params }: { params: Promise<{ room: str
             />
           </aside>
         </div>
+
+        {/* Keep the visitor choosing: three other stays, nearest in price first. */}
+        <section className="room-more" aria-labelledby="room-more-title">
+          <h2 id="room-more-title">Other ways to stay</h2>
+          <div className="srooms-grid">
+            {roomTypes
+              .filter((other) => other.slug !== room.slug)
+              .sort((x, y) => Math.abs(Number((x.startingTariff ?? "0").replace(/\D/g, "")) - tariff) - Math.abs(Number((y.startingTariff ?? "0").replace(/\D/g, "")) - tariff))
+              .slice(0, 3)
+              .map((other, i) => <RoomCard key={other.slug} room={other} index={i} />)}
+          </div>
+        </section>
       </main>
       <SiteFooter />
     </>

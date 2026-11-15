@@ -386,3 +386,74 @@
   margin-top: 24px;
   opacity: 0.85;
 }
+
+/* --- Amenities as a walk through the day (unit 3.26) --------------------- */
+.atrail { position: relative; margin-top: clamp(32px, 4vw, 56px); }
+.atrail-path {
+  position: absolute;
+  left: calc(-1 * var(--gutter));
+  right: calc(-1 * var(--gutter));
+  top: 36px;
+  width: calc(100% + 2 * var(--gutter));
+  height: 120px;
+  pointer-events: none;
+}
+.atrail-path path { stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+.atrail-path .atrail-path-faint { opacity: 0.35; stroke-dasharray: 2 6; }
+.sketch-js .atrail-path .atrail-path-faint { stroke-dasharray: 1; }
+
+.atrail-stops {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 24px;
+}
+.atrail-stop { display: grid; justify-items: center; text-align: center; gap: 6px; }
+.atrail-stop:nth-child(even) { transform: translateY(40px); }
+.atrail-stop .sketch {
+  width: 100%;
+  max-width: 156px;
+  height: auto;
+  padding: 8px;
+  border-radius: 50%;
+  background: var(--ground, var(--color-paper));
+}
+.atrail-stop h3 {
+  margin-top: 4px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: var(--weight-section);
+  line-height: 1.2;
+  color: var(--color-forest);
+}
+.atrail-stop p { font-size: 14px; color: var(--color-ink); font-variant-numeric: tabular-nums; }
+.atrail-essentials {
+  margin-top: clamp(64px, 6vw, 88px);
+  padding-top: 16px;
+  border-top: 1px solid rgb(24 36 29 / 0.1);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-muted);
+}
+
+/* The path draws first, then the stops one after another along it. */
+.sketch-js .atrail-path path { transition-duration: 2.2s; }
+.sketch-js .atrail-stop .sketch path {
+  transition-delay: calc(500ms + var(--stop, 0) * 160ms + var(--i, 0) * 80ms);
+}
+
+@media (max-width: 900px) {
+  .atrail-path { display: none; }
+  .atrail-stops { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px 12px; }
+  .atrail-stop:nth-child(even) { transform: none; }
+  .atrail-stop .sketch { max-width: 104px; }
+  .atrail-stop h3 { font-size: 15px; }
+  .atrail-stop p { font-size: 13px; }
+  .atrail-essentials { margin-top: 32px; }
+}
+/* Labels sit on a strip of the section's own ground, so the path passes
+   behind the words instead of through them. */
+.atrail-stop h3, .atrail-stop p { position: relative; padding-inline: 8px; background: var(--ground, var(--color-paper)); }

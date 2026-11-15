@@ -5,6 +5,7 @@ import MotionProvider from "../motion-provider";
 import SiteFooter from "../site-footer";
 import MembershipCard from "../membership-card";
 import MembershipLedger from "../membership-ledger";
+import { Sketch } from "../pencil";
 import MembershipExtras from "../membership-extras";
 import CountUp from "../count-up";
 import MembershipInquiryForm from "./membership-inquiry-form";
@@ -55,6 +56,7 @@ export default function MembershipPage() {
         {/* The seven parts, as an account that adds up to 180. */}
         <section id="explore" className="mem-ledger-section" aria-labelledby="ledger-title">
           <div className="wrap mem-ledger-head">
+            <Sketch name="hills" className="mem-sketch" />
             <p className="mem-kicker">What is inside</p>
             <h2 id="ledger-title">Seven parts of the resort, one booklet</h2>
           </div>
@@ -66,6 +68,7 @@ export default function MembershipPage() {
         <MembershipExtras />
 
         <section id="inquire" className="wrap mem-inquiry-section" aria-labelledby="inquire-title">
+          <Sketch name="tree" className="mem-sketch" />
           <div className="mem-inquiry-grid">
             <div className="mem-inquiry-info">
               <p className="mem-kicker">Charter member intake</p>

@@ -128,6 +128,58 @@ const DRAWINGS = {
     "M18 60 q-16 -4 -12 -20 q4 -16 22 -12 q14 -10 24 4 q12 8 0 22 q-10 10 -34 6",
     "M140 30 q4 -4 8 0 q4 -4 8 0",
   ],
+  dinner: [
+    ellipse(100, 92, 46, 14),
+    ellipse(100, 90, 30, 8),
+    "M40 70 V112 M36 70 v12 q4 6 8 0 v-12 M40 70 V64",
+    "M160 64 V112 M160 64 q8 10 0 26",
+    "M140 30 q-2 22 10 26 q12 -4 10 -26 Z M150 56 V76 M142 78 H158",
+    "M14 120 H186",
+  ],
+  glasses: [
+    "M60 40 L52 84 q10 10 20 0 L64 40 Z",
+    "M62 92 V118 M52 120 H72",
+    "M138 40 L130 84 q10 10 20 0 L142 40 Z",
+    "M140 92 V118 M130 120 H150",
+    "M56 60 H68 M134 60 H146",
+    "M82 30 l8 -10 M100 24 V10 M118 30 l-8 -10",
+    "M20 126 H180",
+  ],
+  lotus: [
+    "M100 104 Q84 76 100 44 Q116 76 100 104 Z",
+    "M100 104 Q70 92 66 62 Q92 72 100 104",
+    "M100 104 Q130 92 134 62 Q108 72 100 104",
+    "M100 104 Q60 108 44 88 Q76 84 100 104 M100 104 Q140 108 156 88 Q124 84 100 104",
+    "M30 118 q35 -8 70 0 t70 0",
+    "M50 128 q25 -5 50 0 t50 0",
+  ],
+  hotel: [
+    "M44 124 V46 H156 V124",
+    "M38 46 H162 M44 38 H156 L162 46 M44 38 L38 46",
+    "M44 72 H156 M44 98 H156",
+    "M56 54 h12 v10 h-12 Z M80 54 h12 v10 h-12 Z M108 54 h12 v10 h-12 Z M132 54 h12 v10 h-12 Z",
+    "M56 80 h12 v10 h-12 Z M80 80 h12 v10 h-12 Z M108 80 h12 v10 h-12 Z M132 80 h12 v10 h-12 Z",
+    "M88 124 V106 H112 V124 M82 106 H118",
+    "M22 124 Q19 104 26 90 M26 90 q-10 -2 -14 6 M26 90 q8 -6 16 0 M26 90 q-2 -8 -10 -10",
+    "M178 124 Q181 104 174 90 M174 90 q10 -2 14 6 M174 90 q-8 -6 -16 0 M174 90 q2 -8 10 -10",
+    "M8 126 H192",
+  ],
+  games: [
+    "M40 88 L160 88 L182 106 L18 106 Z",
+    "M100 88 V78 M74 78 H126 M74 78 L64 92 M126 78 L136 92",
+    "M28 106 V126 M172 106 V126 M58 106 V120 M142 106 V120",
+    circle(46, 54, 11) + " M54 62 l9 11",
+    circle(154, 50, 11) + " M146 58 l-9 11",
+    circle(100, 42, 3),
+  ],
+  rain: [
+    "M36 18 H164 M60 18 v9 M100 18 v9 M140 18 v9",
+    "M60 36 v6 M56 50 v6 M64 62 v6 M100 34 v6 M140 36 v6 M136 50 v6 M144 64 v6",
+    circle(100, 82, 6),
+    "M100 88 L98 106 M98 106 L90 122 M98 106 L106 122 M100 94 L86 82 M100 94 L114 80",
+    "M70 122 q4 -6 8 0 M122 122 q4 -6 8 0 M44 118 q3 -4 6 0",
+    "M18 126 H182",
+  ],
   cinema: [
     "M50 20 H150 V80 H50 Z",
     "M64 66 q18 -16 36 -4 t36 -6",
@@ -161,6 +213,41 @@ export function Sketch({ name, className = "", label }: { name: SketchName; clas
             <path key={i} d={d} pathLength={1} style={{ "--i": i } as CSSProperties} />
           ))}
         </g>
+      </g>
+    </svg>
+  );
+}
+
+/** A string of festoon lights for a wide band (the gatherings opening):
+ *  three swags between four poles, a bulb hanging at each drop. */
+export function LightString({ className = "" }: { className?: string }) {
+  const poles = [20, 420, 800, 1180];
+  const swags: string[] = [];
+  const bulbs: [number, number][] = [];
+  for (let i = 0; i < poles.length - 1; i++) {
+    const a = poles[i];
+    const b = poles[i + 1];
+    const mid = (a + b) / 2;
+    swags.push(`M${a} 20 Q${mid} 92 ${b} 20`);
+    for (let k = 1; k <= 5; k++) {
+      const t = k / 6;
+      // Point on the quadratic curve at t.
+      const x = (1 - t) * (1 - t) * a + 2 * (1 - t) * t * mid + t * t * b;
+      const y = (1 - t) * (1 - t) * 20 + 2 * (1 - t) * t * 92 + t * t * 20;
+      bulbs.push([x, y]);
+    }
+  }
+  const strokes = [
+    ...swags,
+    ...poles.map((x) => `M${x} 0 V36`),
+    ...bulbs.map(([x, y]) => `M${x} ${y} v6 ${circle(x, y + 12, 5).slice(0)}`),
+  ];
+  return (
+    <svg className={`sketch ${className}`} viewBox="0 0 1200 120" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMin meet">
+      <g filter="url(#pencil)">
+        {strokes.map((d, i) => (
+          <path key={i} d={d} pathLength={1} style={{ "--i": Math.min(i, 12) } as CSSProperties} />
+        ))}
       </g>
     </svg>
   );

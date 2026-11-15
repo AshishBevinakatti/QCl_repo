@@ -21,11 +21,14 @@ export default function SketchObserver() {
 
     const observer = new IntersectionObserver((records) => {
       for (const r of records) {
-        if (!r.isIntersecting) continue;
+        // A share of the drawing, or enough of it in pixels: a large sketch
+        // that is cropped (the gatherings lights) never reaches a share.
+        const enough = r.intersectionRatio >= 0.35 || r.intersectionRect.height >= 120;
+        if (!r.isIntersecting || !enough) continue;
         r.target.classList.add("is-drawn");
         observer.unobserve(r.target);
       }
-    }, { threshold: 0.35 });
+    }, { threshold: [0.1, 0.2, 0.35] });
 
     for (const el of document.querySelectorAll(".sketch:not(.is-drawn):not(.sketch-manual)")) observer.observe(el);
     return () => observer.disconnect();

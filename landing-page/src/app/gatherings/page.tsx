@@ -4,7 +4,7 @@ import SubpageHeader from "../subpage-header";
 import PlanCallout from "../plan-callout";
 import MotionProvider from "../motion-provider";
 import VenueStack from "../venue-stack";
-import { Sketch } from "../pencil";
+import { LightString } from "../pencil";
 import { gatheringVenues } from "../gatherings-data";
 
 export const metadata: Metadata = {
@@ -21,7 +21,7 @@ export default function GatheringsPage() {
       <MotionProvider>
         <main id="top" className="subpage-main sp-page-gather gpage">
           <section className="gintro" aria-labelledby="gather-title">
-            <Sketch name="banquet" className="gintro-lights" />
+            <LightString className="gintro-lights" />
             <div className="wrap gintro-inner">
               <p className="gintro-kicker">Room to gather</p>
               <h1 id="gather-title">Venues for weddings, conferences &amp; banquets</h1>

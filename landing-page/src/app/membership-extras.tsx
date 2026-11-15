@@ -1,3 +1,4 @@
+import { Sketch } from "./pencil";
 import { welcomeKit, membershipFaqs } from "./membership-data";
 import { Bottle, Briefcase, Coffee, CreditCard, ShoppingBag } from "./icons";
 
@@ -12,6 +13,7 @@ export default function MembershipExtras() {
   return (
     <>
       <section className="wrap mem-kit" aria-labelledby="kit-title">
+        <Sketch name="lantern" className="mem-sketch" />
         <div className="mem-kit-head">
           <p className="mem-kicker">Complimentary on enrolment</p>
           <h2 id="kit-title">Five things arrive in a box</h2>
@@ -42,6 +44,7 @@ export default function MembershipExtras() {
       </section>
 
       <section className="wrap mem-faq" aria-labelledby="faq-title">
+        <Sketch name="palm" className="mem-sketch" />
         <div className="mem-faq-head">
           <p className="mem-kicker">Questions</p>
           <h2 id="faq-title">Before you enrol</h2>

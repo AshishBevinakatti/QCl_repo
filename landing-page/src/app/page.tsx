@@ -11,7 +11,8 @@ import { getScene, impression } from "./resort-assets";
 import Reveal from "./reveal";
 import LocationMapCard from "./location-map-card";
 import HighlightsCards, { type HighlightItem } from "./highlights-cards";
-import AmenityGrid, { type AmenityTile } from "./amenity-grid";
+import { type AmenityTile } from "./amenity-grid";
+import AmenityTrail from "./amenity-trail";
 import SwipeRow from "./swipe-row";
 import { roomTypes } from "./stay-data";
 
@@ -162,7 +163,6 @@ export default function Home() {
 
         {/* 4. Amenities */}
         <section id="amenities" className="amenities-section wrap" aria-labelledby="amenities-title" tabIndex={-1}>
-          <Sketch name="zipline" className="sec-sketch sec-sketch--amenities" />
           <div className="amenities-heading">
             <div className="status-line">
               <p className="section-note">Amenities &amp; recreation</p>
@@ -170,7 +170,7 @@ export default function Home() {
             </div>
             <h2 id="amenities-title">Recreation, wellness and adventure facilities</h2>
           </div>
-          <AmenityGrid tiles={amenityTiles} />
+          <AmenityTrail tiles={amenityTiles} />
         </section>
 
         {/* 5. Dining Showcase */}

@@ -16,6 +16,7 @@ import "./room-detail.css";
 import "./home-opening.css";
 import "./experiences.css";
 import "./gatherings.css";
+import "./stay.css";
 import { PencilDefs } from "./pencil";
 import SketchObserver from "./sketch-observer";
 

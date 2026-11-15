@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import SiteFooter from "../site-footer";
 import SubpageHeader from "../subpage-header";
 import PlanCallout from "../plan-callout";
-import StayEditorial from "../stay-editorial";
+import StayShowcase from "../stay-showcase";
 import { roomTypes } from "../stay-data";
 
 export const metadata: Metadata = {
@@ -16,8 +16,8 @@ export default function StayPage() {
     <>
       <SubpageHeader />
 
-      <main id="top" className="subpage-main sp-page-stay">
-        <StayEditorial rooms={roomTypes} />
+      <main id="top" className="subpage-main sp-page-stay spage">
+        <StayShowcase rooms={roomTypes} />
 
         <PlanCallout sketch="cottage"
           title="Planning a longer stay or a group booking?"

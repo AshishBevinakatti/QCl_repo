@@ -20,15 +20,11 @@
 .gintro-lights {
   --sketch-ink: color-mix(in srgb, var(--color-brass) 70%, var(--color-chalk));
   position: absolute;
-  top: -8px;
-  left: 50%;
-  width: min(1100px, 120vw);
-  height: auto;
-  translate: -50% 0;
-  opacity: 0.9;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: clamp(64px, 9vw, 120px);
   pointer-events: none;
-  /* Only the string of lights across the top; the tables below are cut. */
-  clip-path: inset(0 0 72% 0);
 }
 .gintro-inner { display: grid; justify-items: center; }
 .gintro-kicker { font-size: var(--type-label); font-weight: 500; color: color-mix(in srgb, var(--color-brass) 62%, var(--color-chalk)); }
