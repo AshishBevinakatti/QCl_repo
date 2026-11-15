@@ -5,7 +5,7 @@
       "erp-prp": "allow"
     },
     "external_directory": {
-      "/run/media/ash_63/DATA/ERP_Resouce/**": "allow"
+      "/run/media/ash_63/DATA/Intership wrok/ERP_Resouce/**": "allow"
     }
   }
 }

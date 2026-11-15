@@ -1,0 +1,17 @@
+# Decisions (append-only)
+
+Earlier decisions D-001…: `archive/hotel-draft:ERP_DEV/docs/logs/DECISIONS.md`. They don't apply to this baseline.
+
+| ID | Date | Decision | By | Reason / source |
+|---|---|---|---|---|
+| D-101 | 2026-11-15 | Restart the ERP as a new Phase 1; archive the old ERP on `archive/hotel-draft` + tag; landing page unchanged | Ashish | ADR-003 |
+| D-102 | 2026-11-15 | Keep the same tech stack as the archived ERP | Ashish | ADR-001 (version upgrade still open, Q-020) |
+| D-103 | 2026-11-15 | Keycloak is the only employee identity provider; no custom OTP/JWT/password store | Ashish | ADR-002; Blueprint §18 |
+| D-104 | 2026-11-15 | Phase 1 follows the Blueprint scope: no booking, room allocation or payment collection | Ashish | Blueprint §7/§8 |
+| D-105 | 2026-11-15 | Blueprint microservices (gateway, access, guest, lead, notification) with Kafka outbox and Redis | Ashish | ADR-001 |
+| D-106 | 2026-11-15 | Follow-ups, status machine, SLA, reassignment, conversion and CMS are deferred to later Phase 1 increments | Ashish | "we will add new feature later" |
+| D-107 | 2026-11-15 | Gateway listens on :8082 so the unchanged landing page reaches it with its default URL | Agent (proposed) | ARCHITECTURE §2 |
+| D-108 | 2026-11-15 | Permissions are Keycloak `erp-api` client roles inside composite realm roles, not a PostgreSQL table | Agent (proposed) | AUTHENTICATION §3 |
+| D-109 | 2026-11-15 | Employee profiles live in `access-service` (the Blueprint "Access Control" service) until HR & Workforce exists | Agent (proposed) | Q-028 |
+| D-110 | 2026-11-15 | The resource folder used is `/run/media/ash_63/DATA/Intership wrok/ERP_Resouce` (the rule path doesn't exist) | Agent (proposed) | Q-001 |
+| D-111 | 2026-11-15 | D-110 confirmed: the official resource root is `/run/media/ash_63/DATA/Intership wrok/ERP_Resouce`; rules updated | Ashish | Q-001 answer |

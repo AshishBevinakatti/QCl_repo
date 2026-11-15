@@ -1,306 +1,165 @@
-# Phase 1 Master Plan: Sales Executive & Sales Admin ERP
+# Phase 1 Master Plan — Guest Acquisition, Identity & Sales Lead Operations
 
-**Document Version:** 1.0.0  
-**Phase:** Phase 1 – Requirement Discovery & Frontline Sales Delivery  
-**Target Delivery:** Two-Role Sales CRM & Booking Verification System  
-**Roles:** `Sales Executive` (`SALES_EXEC`) & `Sales Admin` (`SALES_ADMIN`)  
-
----
-
-## 1. Executive Summary & Scope Reset
-
-### 1.1 Why the Plan Changed
-Previous drafts and prototypes included early implementations of resort-wide hotel operations (reception room board, housekeeping task board, billing folios, and ops consoles). These modules were premature, did not satisfy current business needs, and added unnecessary operational complexity.
-
-### 1.2 The New Phase 1 Scope
-Phase 1 is now **100% focused on Frontline Lead Conversion and Sales Operations**:
-- **Frontline Execution:** Empower Sales Executives to quickly claim guest inquiries from the public website, contact prospective guests, fill an official booking form, accept offline UPI payments via a physical QR stand, and upload payment screenshots.
-- **Management Oversight:** Provide the Sales Admin with total visibility over team performance (revenue generated, booking counts), the ability to provision and deactivate sales staff, and a deep-dive audit viewer to inspect customer records and verify payment screenshots.
-- **Strict Role Boundary:** Only two roles exist in the user-facing app: **Sales Executive** and **Sales Admin**.
-
-### 1.3 Archival Safety Strategy (Git)
-To ensure no previous code or reference logic is lost:
-1. All existing code, styles, and prototypes will be preserved in a dedicated locked Git branch: `archive/hotel-draft`.
-2. The active working branch (`main`) will be cleaned up so that Phase 1 represents a clean, lightweight, highly focused Sales CRM.
-3. Any utility or layout logic from the archive can be referenced or cherry-picked in future phases.
+**Document version:** 2.0.0 (draft for review) · **Owner:** Ashish · **Last updated:** 2026-11-15  
+**Baseline:** Phase 1 Blueprint (resource folder, 12 Nov 2026), adopted by Ashish on 2026-11-15 ([extract](../../01-requirements/source-extracts/phase1-blueprint-extract.md))  
+**Roles in Phase 1:** `ADMIN`, `MANAGER`, `SALES_EXECUTIVE` (staff) · Guest (public)
 
 ---
 
-## 2. End-to-End System Workflow
+## 0. Change log
+
+| Version | Date | Change |
+|---|---|---|
+| 1.0.0 | 2026-11-14 | Ashish's first draft: two-role sales CRM (Sales Executive, Sales Admin) with custom email-OTP login, an offline UPI-QR booking form and a payment-screenshot audit |
+| 2.0.0 | 2026-11-15 | Reworked after the audit and Ashish's decisions on 2026-11-15: **Keycloak** for all employee identity (ADR-002); follow the **Blueprint** scope, so no booking or payment in Phase 1; **Blueprint microservices** (ADR-001); fresh start with the old ERP archived (ADR-003); new features added in later increments. The removed v1.0 items are listed in §7 so nothing is silently dropped |
+
+## 1. Summary
+
+### 1.1 Why the plan changed
+The earlier hotel-operations build (room board, housekeeping, folios, ops console) was premature for current needs. It is archived on branch `archive/hotel-draft` (tag `archive-hotel-draft-2026-11-15`), and the ERP restarts here. The public landing page stays exactly as it is.
+
+### 1.2 Phase 1 goal (Blueprint §8, §20)
+- A **guest** opens the Golden Hills website → registers or logs in → submits an inquiry → gets a reference → views the inquiry's status.
+- An **employee** is onboarded by an Admin → verifies their email and sets their own password in Keycloak → logs in to the ERP.
+- A **Sales Executive** sees authorized leads → claims a lead. Only one executive can win a claim.
+- An **Admin** can activate and deactivate employees, and the change takes effect in Keycloak.
+
+### 1.3 Out of Phase 1 (Blueprint §7, §8)
+Confirmed bookings, room allocation, payment collection (online or offline), OTA, folio, check-in/out, POS, housekeeping, membership/RFID and HR. "An inquiry is not a confirmed reservation."
+
+---
+
+## 2. End-to-end flow
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Admin as Sales Admin
+    actor Admin
     actor Exec as Sales Executive
-    actor Guest as Registered Guest
-    participant Portal as Landing Page (:3000)
-    participant LeadSvc as Lead & Sales Service (:8082)
-    participant ERPWeb as ERP Console (:5173)
+    actor Guest
+    participant LP as Landing page (:3000)
+    participant ERP as Staff ERP web (:5173)
+    participant KC as Keycloak (:8081)
+    participant GW as API Gateway (:8082)
+    participant ACC as access-service
+    participant LEAD as lead-service
 
-    rect rgb(240, 248, 255)
-    note over Admin,Exec: Phase 1.1: Sales Executive Onboarding & Email OTP
-    Admin->>ERPWeb: Click "Create Sales Executive"
-    Admin->>ERPWeb: Enter Staff Code, Joining Date, Full Name, Email, Phone
-    ERPWeb->>LeadSvc: POST /api/v1/sales/admin/executives (Status: INVITED)
-    Exec->>ERPWeb: Opens "Executive Setup", enters authorized Email & creates Password
-    ERPWeb->>LeadSvc: POST /api/v1/sales/auth/register-init
-    LeadSvc-->>Exec: Sends 6-digit OTP to submitted Email
-    Exec->>ERPWeb: Enters 6-digit OTP
-    ERPWeb->>LeadSvc: POST /api/v1/sales/auth/verify-otp
-    LeadSvc-->>LeadSvc: Activate Staff (Status: ACTIVE)
-    LeadSvc-->>ERPWeb: Issues authenticated JWT token
-    Exec->>ERPWeb: Lands on Sales Executive Dashboard
+    rect rgb(240,248,255)
+    note over Admin,ACC: 2.1 Employee onboarding (once per employee)
+    Admin->>ERP: Add employee (name, email, username, mobile, job role)
+    ERP->>GW: POST /api/v1/admin/employees (Bearer)
+    GW->>ACC: forward
+    ACC->>KC: create user + role + send verify/set-password email
+    KC-->>Exec: email link
+    Exec->>KC: verify email, set own password
     end
 
-    rect rgb(255, 250, 240)
-    note over Guest,Exec: Phase 1.2: Public Inquiry, Offline Booking & QR Payment
-    Guest->>Portal: Inquires or clicks "Book Now" on stay card
-    Portal->>LeadSvc: POST /api/v1/portal/inquiries
-    LeadSvc-->>ERPWeb: Real-time notification in Executive Queue
-    Exec->>ERPWeb: Claims inquiry & contacts guest (Call / WhatsApp)
-    Exec->>ERPWeb: Clicks "Create Booking Form" (Pre-fills guest & stay data)
-    Exec->>ERPWeb: Fills Room Number, Adults/Kids, Tariff, Advance, ID, Meal Plan
-    Exec->>Guest: Presents physical QR stand
-    Guest-->>Exec: Scans & pays via UPI
-    Exec->>ERPWeb: Uploads payment screenshot (image file only)
-    Exec->>LeadSvc: POST /api/v1/sales/bookings
-    LeadSvc-->>LeadSvc: Stores booking & saves screenshot in protected storage
+    rect rgb(255,250,240)
+    note over Exec,KC: 2.2 Employee login (every session)
+    Exec->>ERP: Sign in
+    ERP->>KC: OIDC code + PKCE redirect
+    Exec->>KC: username/email + password
+    KC-->>ERP: access/refresh tokens
+    ERP->>GW: GET /api/v1/me (Bearer)
     end
 
-    rect rgb(240, 255, 240)
-    note over Admin,ERPWeb: Phase 1.3: Admin Performance Analytics & Booking Audit
-    Admin->>ERPWeb: Opens Sales Admin Console
-    Admin->>ERPWeb: Inspects Aggregate KPIs (Total Confirmed Bookings, Total Revenue)
-    Admin->>ERPWeb: Inspects Executive Table (Staff Code, Sales Count, Revenue, Active Status)
-    Admin->>ERPWeb: Clicks on Executive to inspect sales
-    ERPWeb->>LeadSvc: GET /api/v1/sales/admin/executives/{code}/bookings
-    LeadSvc-->>ERPWeb: Returns all bookings with guest details & screenshot URLs
-    Admin->>ERPWeb: Opens high-res payment screenshot modal for visual verification
-    Admin->>ERPWeb: Optional: Toggle Executive Active/Disabled status
+    rect rgb(240,255,240)
+    note over Guest,LEAD: 2.3 Inquiry → lead → claim (increment 2)
+    Guest->>LP: submit inquiry
+    LP->>GW: POST /api/v1/portal/inquiries
+    GW->>LEAD: forward → lead saved + outbox LeadCreated
+    Exec->>ERP: open lead queue
+    ERP->>GW: POST /api/v1/sales/leads/{id}/claim
+    GW->>LEAD: atomic claim (second claimant gets 409)
     end
 ```
 
 ---
 
-## 3. Role 1: Sales Executive (`SALES_EXEC`)
+## 3. Employee Registration & Onboarding workflow (admin-driven)
 
-### 3.1 Onboarding & Authentication Flow
-- **Pre-authorization Requirement:** No random user can register as a Sales Executive. The email must be pre-authorized by the Sales Admin.
-- **Self-Service Password & OTP Activation:**
-  1. The executive visits the ERP login page and selects **"Set up executive account"**.
-  2. Enters their **authorized email** and their **new password**.
-  3. System checks that the email exists in `sales_staff` with status `INVITED`.
-  4. System generates a secure **6-digit numeric OTP** (valid for 10 minutes) and sends it to that email.
-  5. The executive inputs the OTP into the web interface.
-  6. Upon successful verification:
-     - Password hash is saved (BCrypt).
-     - Account status changes from `INVITED` to `ACTIVE`.
-     - System logs the executive in and opens the Sales Executive Dashboard.
+Full specification: [AUTHENTICATION.md §4](../../02-architecture/identity/AUTHENTICATION.md).
 
-### 3.2 Lead Management & Inquiry Pickup
-- Receives inbound guest inquiries submitted from the public landing page.
-- Inquiry cards display: Guest Name, Mobile Number, Email, Room Category Requested, Tentative Check-in/Check-out Dates, and Guest Notes.
-- Action: **"Claim Inquiry"** assigns the lead to that executive and locks out other reps.
+1. **Admin creates the employee.** The ERP form captures first name, last name, email, username, mobile number, job role and WhatsApp notification preference. The profile is stored in **`access_db` (PostgreSQL)**. Further fields ("other required information", such as staff code and joining date) are open as Q-017.
+2. **Keycloak creates the account.** `access-service` calls the **Keycloak Admin API**, creates the user, stores the **Keycloak user ID** on the employee record (and the employee ID on the Keycloak user), and assigns the realm role.
+3. **The employee receives a verification email.** Keycloak's built-in `execute-actions-email` (`VERIFY_EMAIL` + `UPDATE_PASSWORD`) goes out over the realm's **SMTP** settings ([KEYCLOAK-SETUP §8](../../02-architecture/identity/KEYCLOAK-SETUP.md)).
+4. **The employee verifies their email and sets a password** on Keycloak's own pages. No custom OTP or password page exists in the ERP.
+5. **The account becomes ready.** Once verified and the password is set, the employee can log in. The Admin sees the status (`INVITED` → `ACTIVE`) in the Employees list.
 
-### 3.3 The Booking Form Flow
-When the guest confirms interest, the executive clicks **"Create Booking Form"**.
+Failure handling: Keycloak down, duplicate email, failed email or an expired link each leave a visible status with a Retry or Resend action ([AUTHENTICATION §10](../../02-architecture/identity/AUTHENTICATION.md)).
 
-#### Form Fields Specification:
-| Field Name | Type | Source / Entry | Description |
-|---|---|---|---|
-| **Guest Name** | Text | Pre-filled | Customer's full name from inquiry |
-| **Phone Number** | Phone | Pre-filled | Customer's contact number |
-| **Email Address** | Email | Pre-filled | Customer's email |
-| **Room Category** | Dropdown | Pre-filled / Editable | e.g., Luxury Pool Villa, Heritage Cottage |
-| **Room Number** | Text | **Executive Enters** | Specific room allocated (e.g. `Villa 104`) |
-| **Check-in Date** | Date | Pre-filled / Editable | Arrival date |
-| **Check-out Date** | Date | Pre-filled / Editable | Departure date |
-| **Adults Count** | Number | **Executive Enters** | Number of adult guests (1+) |
-| **Children Count** | Number | **Executive Enters** | Number of children (0+) |
-| **Total Tariff (₹)** | Currency | **Executive Enters** | Final agreed package price (e.g. ₹25,000) |
-| **Advance Paid (₹)** | Currency | **Executive Enters** | Amount collected via QR (e.g. ₹10,000) |
-| **Guest ID Type** | Dropdown | **Executive Enters** | Aadhaar Card, Passport, Driving License |
-| **Guest ID Number** | Text | **Executive Enters** | Government ID number of the primary guest |
-| **Meal Plan** | Radio / Select | **Executive Enters** | **EP** (Room Only), **CP** (Breakfast), **AP** (All Meals) |
-| **Special Requests** | Textarea | **Executive Enters** | Honeymoon setup, extra bed, dietary notes |
+## 4. Employee Login & Authentication workflow
 
-### 3.4 Offline QR Payment & Screenshot Upload
-- **Payment Method:** The executive presents their **physical QR code stand** (UPI / PhonePe / GPay / Paytm).
-- **Payment Execution:** Guest scans the physical stand and transfers the advance/full amount.
-- **Zero Manual UTR Typing:** To eliminate friction and typos, the executive does **not** type UTR numbers or transaction timestamps.
-- **Screenshot Proof:** Executive captures/receives the payment confirmation screen and uploads the image (`.png`, `.jpg`, `.jpeg`, `.webp`).
-- **Submission:** Submitting the form writes the booking record and securely stores the image.
+Full specification: [AUTHENTICATION.md §5–6](../../02-architecture/identity/AUTHENTICATION.md).
+
+1. **The employee opens the ERP sign-in page** and presses "Sign in", which redirects to Keycloak's hosted login.
+2. **Keycloak authenticates them** (OIDC Authorization Code + PKCE). Wrong password, a disabled account or a lockout are refused, with Keycloak's own messages.
+3. **Keycloak issues tokens:** a 5-minute JWT access token, a rotating refresh token and an ID token. React keeps them **in memory** and refreshes them before they expire.
+4. **Spring Boot checks every request,** first at the gateway and then in each service: signature from Keycloak's JWKS, issuer, expiry, and audience `erp-api`. Bad or missing token → **401**; missing permission → **403**.
+5. **Role-based access control:** `ADMIN`, `MANAGER` and `SALES_EXECUTIVE` carry Blueprint §11 permissions. The backend checks permission, then record scope, then transition, and audits sensitive operations.
+6. **Dashboard:** `GET /api/v1/me` returns the profile and the permitted modules, and the menu shows only those.
+
+## 5. Logout & account management
+
+- **Logout** ends the Keycloak SSO session (end-session endpoint) and drops the in-memory tokens.
+- Expired sessions (30 min idle / 10 h max, Q-019) and invalid tokens send the user back to sign-in.
+- **Deactivate:** Keycloak `enabled=false`, then the sessions are revoked, then the ERP status becomes `DISABLED`, with an audit entry and a reason. Keycloak is the source of truth, and a reconciliation job keeps the ERP in step. An access token already issued can work for at most 5 more minutes (R-004).
+- **Reactivate / resend invite / change role / change email:** [AUTHENTICATION §7](../../02-architecture/identity/AUTHENTICATION.md).
+- Guards: an admin can't deactivate themself, and the last Admin can't be removed.
+
+**Who does what:** Keycloak handles authentication, passwords, verification, reset, tokens, sessions and account status. PostgreSQL holds employee profiles and business data with the Keycloak user ID. Spring Boot handles the Admin API, sync, JWT validation, RBAC and business logic. React handles the sign-in redirect, the dashboard, session handling and role-based visibility.
 
 ---
 
-## 4. Role 2: Sales Admin (`SALES_ADMIN`)
+## 6. Delivery increments
 
-### 4.1 Executive Provisioning
-The Sales Admin has exclusive authority to create Sales Executives.
-- Clicking **"Create Sales Executive"** opens a dedicated modal:
-  1. **Staff Code** (e.g., `GH-SE-001`, `GH-SE-002`) — Unique identifier.
-  2. **Date of Joining** (Calendar date).
-  3. **Full Name** (e.g., `Rahul Sharma`).
-  4. **Email Address** (e.g., `rahul.sharma@goldenhills.in`).
-  5. **Mobile Number** (e.g., `+91 98765 43210`).
-- On submit: Record created in `sales_staff` with status `INVITED`.
+Each increment follows the project loop: plan → tests first → thin vertical slices → verify → docs → ask before commit.
 
-### 4.2 Executive Status Management (Active / Deactivated)
-- Admin can toggle any executive between **Active** and **Disabled**.
-- Disabled executives cannot log in, claim inquiries, or create bookings.
+### Increment 1 — Platform foundation & employee identity (next)
+1. `infra/docker-compose.yml`: PostgreSQL 16 (a database and a user per service), Keycloak 24 with the `gh-staff` realm import, Kafka 3.7, Redis 7, Mailpit.
+2. `api-gateway`: routes, JWT validation, Redis rate limits, correlation IDs, CORS for `:3000` and `:5173`.
+3. `access-service`: employee CRUD, Keycloak provisioning, status sync job, activate/deactivate, resend invite, `/me`, audit, bootstrap of the first Admin.
+4. `web`: Sign-in (redirect), session handling, dashboard shell, Employees admin screens, Sign-out.
+5. Tests from [AUTHENTICATION §12](../../02-architecture/identity/AUTHENTICATION.md); CI builds each service.
 
-### 4.3 Sales Analytics Dashboard
-The Admin console provides an executive performance overview:
-- **Aggregate KPI Cards:**
-  - **Total Bookings Confirmed:** All completed bookings across all executives.
-  - **Total Revenue Collected (₹):** Cumulative value of advance and total tariffs.
-  - **Active Sales Executives:** Count of staff currently active.
-  - **Pending Leads:** Unclaimed or in-progress inquiries in the pipeline.
-- **Executive Performance Table:**
-  | Staff Code | Name | Joining Date | Phone | Bookings Confirmed | Total Revenue (₹) | Status | Actions |
-  |---|---|---|---|---|---|---|---|
-  | `GH-SE-001` | Rahul Sharma | 2026-11-01 | +91 98765... | 14 | ₹3,45,000 | Active | [View Bookings] [Toggle] |
-  | `GH-SE-002` | Ananya Patel | 2026-11-10 | +91 91234... | 8 | ₹1,90,000 | Active | [View Bookings] [Toggle] |
+**Exit:** an Admin onboards a Sales Executive end to end (the invite arrives in Mailpit); the executive logs in and sees their dashboard; deactivation blocks the next login and refresh; 401/403 tests pass; DAY-ONE is verified from a clean clone.
 
-### 4.4 Complete Booking Audit & Screenshot Verification
-Clicking **"View Bookings"** on any executive opens an in-depth audit view:
-- Lists every booking completed by that specific executive.
-- Shows customer contact information, room allocated, dates, adult/child counts, and tariff breakdown.
-- Displays the **uploaded payment screenshot** in high resolution with zoom and download controls.
-- **Observatory Mode:** The admin view is designed for comprehensive audit, tracking, and operational analysis (no blocking approval button required).
+### Increment 2 — Guest inquiry → lead queue → claim
+Blocked until **Q-003** (how guest login works) is answered.
+1. `guest-service` behind the frozen `/api/v1/portal/auth/**` contract.
+2. `lead-service`: inquiry intake (`/api/v1/portal/inquiries`, frozen contract), lead + activity history, `LeadCreated` via the outbox to Kafka, the Sales queue and "my leads", and an **atomic claim**.
+3. `web`: lead queue, lead detail, Claim button.
+4. The unchanged landing page is checked end to end against the gateway on `:8082`.
 
----
+### Later increments (Blueprint Phase 1 scope, deferred by Ashish on 2026-11-15: "we will add new features later")
+- Notes/activity timeline and follow-ups (Blueprint §10.5).
+- The lead status machine with history (Blueprint §10.3).
+- The 5-minute claim SLA with escalation, plus `notification-service` (Blueprint §10.6, §12.4).
+- Assign/reassign with a reason (Blueprint §10.4/§10.7).
+- Conversion request; it does not confirm a booking (Blueprint §7).
+- CMS (only if Q-015 says it is in Phase 1); Prometheus, Grafana and OpenTelemetry; staging deployment.
 
-## 5. Technical Architecture & Data Model
+## 7. Items removed from v1.0 (kept here so nothing is silently dropped)
 
-### 5.1 Service Boundaries
-- **Backend Service:** `ERP_DEV/services/lead-service` (Spring Boot 3, Java 21, Flyway, PostgreSQL).
-- **Frontend App:** `ERP_DEV/web` (React, TypeScript, Vite, Vanilla CSS design system).
-- **Public Website:** `landing-page` (Next.js, Tailwind/Tokens, calls `lead-service` port 8082).
+| v1.0 item | Status in v2.0 | Reason / where it goes |
+|---|---|---|
+| Custom email-OTP + BCrypt + self-issued JWT for staff | **Replaced** by Keycloak (§3–5) | ADR-002; Blueprint §18 |
+| `Sales Admin` role with its own provisioning | **Replaced** by `ADMIN` (employee management) and `MANAGER` (sales oversight) | SOW §22 Super Admin / Resort Manager; Blueprint §10.7 |
+| Booking form (room number, adults/children, tariff, advance, meal plan, special requests) | **Deferred** to the Reservation module (SOW ERP-02) | Blueprint §7/§8: no confirmed booking or room allocation in Phase 1 |
+| Offline UPI QR stand + payment-screenshot upload, revenue KPIs | **Deferred** to Billing & Payments (SOW ERP-07, payment gateway) | Blueprint §8: no payment collection; Sales Executive has no access to payment records (§10.1) |
+| Guest ID type/number at booking | **Deferred**, together with booking / check-in | Collecting ID data needs a privacy and retention decision (DPDP, Q-022) |
+| Admin "observatory" booking audit with screenshot lightbox | **Deferred** with the booking items above | — |
+| Archive by "cleaning `main`" | **Done** as a branch + tag + reviewed merge | ADR-003 |
 
-### 5.2 Database Schema (`lead-service`)
+## 8. Git workflow from here
+- Increment work happens on `feature/phase1-<increment>-<slug>`, branched from `feature/phase1-fresh-start`, until that branch is merged into `main`. After that, it branches from `main`.
+- Every commit, merge and push needs Ashish's explicit approval. No force-push. Conventional Commits.
 
-#### Migration `V5__sales_team_and_booking_schema.sql`
+## 9. Verification & definition of done (Phase 1)
+- Blueprint §15 acceptance criteria for the delivered increments, with test evidence.
+- Automated: `mvn -B verify` per service (unit + integration with real PostgreSQL/Keycloak/Kafka via Testcontainers, Q-023); `npm run test`, `tsc -b`, `oxlint` and `vite build` for `web`; landing-page `typecheck` + `build` in CI.
+- Security tests: guest token on staff API → 401; executive on admin API → 403; out-of-scope lead → 404; two parallel claims → exactly one success.
+- Docs updated in the same change; DEVLOG/STATE updated; no secrets (gitleaks).
 
-```sql
--- 1. Sales Staff Directory & Authentication
-CREATE TABLE sales_staff (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    staff_code VARCHAR(50) NOT NULL UNIQUE,
-    name VARCHAR(150) NOT NULL,
-    email VARCHAR(150) NOT NULL UNIQUE,
-    phone VARCHAR(30) NOT NULL,
-    joining_date DATE NOT NULL,
-    password_hash VARCHAR(255),
-    status VARCHAR(30) NOT NULL DEFAULT 'INVITED', -- INVITED, ACTIVE, DISABLED
-    otp_code VARCHAR(10),
-    otp_expires_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_sales_staff_email ON sales_staff(email);
-CREATE INDEX idx_sales_staff_code ON sales_staff(staff_code);
-
--- 2. Confirmed Sales Bookings
-CREATE TABLE sales_booking (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    lead_id UUID REFERENCES lead(id) ON DELETE SET NULL,
-    executive_staff_code VARCHAR(50) NOT NULL REFERENCES sales_staff(staff_code),
-    guest_name VARCHAR(150) NOT NULL,
-    guest_phone VARCHAR(30) NOT NULL,
-    guest_email VARCHAR(150) NOT NULL,
-    room_category VARCHAR(100) NOT NULL,
-    room_number VARCHAR(50) NOT NULL,
-    checkin_date DATE NOT NULL,
-    checkout_date DATE NOT NULL,
-    adults_count INT NOT NULL DEFAULT 1,
-    children_count INT NOT NULL DEFAULT 0,
-    total_tariff NUMERIC(12, 2) NOT NULL,
-    advance_paid NUMERIC(12, 2) NOT NULL,
-    id_proof_type VARCHAR(50) NOT NULL, -- Aadhaar, Passport, Driving License
-    id_proof_number VARCHAR(100) NOT NULL,
-    meal_plan VARCHAR(20) NOT NULL DEFAULT 'CP', -- EP, CP, AP
-    special_requests TEXT,
-    payment_screenshot_path VARCHAR(500) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_sales_booking_executive ON sales_booking(executive_staff_code);
-CREATE INDEX idx_sales_booking_lead ON sales_booking(lead_id);
-```
-
-### 5.3 Secure Payment Screenshot Storage
-- **Directory:** Stored in `var/data/payment-proofs/` on the server host, strictly outside the web document root.
-- **Filename Obfuscation:** Stored with a secure UUID hash (e.g., `proof_d3b07384-d113-46fb-9c98-123456789abc.jpg`).
-- **Access Guard:** Direct URL access is blocked. Served only through the authenticated endpoint:
-  ```
-  GET /api/v1/sales/bookings/{id}/payment-proof
-  ```
-  Requires an active JWT token from `SALES_EXEC` or `SALES_ADMIN`.
-
----
-
-## 6. Implementation Milestones
-
-### Milestone 1: Safety Archival & Environment Prep
-1. Create Git branch `archive/hotel-draft` preserving all current code and UI assets.
-2. Ensure working branch is `main` (or dedicated `feature/phase1-sales-system`).
-
-### Milestone 2: Backend Database & Endpoints (`lead-service`)
-1. Create Flyway migration `V5__sales_team_and_booking_schema.sql`.
-2. Implement `SalesStaffEntity`, `SalesStaffRepository`, and `SalesBookingRepository`.
-3. Implement `SalesStaffAuthService`:
-   - `registerInit(email, password)` → verifies invited email, hashes password, generates 6-digit OTP, triggers email.
-   - `verifyOtp(email, otp)` → validates OTP, activates status to `ACTIVE`, returns JWT.
-   - `login(email, password)` → validates password, checks not `DISABLED`, returns JWT.
-4. Implement `EmailNotificationService` with dev console logger fallback.
-5. Implement `SalesAdminService` & `SalesAdminController`:
-   - Create executive (staff code, date of joining, name, email, phone).
-   - List executives with aggregate stats (bookings count, total revenue).
-   - Toggle status (Active / Disabled).
-   - Get executive bookings list with screenshot URLs.
-6. Implement `SalesBookingController`:
-   - Create booking with pre-filled lead data.
-   - Multipart screenshot upload with MIME type and size checks (<5MB).
-   - Authenticated image streaming endpoint for proofs.
-
-### Milestone 3: Frontend User Experience (`ERP_DEV/web`)
-1. **Auth & Setup:**
-   - Create `ExecutiveSetup.tsx` for email OTP verification and password activation.
-   - Update `SignIn.tsx` to support both Sales Executive and Sales Admin login.
-2. **Sales Executive Workspace:**
-   - Inbound inquiries list with real-time updates.
-   - "Create Booking Form" modal with 2 clean tabs (Stay Details & Screenshot Upload).
-3. **Sales Admin Console:**
-   - KPI metrics cards (Bookings, Revenue, Staff count).
-   - "Create Sales Executive" modal (Staff code, joining date, contact details).
-   - Interactive table with Active/Disabled toggle.
-   - Comprehensive drill-down drawer with customer details and interactive screenshot lightbox.
-
-### Milestone 4: Landing Page Connection
-- Ensure public room cards and stay forms submit cleanly to `/api/v1/portal/inquiries` on `lead-service`.
-
----
-
-## 7. Verification & Definition of Done
-
-### Automated Test Suite
-```bash
-# 1. Backend Integration Tests
-mvn -pl services/lead-service test
-
-# 2. Frontend Unit & Screen Tests
-npm --prefix ERP_DEV/web run test
-```
-
-### Manual Verification Checklist
-- [ ] Admin creates an executive (`GH-SE-001`, joining date, name, email, phone).
-- [ ] Executive completes setup using the same email, receives OTP, sets password, and logs in.
-- [ ] Registered guest submits inquiry on landing page; inquiry appears in real-time in the executive queue.
-- [ ] Executive claims inquiry, opens booking form, fills room number, adult/child count, tariff, advance, ID details, and meal plan.
-- [ ] Executive uploads payment screenshot and submits form.
-- [ ] Admin dashboard reflects updated booking count and revenue under that executive.
-- [ ] Admin opens drill-down view, inspects complete guest data, and views the uploaded payment screenshot.
-- [ ] Admin toggles executive to Disabled; executive is immediately prevented from accessing the system.
+## 10. Open questions blocking or shaping this plan
+Q-003 guest identity; Q-017 extra employee fields; Q-019 session lengths; Q-020 version upgrade; Q-021 MFA for admins; Q-023 new dev/test dependencies; Q-024 SMTP provider and sender domain; Q-027 CR-001 sales role approval; Q-029 who may onboard employees (Admin only, or GM/HR too). Full list: [OPEN_QUESTIONS.md](../../logs/OPEN_QUESTIONS.md).

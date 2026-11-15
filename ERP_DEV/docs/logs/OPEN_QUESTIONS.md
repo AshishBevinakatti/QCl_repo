@@ -1,0 +1,37 @@
+# Open Questions (append-only; answers are added below each question)
+
+Earlier questions: `archive/hotel-draft:ERP_DEV/docs/logs/OPEN_QUESTIONS.md`.
+
+| ID | Question | Blocks | Default until answered |
+|---|---|---|---|
+| Q-001 | The resource folder moved to `/run/media/ash_63/DATA/Intership wrok/ERP_Resouce`. Confirm it is the official one, and update the erp-prp skill path | Rule compliance | Used read-only (D-110) |
+| Q-002 | Is this AI coding assistant approved under Engineering Playbook §2.3 for the client documents it has read? | Compliance | Ashish to confirm |
+| **Q-003** | **Guest identity:** the unchanged landing page posts the guest password to `/api/v1/portal/auth/register` and `/login` and expects a `token`. The Blueprint forbids an ERP password store. Options: **(A)** guest-service passes these calls through to the Keycloak realm `gh-guests` (Admin API to create the user; password grant to log in). No landing-page change, but it uses the deprecated password grant. **(B)** change the landing page to redirect to Keycloak (PKCE), which breaks "landing page unchanged". **(C)** keep a guest password table, which violates the Blueprint. Recommendation: A now, B later | Increment 2 | — (blocked) |
+| Q-004 | The landing page has 4 lint errors (already there). Fix them (this changes the landing page) or leave them? CI runs typecheck + build only | CI lint | Not linted in CI |
+| Q-005 | (BP §19.1) Allow anonymous inquiries? | Inc 2 | Allowed (the landing page already allows them), with stricter rate limits |
+| Q-006 | (BP §19.2) Email, mobile or both mandatory at guest registration? | Inc 2 | As the landing page form does today |
+| Q-007 | (BP §19.3) Guest verification channel? | Inc 2 | Email (Keycloak). SRS §11.2: the client excludes SMS |
+| Q-008 | (BP §19.4) Final inquiry categories and fields? | Inc 2 | Room inquiry only (current form). SRS §3.2 also asks for an Event Enquiry Form (banquets/weddings/corporate) |
+| Q-009 | (BP §19.5) Five-minute claim SLA confirmed? | Later inc | Configurable |
+| Q-010 | (BP §19.6) First escalation recipient? | Later inc | — |
+| Q-011 | (BP §19.7) Voice escalation provider approved? | Later inc | Off |
+| Q-012 | (BP §19.8) WhatsApp Business API provisioned and approved? | Later inc | Off |
+| Q-013 | (BP §19.9) Consent wording and privacy policy? | Inc 2 | — |
+| Q-014 | (BP §19.10) Approved public content? | Landing page | As-is |
+| Q-015 | (BP §19.11) Is CMS editing in Phase 1, and who publishes? | CMS | Not in Phase 1 |
+| Q-016 | (BP §19.12) Hosting budget and availability target? | Deployment | — |
+| Q-017 | Other employee fields ("other required information"): staff code, joining date, department? | Inc 1 schema | Only the fields listed in AUTHENTICATION §4 |
+| Q-018 | Branded Keycloak login and email theme (client-approved assets only)? | Polish | Keycloak default theme |
+| Q-019 | Session lengths: idle 30 min / max 10 h. OK? (SRS §10: 8-hour shift, 8–9 h window) | Inc 1 | As proposed |
+| Q-020 | Spring Boot 3.2.5 and Keycloak 24 are past their support windows. Upgrade to the current supported releases (same products) at the start of increment 1? | Inc 1 | Keep as-is (Ashish: "same stack") |
+| Q-021 | Keycloak TOTP (built-in MFA) required for ADMIN accounts? | Inc 1 | Off |
+| Q-022 | Retention for employee data, audit logs, Keycloak events and guest data (DPDP)? | Inc 1 | Events 90 days; audit kept |
+| Q-023 | Approve the new dev/test tools: Testcontainers (+ Keycloak module), Mailpit container, ShedLock (or plain SQL locking) | Inc 1 | Not added |
+| Q-024 | SMTP provider, sender address/domain, reply-to, SPF/DKIM/DMARC owner | Inc 1 (staging) | Mailpit in dev |
+| Q-025 | Production hostnames (ERP, identity, API) | Deployment | — |
+| Q-026 | Password policy: 12+ characters, not username/email, last 3 not reused. OK? | Inc 1 | As proposed |
+| Q-027 | Client approval of CR-001 (Sales role not in SOW §22). Which client designations get SALES_EXECUTIVE: Reservation Desk Associates, Marketing Executives (SRS §10)? MANAGER vs a separate SALES_SUPERVISOR? | Scope | MANAGER holds the supervisor permissions |
+| Q-028 | Long-term owner of employee records: access-service now, or HR & Workforce later? | Later | access-service |
+| Q-029 | Who may onboard and deactivate employees: only ADMIN (= SOW/SRS Super Admin, Owner/MD), or also the GM / HR Manager? SRS §11.1 gives the Resort Manager create/edit/config rights in general | Inc 1 | ADMIN only (least privilege); can be granted to MANAGER per person later via `employees.manage` |
+
+**Answer Q-001 (2026-11-15T11:23:40+05:30, Ashish):** the official resource folder is `/run/media/ash_63/DATA/Intership wrok/ERP_Resouce`. The rules and agent config are updated. D-110 is accepted.
