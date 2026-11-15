@@ -1,0 +1,36 @@
+# Configuration names: docs/02-architecture/identity/KEYCLOAK-SETUP.md §9. Secrets come from the environment only.
+server:
+  port: ${PORT:8091}
+
+spring:
+  application:
+    name: access-service
+  datasource:
+    url: ${ACCESS_DB_URL:jdbc:postgresql://localhost:5433/access_db}
+    username: ${ACCESS_DB_USER:access_svc}
+    password: ${ACCESS_DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate   # Flyway owns the schema
+  flyway:
+    enabled: true
+
+erp:
+  keycloak:
+    issuer: ${KEYCLOAK_URL:http://localhost:8081}/realms/${KEYCLOAK_REALM:gh-staff}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  structured:
+    format:
+      console: ecs   # JSON logs; correlationId comes from the MDC (CorrelationIdFilter)

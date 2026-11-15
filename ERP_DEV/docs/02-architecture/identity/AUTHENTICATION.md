@@ -248,8 +248,9 @@ employee
   created_at, updated_at  TIMESTAMPTZ NOT NULL
   version            INT NOT NULL           -- optimistic locking
 
-audit_event (append-only; no UPDATE/DELETE grants for the app user)
-  id, occurred_at, actor_id, actor_ip, action, entity_type, entity_id, before_json, after_json, correlation_id, outcome
+audit_event (append-only, enforced by a trigger that rejects UPDATE/DELETE/TRUNCATE, because the app user owns the table)
+  id, occurred_at, actor_id (null for SYSTEM_* actors), actor_label, actor_ip, action, entity_type, entity_id,
+  before_json, after_json, reason, correlation_id, outcome
 
 idempotency_key
   key, actor_id, request_hash, response_json, created_at   -- 24 h retention

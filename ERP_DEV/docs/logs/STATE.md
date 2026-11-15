@@ -1,6 +1,6 @@
 # Project State
-Updated: 2026-11-15T11:44:30+05:30
-Phase: 1 (new baseline): Guest Acquisition, Identity & Sales Lead Operations. Work unit: **Increment 1, slice S1 done (infra + realm), waiting for commit approval**. Branch `feature/phase1-inc1-identity`.
+Updated: 2026-11-15T11:55:38+05:30
+Phase: 1 (new baseline): Guest Acquisition, Identity & Sales Lead Operations. Work unit: **Increment 1: S1 committed (8d5f9bc); S2 access-service skeleton done, waiting for commit approval**. Branch `feature/phase1-inc1-identity`.
 Branch: `feature/phase1-fresh-start` (local, not pushed). Archive: `archive/hotel-draft` + tag `archive-hotel-draft-2026-11-15` (825f3fe, pushed).
 
 State:
@@ -11,7 +11,7 @@ State:
 4. Resource folder rule updated to `/run/media/ash_63/DATA/Intership wrok/ERP_Resouce` (Q-001 answered).
 
 Next action:
-1. Ashish reviews slice S1 (infra + realm, 15/15 live checks) and approves the commit.
+1. Ashish approves the S2 commit.
 2. Push still blocked: GitHub token needs the `workflow` scope.
-3. Ashish adds the new variables from `ERP_DEV/.env.example` to his `ERP_DEV/.env` (the agent doesn't edit it).
-4. Then slice S2: access-service skeleton (Spring Boot 4.1.2, resource server, /me, Flyway V1, 401 tests).
+3. Ashish adds the new variables from `ERP_DEV/.env.example` to his `ERP_DEV/.env`.
+4. Then S3: api-gateway (Spring Cloud 2025.1.4 + Boot 4.1.2 compatibility is checked there).

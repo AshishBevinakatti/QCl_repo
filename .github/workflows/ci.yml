@@ -93,7 +93,8 @@ jobs:
           cache: maven
       - if: steps.present.outputs.yes == 'true'
         name: Build + test ${{ matrix.service }}
-        run: mvn -B verify -f ERP_DEV/services/${{ matrix.service }}/pom.xml
+        working-directory: ERP_DEV/services/${{ matrix.service }}
+        run: ./mvnw -B verify   # Maven Wrapper pins Maven 3.10.0 (sha256-checked); Testcontainers uses the runner's Docker
 
   web:
     runs-on: ubuntu-latest

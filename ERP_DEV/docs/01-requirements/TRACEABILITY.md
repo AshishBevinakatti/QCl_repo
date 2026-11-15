@@ -10,12 +10,12 @@ Design and test columns get filled in as increments are built. "TBD" means not b
 | REQ-IAM-004 | AB, BP §9 | AUTHENTICATION §4 step 3; KEYCLOAK-SETUP §8 | TBD |
 | REQ-IAM-005 | AB | AUTHENTICATION §7, §8 | TBD |
 | REQ-IAM-006 | AB, BP §3 | AUTHENTICATION §5; KEYCLOAK-SETUP §2–5 | TBD |
-| REQ-IAM-007 | AB, BP §3/§11, SOW §25.2 | AUTHENTICATION §5 step 4; api.md §1 | TBD |
+| REQ-IAM-007 | AB, BP §3/§11, SOW §25.2 | AUTHENTICATION §5 step 4; api.md §1; access-service `SecurityConfig` | `MeEndpointTest` (no token, expired, other realm, other audience, unknown key → 401) ✅; gateway: S3 |
 | REQ-IAM-008 | AB, BP §11, SOW §22 | AUTHENTICATION §3; KEYCLOAK-SETUP §6 | TBD |
 | REQ-IAM-009 | AB | AUTHENTICATION §6 | TBD |
 | REQ-IAM-010 | AB, BP §13 | AUTHENTICATION §7 | TBD |
 | REQ-IAM-011 | AB | AUTHENTICATION §10 | TBD |
-| REQ-IAM-012 | BP §17, SOW §25.1 | AUTHENTICATION §9, §11; KEYCLOAK-SETUP §7 | TBD |
+| REQ-IAM-012 | BP §17, SOW §25.1 | AUTHENTICATION §9, §11; KEYCLOAK-SETUP §7; Flyway V1 trigger | `AuditAppendOnlyTest` (append-only) ✅; audit writes: S5/S6 |
 | REQ-IAM-013 | AB | KEYCLOAK-SETUP §10 | TBD |
 | REQ-IAM-014 | ASSUMED | AUTHENTICATION §7 | TBD |
 | REQ-LEAD-001 | AB, LP | api.md §2 | TBD (Inc 2) |
