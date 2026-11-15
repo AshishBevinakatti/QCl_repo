@@ -19,7 +19,7 @@ Design and test columns get filled in as increments are built. "TBD" means not b
 | REQ-IAM-013 | AB | KEYCLOAK-SETUP §10 | TBD |
 | REQ-IAM-014 | ASSUMED | AUTHENTICATION §7 | TBD |
 | REQ-LEAD-001 | AB, LP | api.md §2 | TBD (Inc 2) |
-| REQ-LEAD-002 | BP §6/§9/§12.2 | blocked (Q-003) | — |
+| REQ-LEAD-002 | BP §6/§9/§12.2 | api.md §2 (D-114) | TBD (Inc 2) |
 | REQ-LEAD-003 | BP §9, SOW §4 | api.md §2 | TBD |
 | REQ-LEAD-004 | BP §5/§9 | ARCHITECTURE §5; api.md §5 | TBD |
 | REQ-LEAD-005 | BP §10.1 | api.md §4 | TBD |

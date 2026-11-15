@@ -28,7 +28,7 @@
 | ID | Requirement | Source | Pri | Inc | Acceptance criteria |
 |---|---|---|---|---|---|
 | REQ-LEAD-001 | The unchanged landing page keeps working: frozen `/api/v1/portal/**` contract | AB; LP | Must | 2 | Contract tests on field names; manual run of the landing page |
-| REQ-LEAD-002 | A guest can register, log in and view own inquiries; guest credentials are held by Keycloak (`gh-guests`), never by an ERP service | BP §6, §9, §12.2 | Must | 2 | **Blocked by Q-003** |
+| REQ-LEAD-002 | A guest can register, log in and view own inquiries; guest credentials are held by Keycloak (`gh-guests`), never by an ERP service | BP §6, §9, §12.2 | Must | 2 | Register/login pass through to Keycloak `gh-guests` (D-114); no password column in guest_db |
 | REQ-LEAD-003 | Inquiry submission validates dates/numbers, is rate-limited, and returns a unique public reference without internal IDs | BP §9 Journey D; SOW §4 (inquiry forms) | Must | 2 | Invalid dates → 400; burst → 429; reference format documented |
 | REQ-LEAD-004 | Lead and `LeadCreated` outbox event commit in one transaction; a Kafka outage loses nothing | BP §5, §9 Journey E | Must | 2 | Kafka-down test |
 | REQ-LEAD-005 | Sales Executive sees the queue and their own leads only | BP §10.1 | Must | 2 | Scope tests |

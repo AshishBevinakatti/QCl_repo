@@ -15,3 +15,6 @@ Earlier decisions D-001…: `archive/hotel-draft:ERP_DEV/docs/logs/DECISIONS.md`
 | D-109 | 2026-11-15 | Employee profiles live in `access-service` (the Blueprint "Access Control" service) until HR & Workforce exists | Agent (proposed) | Q-028 |
 | D-110 | 2026-11-15 | The resource folder used is `/run/media/ash_63/DATA/Intership wrok/ERP_Resouce` (the rule path doesn't exist) | Agent (proposed) | Q-001 |
 | D-111 | 2026-11-15 | D-110 confirmed: the official resource root is `/run/media/ash_63/DATA/Intership wrok/ERP_Resouce`; rules updated | Ashish | Q-001 answer |
+| D-112 | 2026-11-15 | Upgrade to current supported releases of the same stack products (answers Q-020; supersedes the version column of ADR-001) | Ashish | R-002 |
+| D-113 | 2026-11-15 | Employee onboarding/activation/deactivation: ADMIN only (answers Q-029) | Ashish | Least privilege |
+| D-114 | 2026-11-15 | Guest register/login: guest-service passes through to Keycloak `gh-guests`; password grant allowed only on the dedicated guest client (answers Q-003) | Ashish | Landing page unchanged; Blueprint "no second password store" |

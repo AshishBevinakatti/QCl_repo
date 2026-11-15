@@ -125,7 +125,7 @@ Each increment follows the project loop: plan → tests first → thin vertical 
 **Exit:** an Admin onboards a Sales Executive end to end (the invite arrives in Mailpit); the executive logs in and sees their dashboard; deactivation blocks the next login and refresh; 401/403 tests pass; DAY-ONE is verified from a clean clone.
 
 ### Increment 2 — Guest inquiry → lead queue → claim
-Blocked until **Q-003** (how guest login works) is answered.
+Guest login decided (Q-003 → D-114): pass-through to Keycloak `gh-guests`, landing page unchanged.
 1. `guest-service` behind the frozen `/api/v1/portal/auth/**` contract.
 2. `lead-service`: inquiry intake (`/api/v1/portal/inquiries`, frozen contract), lead + activity history, `LeadCreated` via the outbox to Kafka, the Sales queue and "my leads", and an **atomic claim**.
 3. `web`: lead queue, lead detail, Claim button.

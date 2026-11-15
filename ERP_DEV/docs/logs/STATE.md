@@ -11,6 +11,6 @@ State:
 4. Resource folder rule updated to `/run/media/ash_63/DATA/Intership wrok/ERP_Resouce` (Q-001 answered).
 
 Next action:
-1. Push `feature/phase1-fresh-start` only with Ashish's approval; the first CI run checks the landing-page build (R-010).
-2. Answer blockers: Q-003 (guest identity vs the frozen landing-page contract) before increment 2; Q-020 (version upgrade) and Q-023 (new dev/test dependencies) before increment 1 code.
-3. Then plan increment 1 (`docs/03-phases/phase-1/inc1-PLAN.md`) and wait for approval.
+1. **Push blocked:** the GitHub token lacks the `workflow` scope. Ashish updates the token, then push `feature/phase1-fresh-start`.
+2. Ashish reviews `docs/03-phases/phase-1/inc1-PLAN.md`: approve the plan, the web lookups for current versions (§3) and the dependencies (§4, Q-023).
+3. Uncommitted: DEVLOG/OPEN_QUESTIONS/DECISIONS entries, Q-003 decided in api/REQUIREMENTS/TRACEABILITY/ARCHITECTURE/phase1_plan/READMEs, ADR-001 update, inc1-PLAN.md. Ask before committing.

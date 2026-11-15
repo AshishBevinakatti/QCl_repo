@@ -41,7 +41,12 @@ Source of truth: `landing-page/src/app/portal-client.ts`, base `NEXT_PUBLIC_LEAD
 
 `InquiryResponse` = `{ id, publicReference, name, email, phone, checkinDate, checkoutDate, roomCategory, guestCount, notes, status, priority, claimedBy, claimedAt, slaDeadline, slaBreached, createdAt }`.
 
-⚠ **Open (Q-003):** the old backend checked the register/login passwords against its own table. Blueprint §6/§12 forbids a second password store, so these two endpoints must be backed by the Keycloak `gh-guests` realm. The options are in OPEN_QUESTIONS Q-003, and the guest side isn't built until it is answered. The Blueprint's guest paths (`/api/v1/guests/me`, `/api/v1/leads/me`) can be added beside this contract later; they don't replace it.
+**Decided (Q-003, D-114, 2026-11-15):** these two endpoints are served by `guest-service`, which passes them through to the Keycloak realm **`gh-guests`**:
+- `register` → Admin API creates the user (email verification per Q-007) and the guest profile is linked by `keycloak_sub`;
+- `login` → token request with the password grant on a dedicated confidential client `guest-portal` (the only client in either realm with that grant enabled);
+- `token` in the response is the Keycloak access token.
+
+The ERP never stores or logs the password. Moving the landing page to a Keycloak redirect (PKCE) is a later improvement. The Blueprint's guest paths (`/api/v1/guests/me`, `/api/v1/leads/me`) can be added beside this contract later; they don't replace it.
 
 Gateway routes: `/api/v1/portal/auth/**` → guest-service, `/api/v1/portal/inquiries/**` → lead-service. Both have rate limits (Blueprint §9: anonymous submissions are rate-limited more strictly).
 

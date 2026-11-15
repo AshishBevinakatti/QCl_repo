@@ -35,3 +35,8 @@ Earlier questions: `archive/hotel-draft:ERP_DEV/docs/logs/OPEN_QUESTIONS.md`.
 | Q-029 | Who may onboard and deactivate employees: only ADMIN (= SOW/SRS Super Admin, Owner/MD), or also the GM / HR Manager? SRS §11.1 gives the Resort Manager create/edit/config rights in general | Inc 1 | ADMIN only (least privilege); can be granted to MANAGER per person later via `employees.manage` |
 
 **Answer Q-001 (2026-11-15T11:23:40+05:30, Ashish):** the official resource folder is `/run/media/ash_63/DATA/Intership wrok/ERP_Resouce`. The rules and agent config are updated. D-110 is accepted.
+
+**Answer Q-020 (2026-11-15T11:27:15+05:30, Ashish):** upgrade to the current supported releases of the same products. Exact versions are checked against official release pages at the start of increment 1 (inc1-PLAN §3).
+**Answer Q-029 (2026-11-15T11:27:15+05:30, Ashish):** only ADMIN may onboard, activate and deactivate employees. `employees.manage` can be granted to one person later.
+**Answer Q-003 (2026-11-15T11:27:15+05:30, Ashish):** option A. guest-service passes `/api/v1/portal/auth/register|login` through to the Keycloak realm `gh-guests` (Admin API to create the user; password grant to log in, on a dedicated guest client only). The landing page stays unchanged; moving it to a Keycloak redirect is a later improvement. The ERP stores no guest passwords.
+**Answer Q-023 (2026-11-15T11:30:28+05:30, Ashish):** approved Testcontainers (PostgreSQL), `com.github.dasniko:testcontainers-keycloak`, the Mailpit Docker image and `keycloak-js`. ShedLock and keycloak-admin-client aren't used.

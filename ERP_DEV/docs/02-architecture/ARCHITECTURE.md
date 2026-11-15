@@ -56,7 +56,7 @@ flowchart LR
 |---|---|---|---|
 | `api-gateway` | Routing, JWT validation, rate limits (Redis), request-size limits, correlation IDs, CORS. **No business logic, no DB** | 1 | 8082 |
 | `access-service` | Employee profiles, Keycloak account provisioning and sync, `/me`, account audit. Blueprint "Access Control" service. Long-term ownership of employee records versus the future HR & Workforce service: Q-028 | 1 | 8091 |
-| `guest-service` | Guest profile linked to the identity subject (Blueprint §6 Guest & CRM) | 2 (blocked by Q-003) | 8092 |
+| `guest-service` | Guest profile linked to the identity subject (Blueprint §6 Guest & CRM) | 2 (guest login via Keycloak `gh-guests`, D-114) | 8092 |
 | `lead-service` | Inquiries/leads, public reference, activity history, atomic claim, transactional outbox | 2 | 8093 |
 | `notification-service` | Email adapter, delivery attempts, retries, dead-letter queue | Later increment (with SLA) | 8094 |
 | CMS | Public content | Not scaffolded. The landing page is static today; Blueprint Q-015 (CMS in Phase 1?) is open | — |

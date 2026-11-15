@@ -30,3 +30,6 @@ The ERP restarts from scratch (ADR-003). Ashish's first draft plan had one `lead
 - More moving parts than one service: local dev needs Compose with 5 infrastructure containers. Mitigation: one `docker compose up` and a checked DAY-ONE guide.
 - ⚠ **Version risk (R-002, Q-020):** by our records, Spring Boot 3.2.x left open-source support in Nov 2024 and Keycloak 24 is also past its support window. Today (Nov 2026) they get no security fixes. Ashish asked for the *same* stack, so this ADR keeps the versions. **Recommendation:** keep the same products but move to the current supported releases at the start of increment 1. That is a version bump, not a stack change, and it needs Ashish's yes (Q-020).
 - New libraries beyond those listed (Testcontainers, Keycloak Testcontainers module, Mailpit image, ShedLock) need approval before they are added (Q-023).
+
+## Update — 2026-11-15
+Q-020 answered (D-112): keep the same products but use their **current supported releases**. The version column above is the historical baseline. The versions actually used are fixed in `03-phases/phase-1/inc1-PLAN.md` §3 after checking the official release pages.

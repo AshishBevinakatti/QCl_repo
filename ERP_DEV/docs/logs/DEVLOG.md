@@ -25,3 +25,12 @@ History before 2026-11-15 is in `archive/hotel-draft:ERP_DEV/docs/logs/DEVLOG.md
 - Ashish: "/run/media/ash_63/DATA/Intership wrok/ERP_Resouce: update the rule and read the resources from here, and commit it".
 - Updated the path in `AGENTS.md`, `opencode.json` (permission allow-list), `.opencode/skills/erp-prp/SKILL.md`, `references/docs-and-records.md`, `references/phases.md`. The source-extract headers still show the old path, because they record where each file was read at the time; the sha256 values are unchanged.
 - Ashish approved the commit of Milestone 1 docs + CI + rule update in the same message. Push not approved.
+- Commit `e9841f5` docs(core): phase 1 baseline (40 files, approved by Ashish). Not pushed.
+
+## 2026-11-15T11:27:15+05:30 — Push attempt and increment 1 decisions
+- Ashish: "go ahead". `git push -u origin feature/phase1-fresh-start` was **rejected** by GitHub: the stored personal access token has no `workflow` scope, which a change to `.github/workflows/ci.yml` needs. Nothing was pushed. Ashish must update the token (classic: `workflow` scope; fine-grained: Workflows read/write).
+- Q-020 → upgrade the same products; Q-029 → ADMIN only; Q-003 → Keycloak pass-through (A). See D-112…D-114.
+- Increment 1 plan written: `docs/03-phases/phase-1/inc1-PLAN.md` (waiting for approval).
+
+## 2026-11-15T11:30:28+05:30 — Increment 1 approved
+- Ashish approved `inc1-PLAN.md` as written; approved checking versions on official release pages (spring.io, keycloak.org, GitHub releases, npm) for this increment; approved Q-023 dependencies (Testcontainers PostgreSQL, testcontainers-keycloak, Mailpit image, keycloak-js); approved committing the doc updates.
