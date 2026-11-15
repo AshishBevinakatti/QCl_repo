@@ -3,8 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
-import { logo } from "./resort-assets";
+import { useEffect, useRef, useState } from "react";
+import { logo, logoLight } from "./resort-assets";
 import { ArrowRight } from "./icons";
 
 const navLinks = [
@@ -32,9 +32,29 @@ const mobileExploreLinks = [
   { href: "/#story", label: "Brand Story" },
 ];
 
-export default function SubpageHeader() {
+/* `overlay` (home only, unit 3.22): the bar starts see-through over the
+ * opening photograph with the light logo, and turns solid after the first
+ * 40px of scroll. Colour and background change only, nothing moves. */
+export default function SubpageHeader({ overlay = false }: { overlay?: boolean }) {
   const pathname = usePathname();
   const menu = useRef<HTMLDetailsElement>(null);
+  const [clear, setClear] = useState(overlay);
+
+  useEffect(() => {
+    if (!overlay) return;
+    let frame = 0;
+    const check = () => {
+      frame = 0;
+      setClear(window.scrollY < 40);
+    };
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(check); };
+    check();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, [overlay]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -59,7 +79,7 @@ export default function SubpageHeader() {
   }
 
   return (
-    <header className="site-navbar-header" role="banner">
+    <header className={`site-navbar-header${overlay ? " is-overlay" : ""}${clear ? " is-clear" : ""}`} role="banner">
       <div className="wrap site-navbar-inner">
         {/* Top-Left Corner: Brand Logo */}
         <Link href="/" className="site-navbar-logo" aria-label="Golden Hills Resort, return home">
@@ -70,7 +90,18 @@ export default function SubpageHeader() {
             height={1120}
             priority
             sizes="136px"
+            className="site-navbar-logo-dark"
           />
+          {overlay && (
+            <Image
+              src={logoLight}
+              alt=""
+              width={2360}
+              height={1120}
+              sizes="136px"
+              className="site-navbar-logo-light"
+            />
+          )}
         </Link>
 
         {/* Center: Clean & Readable Desktop Navigation Buttons */}

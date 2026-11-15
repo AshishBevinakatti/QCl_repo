@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Sketch } from "./pencil";
 import { logo } from "./resort-assets";
 import { ArrowUp } from "./icons";
 
@@ -33,6 +34,7 @@ export default function SiteFooter() {
               <Image src={logo} alt="" width={2360} height={1120} sizes="132px" />
             </Link>
             <p>Golden Hills Resort brings together stays, dining, recreation and event celebrations in Anagawadi Village, Biligi Taluk, Bagalkote District. All property imagery is an artist&rsquo;s impression by Astu Architects and Rajvi Jhaveri.</p>
+            <Sketch name="tree" className="footer-sketch" />
           </div>
 
           <nav className="footer-col" aria-label="Explore the resort">

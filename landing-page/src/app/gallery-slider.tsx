@@ -7,7 +7,7 @@ import { getScene, impression } from "./resort-assets";
 
 export type GalleryItem = {
   id: string;
-  category: "Pool & Cottages" | "Dining & Bar" | "Event Spaces" | "Interiors & Lounge";
+  category: "Pool & cottages" | "Dining & bar" | "Event spaces" | "Interiors & lounge";
   tag: string;
   title: string;
   desc: string;
@@ -16,126 +16,126 @@ export type GalleryItem = {
 export const galleryLibrary: GalleryItem[] = [
   {
     id: "hero-pool-day-desktop-p37",
-    category: "Pool & Cottages",
-    tag: "Daylight View",
+    category: "Pool & cottages",
+    tag: "Daylight view",
     title: "Daylight Private Pool Courtyard",
     desc: "Private cottage pool with crystal water, stone spout waterfalls, and daybed alcove.",
   },
   {
     id: "hero-pool-arch-mobile-p35",
-    category: "Pool & Cottages",
-    tag: "Arched Pavilion",
+    category: "Pool & cottages",
+    tag: "Arched pavilion",
     title: "Illuminated Pool Arch & Sunken Seat",
     desc: "Courtyard study featuring an illuminated architectural arch and submerged pool loungers.",
   },
   {
     id: "cottage-entry-p32",
-    category: "Pool & Cottages",
-    tag: "Exterior Entrance",
+    category: "Pool & cottages",
+    tag: "Exterior entrance",
     title: "Cottage Garden Entryway",
     desc: "Stone pathways and lush privacy foliage transitioning from resort grounds into private cottage gates.",
   },
   {
     id: "cottage-pool-overhead-p33",
-    category: "Pool & Cottages",
-    tag: "Overhead Perspective",
+    category: "Pool & cottages",
+    tag: "Overhead perspective",
     title: "Overhead Pool Villa Layout",
     desc: "Bird's-eye architectural view showing private plunge pool, terrace sunbeds, and perimeter boundary garden.",
   },
   {
     id: "cottage-pool-terrace-p34",
-    category: "Pool & Cottages",
-    tag: "Outdoor Living",
+    category: "Pool & cottages",
+    tag: "Outdoor living",
     title: "Shaded Poolside Terrace Lounge",
     desc: "Timber-framed shade pavilion with comfortable day loungers and direct steps into the private pool.",
   },
   {
     id: "dusk-pool-candidate-p38",
-    category: "Pool & Cottages",
-    tag: "Evening Atmosphere",
+    category: "Pool & cottages",
+    tag: "Evening atmosphere",
     title: "Dusk Pool Courtyard",
     desc: "Evening lighting scheme highlighting glowing pool water, garden foliage, and architectural stonework.",
   },
   {
     id: "arrival-reception-lounge-p11",
-    category: "Interiors & Lounge",
-    tag: "Main Complex",
+    category: "Interiors & lounge",
+    tag: "Main complex",
     title: "Grand Double-Height Reception Lounge",
     desc: "Full-height glass facade, ribbed stone columns, and panoramic views opening onto central resort courtyards.",
   },
   {
     id: "cottage-interior-front-bed-p40",
-    category: "Interiors & Lounge",
-    tag: "Master Bedroom",
+    category: "Interiors & lounge",
+    tag: "Master bedroom",
     title: "Cottage Bedroom & Timber Ceiling",
     desc: "Exposed natural timber roof beams, platform queen bed, botanical artwork, and warm bedside lighting.",
   },
   {
     id: "cottage-interior-bed-and-bath-p39",
-    category: "Interiors & Lounge",
-    tag: "Suite Layout",
+    category: "Interiors & lounge",
+    tag: "Suite layout",
     title: "Cottage Bedroom & Ensuite Bathroom Flow",
     desc: "Open-plan flow between sleeping quarters and modern luxury ensuite bathroom with textured stone finishes.",
   },
   {
     id: "cottage-interior-tv-wall-p41",
-    category: "Interiors & Lounge",
-    tag: "Living Space",
+    category: "Interiors & lounge",
+    tag: "Living space",
     title: "Cottage Entertainment & Lounge Wall",
     desc: "Integrated media console wall with fluted wood paneling, luggage credenza, and custom storage cabinetry.",
   },
   {
     id: "dining-veg-seating-p13",
-    category: "Dining & Bar",
-    tag: "Pure Veg Outlet",
+    category: "Dining & bar",
+    tag: "Pure veg outlet",
     title: "Pure Vegetarian Dining Hall",
     desc: "Warm interior dining space with pendant chandeliers, upholstered booth banquettes, and woven cane chairs.",
   },
   {
     id: "dining-veg-central-aisle-p12",
-    category: "Dining & Bar",
-    tag: "Vegetarian Dining",
+    category: "Dining & bar",
+    tag: "Vegetarian dining",
     title: "Vegetarian Restaurant Central Aisle",
     desc: "Circulation aisle framed by acoustic wood paneling and decorative hanging pendant lights for family meals.",
   },
   {
     id: "dining-non-veg-aisle-p07",
-    category: "Dining & Bar",
-    tag: "Multi-Cuisine",
+    category: "Dining & bar",
+    tag: "Multi-cuisine",
     title: "Non-Veg Restaurant & Live BBQ Lounge",
     desc: "Curved timber arches, central circulation corridor, and seating for Indian, Italian, and barbecue dining.",
   },
   {
     id: "evening-bar-counter-p03",
-    category: "Dining & Bar",
-    tag: "Cocktail Bar",
+    category: "Dining & bar",
+    tag: "Cocktail bar",
     title: "Bar Lounge Marble Counter",
     desc: "Custom illuminated backlit onyx bar counter with brass bar stools and expansive spirit display shelving.",
   },
   {
     id: "evening-bar-wide-p09",
-    category: "Dining & Bar",
-    tag: "Lounge Seating",
+    category: "Dining & bar",
+    tag: "Lounge seating",
     title: "Evening Bar Lounge Seating",
     desc: "Emerald velvet banquet booths, geometric floor tiling, exposed brick walls, and warm atmospheric downlights.",
   },
   {
     id: "gatherings-banquet-p03",
-    category: "Event Spaces",
-    tag: "Banquet Hall",
+    category: "Event spaces",
+    tag: "Banquet hall",
     title: "Conference & Banquet Hall Setup",
     desc: "Climate-controlled hall with exposed timber roof trusses, clothed round tables, and stage for celebrations.",
   },
   {
     id: "gatherings-theatre-p05",
-    category: "Event Spaces",
-    tag: "Corporate Seminars",
+    category: "Event spaces",
+    tag: "Corporate seminars",
     title: "Conference Hall Seminar Layout",
     desc: "Auditorium / theater seating configuration equipped with presentation AV projection for business conferences.",
   },
 ];
 
-const categories = ["All", "Pool & Cottages", "Dining & Bar", "Interiors & Lounge", "Event Spaces"] as const;
+const categories = ["All", "Pool & cottages", "Dining & bar", "Interiors & lounge", "Event spaces"] as const;
 
 export default function GallerySlider() {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -257,7 +257,6 @@ export default function GallerySlider() {
                     <span className="gallery-slide-category">{item.category}</span>
                     <h4>{item.title}</h4>
                   </div>
-                  <p className="gallery-slide-desc">{item.desc}</p>
                   <div className="gallery-slide-footer">
                     <span className="gallery-slide-disclosure">{impression}</span>
                   </div>

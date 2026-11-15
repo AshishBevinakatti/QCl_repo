@@ -122,7 +122,7 @@ export default function LocationMapCard({
         {!isLoaded && (
           <div className="map-card-loader" aria-live="polite">
             <div className="map-spinner" />
-            <span>Loading interactive resort map...</span>
+            <span>Loading map</span>
           </div>
         )}
 

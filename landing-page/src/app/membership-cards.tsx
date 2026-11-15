@@ -138,7 +138,6 @@ export default function MembershipCards() {
                 </div>
 
                 <h2 className="rc-title mem-title">{category.name}</h2>
-                <p className="rc-lead mem-lead">{category.lead}</p>
 
                 {/* Key Takeaways (Bullet points - concise, not overwhelming) */}
                 <div className="mem-highlights-list">

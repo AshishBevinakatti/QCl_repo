@@ -1,0 +1,509 @@
+/* ==========================================================================
+   Privilege Club (unit 3.19)
+   The page is a members' card and the ledger that goes with it. Brass foil on
+   forest board up top, then a paper account that tallies to 180. One accent
+   (brass), one object, no decoration anywhere else.
+   ========================================================================== */
+
+.mem-page { background: var(--color-paper); }
+
+.mem-kicker {
+  font-family: var(--font-sans);
+  font-size: var(--type-label);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: var(--color-muted);
+}
+.mem-kicker.is-on-dark { color: var(--color-garden); }
+
+/* --- Hero ----------------------------------------------------------------- */
+.mem-hero {
+  background: var(--color-forest);
+  color: var(--color-chalk);
+  padding-block: clamp(48px, 7vw, 104px) clamp(32px, 4vw, 56px);
+}
+.mem-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(32px, 6vw, 88px);
+  align-items: center;
+}
+.mem-hero-copy h1 {
+  margin-top: 16px;
+  font-family: var(--font-display);
+  font-size: clamp(40px, 5.4vw, 76px);
+  font-weight: var(--weight-section);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  color: var(--color-chalk);
+}
+.mem-hero-line {
+  margin-top: 24px;
+  max-width: 40ch;
+  font-size: var(--type-body);
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--color-chalk) 80%, transparent);
+}
+.mem-hero-actions {
+  margin-top: 32px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.mem-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 28px;
+  font-family: var(--font-sans);
+  font-size: var(--type-small);
+  font-weight: 600;
+  color: var(--color-ink);
+  background: var(--color-brass);
+  border-radius: 12px;
+  text-decoration: none;
+  transition: background-color .2s var(--ease-out);
+}
+.mem-btn:hover { background: color-mix(in srgb, var(--color-brass) 88%, #000); }
+.mem-btn:focus-visible { outline: 2px solid var(--color-chalk); outline-offset: 3px; }
+.mem-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--type-small);
+  font-weight: 500;
+  color: var(--color-chalk);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-garden) 60%, transparent);
+}
+.mem-link:hover { color: var(--color-garden); }
+
+/* --- The card ------------------------------------------------------------- */
+.mcard-stage { perspective: 1100px; }
+.mcard {
+  position: relative;
+  aspect-ratio: 1.586;          /* the proportion of a real card */
+  max-width: 460px;
+  margin-inline: auto;
+  border-radius: 18px;
+  transform-style: preserve-3d;
+  transition: transform .5s var(--ease-out);
+  /* A soft neutral shadow is allowed on an object floating over a surface. */
+  box-shadow: 0 30px 60px -20px rgba(4, 12, 8, .65);
+}
+.mcard-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(20px, 2.4vw, 30px);
+  border-radius: inherit;
+  /* One tone shift inside a single colour, plus a brass foil edge. */
+  background:
+    linear-gradient(152deg, #16402b 0%, #0e2e1e 52%, #0a2217 100%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-brass) 55%, transparent);
+  overflow: hidden;
+}
+.mcard-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.mcard-logo { width: clamp(104px, 11vw, 132px); height: auto; }
+.mcard-kind {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;    /* the one engraved line on the object */
+  color: var(--color-brass);
+}
+/* A foil chip, drawn rather than photographed. */
+.mcard-chip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  width: 44px;
+  height: 34px;
+  padding: 4px;
+  border-radius: 6px;
+  background: linear-gradient(145deg, #d9ad51, #9d7421);
+}
+.mcard-chip span { background: color-mix(in srgb, #5a4312 45%, transparent); border-radius: 2px; }
+.mcard-serial {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: clamp(22px, 2.4vw, 30px);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  color: var(--color-chalk);
+}
+.mcard-serial i { font-style: normal; color: var(--color-brass); }
+.mcard-serial-label {
+  margin-top: 4px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--color-chalk) 60%, transparent);
+}
+/* A single still highlight, not a moving shine. */
+.mcard-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(118deg, rgba(255, 255, 255, .11) 0%, rgba(255, 255, 255, 0) 42%);
+  pointer-events: none;
+}
+.mcard-caption {
+  margin-top: 16px;
+  font-size: 12px;
+  text-align: center;
+  color: color-mix(in srgb, var(--color-chalk) 55%, transparent);
+}
+
+/* --- Figures -------------------------------------------------------------- */
+.mem-figures {
+  margin-top: clamp(40px, 6vw, 72px);
+  padding-top: clamp(24px, 3vw, 36px);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+  border-top: 1px solid color-mix(in srgb, var(--color-chalk) 20%, transparent);
+}
+.mem-figures > div { display: flex; flex-direction: column-reverse; gap: 6px; }
+.mem-figures dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(30px, 3.4vw, 46px);
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-brass);
+}
+.mem-figures dt { font-size: 13px; color: var(--color-forest-soft); }
+
+/* --- Ledger --------------------------------------------------------------- */
+.mem-ledger-section { padding-block: clamp(56px, 8vw, 112px); }
+.mem-ledger-head { margin-bottom: clamp(32px, 4vw, 56px); }
+.mem-ledger-head h2,
+.mem-kit-head h2,
+.mem-faq-head h2,
+.mem-inquiry-heading {
+  margin-top: 12px;
+  font-family: var(--font-display);
+  font-size: var(--type-section);
+  font-weight: var(--weight-section);
+  line-height: var(--leading-section);
+  letter-spacing: var(--tracking-section);
+  color: var(--color-ink);
+}
+
+.ledger {
+  display: grid;
+  grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+  gap: clamp(32px, 5vw, 80px);
+  align-items: start;
+}
+.ledger-tally {
+  position: sticky;
+  top: 116px;                   /* clears the 84px sticky header */
+  padding: 24px;
+  background: var(--color-chalk);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+}
+.ledger-tally-step {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--color-muted);
+}
+.ledger-tally-step i { font-style: normal; opacity: .55; }
+.ledger-tally-name {
+  margin-top: 8px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: var(--weight-card);
+  line-height: 1.15;
+  color: var(--color-ink);
+}
+.ledger-tally-rows { margin: 20px 0 0; display: grid; gap: 10px; }
+.ledger-tally-rows > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--type-small);
+  color: var(--color-muted);
+}
+.ledger-tally-rows dd {
+  margin: 0;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink);
+}
+.ledger-tally-total {
+  padding-top: 10px;
+  border-top: 1px solid var(--color-line);
+}
+.ledger-tally-total dd { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--color-forest) !important; }
+.ledger-tally-bar {
+  margin-top: 16px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--color-limestone);
+  overflow: hidden;
+}
+.ledger-tally-bar span {
+  display: block;
+  height: 100%;
+  background: var(--color-brass);
+  transform-origin: left;
+  transition: transform .5s var(--ease-out);
+}
+
+.ledger-entries {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(28px, 3.5vw, 48px);
+}
+/* Picture beside the words, so an entry is one band rather than a tall stack. */
+.ledger-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+  grid-template-areas: "media head" "media lines";
+  align-content: start;
+  column-gap: clamp(20px, 2.5vw, 36px);
+  row-gap: 16px;
+  opacity: .72;
+  transition: opacity .4s var(--ease-out);
+}
+.ledger-entry-head { grid-area: head; }
+.ledger-entry-media { grid-area: media; align-self: start; }
+.ledger-entry-lines { grid-area: lines; align-self: start; }
+.ledger-entry.is-current { opacity: 1; }
+.ledger-entry-head { display: grid; gap: 8px; }
+.ledger-entry-no {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--color-brass-ink);
+}
+.ledger-entry-head h3 {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 2.8vw, 36px);
+  font-weight: var(--weight-section);
+  line-height: 1.12;
+  letter-spacing: var(--tracking-section);
+  color: var(--color-ink);
+}
+.ledger-entry-count {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: var(--type-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-muted);
+}
+.ledger-entry-media {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  background: var(--color-limestone);
+}
+.ledger-entry-media img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ledger-entry-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.ledger-entry-lines li {
+  position: relative;
+  padding-left: 20px;
+  font-size: var(--type-small);
+  line-height: 1.55;
+  color: var(--color-muted);
+}
+.ledger-entry-lines li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 8px;
+  height: 1px;
+  background: var(--color-brass);
+}
+.ledger-note { margin-top: 32px; font-size: 12px; color: var(--color-muted); }
+
+/* --- Keepsake kit --------------------------------------------------------- */
+.mem-kit {
+  padding-block: clamp(48px, 6vw, 88px);
+  border-top: 1px solid var(--color-line);
+}
+.mem-kit-head { margin-bottom: 32px; }
+/* The box: a lid line, then the five objects inside it. */
+.kit-box {
+  background: var(--color-chalk);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.kit-box-lid {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  font-size: 13px;
+  /* ink, not muted: muted on limestone measures 4.44:1, under AA */
+  color: var(--color-ink);
+  background: var(--color-limestone);
+  border-bottom: 1px solid var(--color-line);
+}
+.kit-box-count { font-variant-numeric: tabular-nums; }
+.kit-grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.kit-grid li {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  padding: clamp(20px, 2.4vw, 28px) clamp(14px, 1.6vw, 20px) clamp(20px, 2.4vw, 28px);
+  border-right: 1px solid var(--color-line);
+}
+.kit-grid li:last-child { border-right: 0; }
+.kit-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 10px;
+  color: var(--color-forest);
+  background: var(--color-garden);
+  border-radius: 14px;
+}
+.kit-no {
+  position: absolute;
+  top: clamp(20px, 2.4vw, 28px);
+  right: clamp(14px, 1.6vw, 20px);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: var(--color-brass-ink);
+}
+.kit-grid strong {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-ink);
+}
+.kit-detail { font-size: 13px; line-height: 1.4; color: var(--color-muted); }
+
+.mem-kit-terms { margin-top: 28px; font-size: 13px; color: var(--color-muted); }
+
+/* --- Questions ------------------------------------------------------------ */
+.mem-faq {
+  padding-block: clamp(48px, 6vw, 88px);
+  border-top: 1px solid var(--color-line);
+}
+.mem-faq-head { margin-bottom: 28px; }
+.mem-faq-list { display: grid; }
+.mem-faq-list details { border-top: 1px solid var(--color-line); }
+.mem-faq-list details:last-child { border-bottom: 1px solid var(--color-line); }
+.mem-faq-list summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 0;
+  font-family: var(--font-sans);
+  font-size: var(--type-body);
+  font-weight: 500;
+  color: var(--color-ink);
+  cursor: pointer;
+  list-style: none;
+}
+.mem-faq-list summary::-webkit-details-marker { display: none; }
+.mem-faq-list summary::after { content: "+"; font-size: 20px; color: var(--color-brass-ink); }
+.mem-faq-list details[open] summary::after { content: "−"; }
+.mem-faq-list p {
+  padding-bottom: 24px;
+  max-width: 68ch;
+  font-size: var(--type-small);
+  line-height: 1.65;
+  color: var(--color-muted);
+}
+
+/* --- Enquiry -------------------------------------------------------------- */
+.mem-perks {
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+.mem-perks li {
+  position: relative;
+  padding-left: 20px;
+  font-size: var(--type-small);
+  color: var(--color-muted);
+}
+.mem-perks li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 8px;
+  height: 1px;
+  background: var(--color-brass);
+}
+
+/* --- Tablet --------------------------------------------------------------- */
+@media (max-width: 1000px) {
+  .kit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kit-grid li:nth-child(2n) { border-right: 0; }
+  .kit-grid li:not(:nth-last-child(-n+2)) { border-bottom: 1px solid var(--color-line); }
+  .mem-hero-grid { grid-template-columns: minmax(0, 1fr); }
+  .mcard { max-width: 420px; }
+  .mem-figures { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 28px; }
+  .ledger { grid-template-columns: minmax(0, 1fr); }
+  /* On one column the tally rides along the top rather than beside the list. */
+  .ledger-tally {
+    position: sticky;
+    top: 92px;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+  }
+  .ledger-tally-rows { margin: 0; grid-auto-flow: column; gap: 20px; }
+  .ledger-tally-rows > div { flex-direction: column; align-items: flex-end; gap: 2px; }
+  .ledger-tally-bar { grid-column: 1 / -1; margin-top: 4px; }
+  .ledger-entry { opacity: 1; grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "media" "lines"; }
+}
+
+/* --- Phone ---------------------------------------------------------------- */
+@media (max-width: 640px) {
+  .kit-grid { grid-template-columns: minmax(0, 1fr); }
+  .kit-grid li { border-right: 0; }
+  .kit-grid li:not(:last-child) { border-bottom: 1px solid var(--color-line); }
+  .mem-figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mem-figures > div:last-child { grid-column: span 2; }
+  .ledger-tally-rows { grid-auto-flow: row; gap: 6px; }
+  .ledger-tally-rows > div { flex-direction: row; align-items: baseline; }
+  .ledger-tally { grid-template-columns: minmax(0, 1fr); }
+  .mcard-stage { perspective: none; }
+  .mcard { transform: none !important; }
+}

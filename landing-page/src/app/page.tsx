@@ -1,190 +1,105 @@
 import Image from "next/image";
 import Link from "next/link";
-import Opening from "./opening";
-import ConceptFigure from "./concept-figure";
+import HomeOpening, { type OpeningFeature, type OpeningSlide } from "./home-opening";
+import SubpageHeader from "./subpage-header";
+import { Sketch } from "./pencil";
 import GallerySlider from "./gallery-slider";
 import MotionProvider from "./motion-provider";
 import SiteFooter from "./site-footer";
-import { ArrowRight, ArrowDown, Sparkles } from "./icons";
-import { getScene } from "./resort-assets";
+import { ArrowRight, ArrowDown, MapPin } from "./icons";
+import { getScene, impression } from "./resort-assets";
 import Reveal from "./reveal";
-import LocationActions from "./location-actions";
 import LocationMapCard from "./location-map-card";
-import HighlightsCards from "./highlights-cards";
-import AmenitiesCards from "./amenities-cards";
+import HighlightsCards, { type HighlightItem } from "./highlights-cards";
+import AmenityGrid, { type AmenityTile } from "./amenity-grid";
+import SwipeRow from "./swipe-row";
+import { roomTypes } from "./stay-data";
 
 /* =========================================================================
    1. Data grounded in Resort ERP SRS, Project Report & Loyalty Documents
    ========================================================================= */
 
-const whyChooseUsHighlights = [
-  {
-    num: "01",
-    title: "Six Distinct Dining Outlets",
-    desc: "Dedicated pure vegetarian dining, live barbecue grill, open-air courtyard cafe, resto-bar, and an evening bar lounge with separate kitchen operations.",
-  },
-  {
-    num: "02",
-    title: "1,000-Pax Celebration Venues",
-    desc: "Indoor AC conference hall (100 pax), standard banquet lawn (300 pax), and poolside LED lawn (500 pax) with a transparent zero hall-rental policy.",
-  },
-  {
-    num: "03",
-    title: "Six Accommodation Categories",
-    desc: "Executive hotel rooms, a luxury Jacuzzi suite, natural timber cottages, dormitory cottages for 10–12 guests, and 24×7 private pool villas.",
-  },
-  {
-    num: "04",
-    title: "All-Age Recreation & Adventure",
-    desc: "Freshwater main and kids pools, overhead mist rain dance arena, aerial sky cycling, high-glide zipline, and comprehensive indoor sports center.",
-  },
-  {
-    num: "05",
-    title: "Prime Northern Karnataka Gateway",
-    desc: "Direct National Highway frontage between Hubli and Vijayapur, situated minutes from Almatti Dam, Badami Cave Temples, and Aihole & Pattadakal.",
-  },
-  {
-    num: "06",
-    title: "Modern Core Infrastructure",
-    desc: "Resort-wide Wi-Fi, 24/7 power backup with dual DG sets, EV charging stations, driver dormitories, and barrier-free wheelchair accessibility.",
-  },
+const whyChooseUsHighlights: HighlightItem[] = [
+  { icon: "dining", title: "Six dining outlets", desc: "Veg and non-veg kitchens" },
+  { icon: "venues", title: "1,000-guest venues", desc: "Zero hall rental" },
+  { icon: "rooms", title: "Six room types", desc: "Rooms, a suite and cottages" },
+  { icon: "recreation", title: "Recreation for all ages", desc: "Pools, zipline and rain dance" },
+  { icon: "location", title: "Northern Karnataka gateway", desc: "Near Badami, Aihole and Almatti" },
+  { icon: "infrastructure", title: "Modern essentials", desc: "Wi-Fi, power backup, EV charging" },
 ];
 
-const amenitiesList = [
-  {
-    title: "Main Swimming Pool & Kids Pool",
-    timing: "07:00 AM – 07:00 PM",
-    rating: "4.9",
-    statValue: "07 AM – 07 PM",
-    statLabel: "Hours",
-    image: "/assets/resort/scenes/web/hero-pool-day-desktop-p37.jpg",
-    iconKey: "pool" as const,
-    lead: "Freshwater resort swimming pool with dedicated shallow splash pool for children.",
-    highlights: [
-      "4–5 ft depth freshwater main pool with loungers",
-      "Adjoining safe shallow splash zone for toddlers",
-      "Morning swim window (06:00–10:00 AM) reserved for room guests",
-    ],
-    rules: [
-      "Open to day-outing visitors from 10:00 AM – 05:00 PM",
-      "Life jackets available; swimwear mandatory",
-    ],
-  },
-  {
-    title: "Spa & Wellness Center",
-    timing: "11:00 AM – 11:00 PM",
-    rating: "4.9",
-    statValue: "11 AM – 11 PM",
-    statLabel: "Hours",
-    image: "/assets/resort/amenities/spa-wellness.jpg",
-    iconKey: "spa" as const,
-    lead: "Holistic wellness haven offering traditional Ayurvedic therapies and soothing relaxation.",
-    highlights: [
-      "Certified Ayurvedic therapies and herbal body massages",
-      "Private steam facilities and aromatic relaxation rooms",
-      "Custom wellness consultations by trained practitioners",
-    ],
-    rules: [
-      "Prior appointment recommended via resort concierge",
-      "Couples treatment suites available upon reservation",
-    ],
-  },
-  {
-    title: "Gymnasium & Indoor Games",
-    timing: "07:00 AM – 11:00 PM",
-    rating: "4.8",
-    statValue: "07 AM – 11 PM",
-    statLabel: "Hours",
-    image: "/assets/resort/amenities/games-gym.jpg",
-    iconKey: "gym" as const,
-    lead: "Comprehensive fitness gym and multi-activity indoor games lounge for all ages.",
-    highlights: [
-      "Cardio zone with treadmills, cycles and strength equipment",
-      "Full-size snooker, pool, table tennis, carrom & chess",
-      "Virtual Reality gaming setup and quiet reading corner",
-    ],
-    rules: [
-      "Complimentary access for all in-house guests",
-      "Sports shoes required in fitness facility",
-    ],
-  },
-  {
-    title: "Adventure Sports Arena",
-    timing: "10:00 AM – 05:00 PM",
-    rating: "4.8",
-    statValue: "10 AM – 05 PM",
-    statLabel: "Hours",
-    image: "/assets/resort/amenities/adventure-sports-arena.jpg",
-    iconKey: "adventure" as const,
-    lead: "Adrenaline-filled outdoor adventure installations across landscaped resort grounds.",
-    highlights: [
-      "Aerial Sky Cycling suspended above resort terrain",
-      "High-glide Zipline crossing open garden spaces",
-      "Supervised obstacle activity circuits for adults and youth",
-    ],
-    rules: [
-      "Safety harnesses and trained instructor supervision provided",
-      "Included in select day-outing and group celebration packages",
-    ],
-  },
-  {
-    title: "Rain Dance Arena",
-    timing: "Scheduled Sessions",
-    rating: "4.7",
-    statValue: "30-Min Beats",
-    statLabel: "Session",
-    image: "/assets/resort/amenities/rain-dance.jpg",
-    iconKey: "raindance" as const,
-    lead: "Dynamic overhead rainfall shower zone with synchronized music and party lighting.",
-    highlights: [
-      "High-pressure overhead mist and warm-water rainfall jets",
-      "Dynamic multi-color sound-responsive party lighting",
-      "Outdoor sound system for upbeat family & group fun",
-    ],
-    rules: [
-      "Sessions run at scheduled intervals throughout the afternoon",
-      "Towel service available adjacent to changing pavilions",
-    ],
-  },
-  {
-    title: "Bonfire & Nature Walks",
-    timing: "07:00 PM – 11:00 PM",
-    rating: "4.9",
-    statValue: "07 PM – 11 PM",
-    statLabel: "Hours",
-    image: "/assets/resort/amenities/bonfire-walks.jpg",
-    iconKey: "bonfire" as const,
-    lead: "Atmospheric evening campfires and guided morning nature trails along the river bank.",
-    highlights: [
-      "Nightly open campfire on Butterfly Lawn with acoustic music",
-      "Morning guided river walk along scenic Ghataprabha corridor",
-      "Fragrant herb gardens and children's botanical discovery path",
-    ],
-    rules: [
-      "Bonfire skewers and warm appetizers available on order",
-      "Morning walking tours depart from reception lobby at 07:00 AM",
-    ],
-  },
-  {
-    title: "Core Infrastructure & Accessibility",
-    timing: "24 Hours Daily",
-    rating: "5.0",
-    statValue: "24/7 Power",
-    statLabel: "Backup",
-    image: "/assets/resort/scenes/web/arrival-reception-lounge-p11.webp",
-    iconKey: "core" as const,
-    lead: "Modern hospitality essentials ensuring seamless comfort, connectivity, and peace of mind.",
-    highlights: [
-      "High-speed Wi-Fi & 24/7 power backup with dual DG generators",
-      "EV vehicle charging stations & spacious guarded parking",
-      "Barrier-free wheelchair ramps and accessible pathways throughout",
-    ],
-    rules: [
-      "24-hour front desk, security patrol & CCTV monitoring",
-      "Dedicated air-conditioned driver dormitories with wash facilities",
-    ],
-  },
+/* Amenities as icon tiles. Each detail line comes from the facility notes the
+ * old photo cards carried; the stock photos themselves are no longer used here. */
+const amenityTiles: AmenityTile[] = [
+  { icon: "pool", label: "Swimming pool", hours: "7 AM – 7 PM", details: [
+    "4–5 ft freshwater main pool with loungers", "Shallow splash zone for toddlers",
+    "Morning swim (6–10 AM) for room guests; day visitors 10 AM – 5 PM"] },
+  { icon: "spa", label: "Spa & wellness", hours: "11 AM – 11 PM", details: [
+    "Ayurvedic therapies and herbal body massages", "Private steam and aromatic relaxation rooms",
+    "Couples treatment suites on reservation"] },
+  { icon: "gym", label: "Gym & indoor games", hours: "7 AM – 11 PM", details: [
+    "Cardio and strength equipment", "Snooker, pool, table tennis, carrom and chess",
+    "VR gaming and a quiet reading corner"] },
+  { icon: "adventure", label: "Zipline & sky cycling", hours: "10 AM – 5 PM", details: [
+    "Aerial sky cycling above the grounds", "High-glide zipline over the gardens",
+    "Harnesses and trained instructors provided"] },
+  { icon: "raindance", label: "Rain dance", hours: "30 min sessions", details: [
+    "Overhead mist and warm-water rainfall jets", "Sound-responsive party lighting",
+    "Sessions run through the afternoon"] },
+  { icon: "bonfire", label: "Bonfire & nature walks", hours: "7 PM – 11 PM", details: [
+    "Nightly campfire on the Butterfly Lawn", "Morning guided walk along the Ghataprabha",
+    "Walks leave the reception lobby at 7 AM"] },
+  { icon: "wifi", label: "Wi-Fi & power", hours: "Resort-wide", details: [
+    "High-speed Wi-Fi across the resort", "24/7 power backup with dual DG generators"] },
+  { icon: "core", label: "Parking & access", hours: "24 hours", details: [
+    "EV charging and guarded parking", "Barrier-free ramps and accessible paths",
+    "24-hour front desk and CCTV"] },
 ];
+
+/* The opening's renders, in the order a guest would meet them. */
+const openingSlides: OpeningSlide[] = [
+  { scene: getScene("hero-pool-day-desktop-p37"), label: "Pool courtyard concept", alt: "Pool courtyard and illuminated arched seating pavilion at Golden Hills Resort", focalPoint: "center 54%" },
+  { scene: getScene("arrival-reception-lounge-p11"), label: "Main reception lounge concept", alt: "Double-height reception lounge concept with floor-to-ceiling glass and outdoor landscape views", focalPoint: "center 55%" },
+  { scene: getScene("cottage-pool-terrace-p34"), label: "Private pool cottage concept", alt: "Shaded terrace seating beside a private plunge pool outside a cottage at golden hour", focalPoint: "58% 58%" },
+  { scene: getScene("gatherings-banquet-p03"), label: "Banquet hall concept", alt: "Banquet hall laid with round tables and a stage for a celebration", focalPoint: "center 58%" },
+  { scene: getScene("dining-veg-central-aisle-p12"), label: "Vegetarian restaurant concept", alt: "Vegetarian restaurant dining room with banquette seating and a painted crane mural", focalPoint: "center 56%" },
+  { scene: getScene("dusk-pool-candidate-p38"), label: "Poolside cottages at dusk", alt: "Poolside cottages at dusk with lanterns reflected in the water", focalPoint: "center 60%" },
+];
+
+/* The brand story, moved into the opening (it was its own section): the
+ * short statement under the portrait, as on the reference. Same words. */
+const openingIntro = {
+  title: "A family-friendly retreat taking shape in northern Karnataka",
+  lead: "A serene base on the Hubli–Vijayapur highway, where families unwind and celebrations come together.",
+  credit: "Promoted by Smt. Asha Bilagi and family · Designed by Astu Architects and Rajvi Jhaveri",
+};
+
+/* What the resort holds, each as a pencil sketch. Every label is a fact
+ * already stated further down this page. */
+const openingFeatures: OpeningFeature[] = [
+  { sketch: "pool", label: "Pool courtyard" },
+  { sketch: "cottage", label: "Private pool cottages" },
+  { sketch: "thali", label: "Two separate kitchens" },
+  { sketch: "banquet", label: "1,000-guest venues" },
+  { sketch: "zipline", label: "Zipline & sky cycling" },
+  { sketch: "temple", label: "Badami caves, 55 km" },
+];
+
+/* The six outlets, as named on the dining page. */
+const diningOutlets = ["Pure veg restaurant", "Non-veg restaurant", "Bar lounge", "Resto-bar cafe", "Courtyard cafe", "Banquet dining"];
+
+/* Only the experiences with an architect's render; the rest use stock photos. */
+const moments = [
+  { scene: "dusk-pool-candidate-p38", name: "Candlelight dinner", detail: "2 hours", alt: "Poolside cottages at dusk with lanterns reflected in the water" },
+  { scene: "cottage-pool-terrace-p34", name: "Poolside sundowner", detail: "2 hours", alt: "Covered timber deck with armchairs beside a cottage pool" },
+  { scene: "hero-pool-day-desktop-p37", name: "Full-day outing", detail: "7 hours", alt: "Central pool and poolside cottages in daylight" },
+];
+
+/** "Badami Cave Temples (55 km)" -> ["Badami Cave Temples", "55 km"]. */
+function splitDistance(name: string): [string, string] {
+  const match = name.match(/^(.*?)\s*\((\d+ km)\)$/);
+  return match ? [match[1], match[2]] : [name, ""];
+}
 
 const nearbyAttractions = [
   {
@@ -209,130 +124,68 @@ export default function Home() {
   return (
     <MotionProvider>
       <a className="skip-link" href="#story">Skip to content</a>
+      <SubpageHeader overlay />
       <main id="main-content" tabIndex={-1}>
 
-        {/* 1. Hero */}
-        <Opening slides={[
-          {
-            scene: getScene("hero-pool-day-desktop-p37"),
-            mobile: getScene("hero-pool-arch-mobile-p35"),
-            title: "A stay shaped around time together.",
-            label: "Private pool cottage concept",
-            alt: "Pool courtyard and illuminated arched seating pavilion at Golden Hills Resort",
-            focalPoint: "center 54%",
-            mobileFocalPoint: "51% center",
-          },
-        ]} />
-
-        {/* 2. Brand Story / Welcome */}
-        <section id="story" className="story-section wrap" aria-labelledby="story-title" tabIndex={-1}>
-          <div className="story-layout">
-            <div className="story-content">
-              <div className="status-line">
-                <p className="section-note">Brand story &amp; welcome</p>
-                <span className="section-status">Welcome to Golden Hills</span>
-              </div>
-              <h2 id="story-title">A family-friendly retreat taking shape in northern Karnataka.</h2>
-              <div className="story-prose">
-                <p className="story-lead">
-                  Promoted by Smt. Asha Bilagi and family, Golden Hills Resort is located at Survey No. 162/2A in Anagawadi Village, Biligi Taluk, within northern Karnataka&rsquo;s historic tourism corridor.
-                </p>
-                <p>
-                  Conceived by Astu Architects and Rajvi Jhaveri, the resort combines comfortable guest rooms and standalone wooden cottages, six specialized dining destinations, 1,000-guest celebration lawns, and all-age recreation.
-                </p>
-                <p>
-                  Situated directly along the National Highway between Hubli and Vijayapur (30 km from Bagalkote town), the resort is envisioned as a serene base where families unwind, milestone celebrations come together, and visitors explore nearby heritage destinations including Almatti Dam, Aihole, and the Badami Cave Temples.
-                </p>
-              </div>
-              <div className="story-badges">
-                <span className="story-badge-pill">Biligi Taluk, Bagalkote Dist.</span>
-                <span className="story-badge-pill">Astu Architects &amp; Rajvi Jhaveri</span>
-                <span className="story-badge-pill">Focus Tourism Destination</span>
-              </div>
-            </div>
-
-            <div className="story-visual">
-              <ConceptFigure
-                scene={getScene("arrival-reception-lounge-p11")}
-                alt="Double-height reception lounge concept with floor-to-ceiling glass and outdoor landscape views"
-                label="Main reception lounge concept"
-                sizes="(max-width: 900px) 100vw, 48vw"
-              />
-            </div>
-          </div>
-        </section>
+        {/* 1. Opening — a pinned, scroll-driven slideshow (home-opening.tsx). */}
+        <HomeOpening slides={openingSlides} features={openingFeatures} intro={openingIntro} />
 
         {/* 3. Accommodation Showcase */}
-        <section id="stay" className="stay-section wrap" aria-labelledby="stay-title" tabIndex={-1}>
-          <div className="showcase-split-layout">
-            <div className="showcase-left">
+        <section id="stay" className="home-rooms wrap" aria-labelledby="stay-title" tabIndex={-1}>
+          <Sketch name="cottage" className="sec-sketch sec-sketch--stay" />
+          <div className="home-row-head">
+            <div>
               <div className="status-line">
                 <p className="section-note">Accommodations</p>
-                <span className="section-status">Six distinct categories</span>
+                <span className="section-status">Six categories · from ₹4,999 a night</span>
               </div>
-              <h2 id="stay-title">Rooms, cottages &amp; private pool villas.</h2>
-              <p className="showcase-description">
-                Thoughtfully crafted living spaces across Hotel Block 1, the Timber Wellness Enclave, and the Poolside Courtyard with verified 3D perspectives and ensuite washrooms.
-              </p>
-              <div className="showcase-cta-wrap">
-                <Link href="/stay" className="showcase-cta-btn">
-                  <span>View accommodations</span>
-                  <ArrowRight size={15} />
-                </Link>
-              </div>
+              <h2 id="stay-title">Rooms, cottages &amp; private pool villas</h2>
             </div>
-
-            <Link href="/stay" className="showcase-right-card" aria-label="Explore all 6 accommodation categories">
-              <div className="showcase-media-frame">
-                <Image
-                  src={getScene("room-queen-bed-p06").src}
-                  alt="Golden Hills Resort luxury queen bedroom render"
-                  fill
-                  sizes="(max-width: 900px) 100vw, 560px"
-                  className="showcase-media-img"
-                />
-                <div className="showcase-card-overlay">
-                  <span className="showcase-pill">From ₹4,999 / night · 6 Categories</span>
-                </div>
-              </div>
-              <div className="showcase-card-body">
-                <span className="showcase-eyebrow">Hotel Rooms · Timber Cottages · Poolside Villas</span>
-                <h3 className="showcase-card-title">Explore All 6 Accommodation Categories</h3>
-                <span className="showcase-card-link">
-                  View rooms, cottages &amp; floorplans <ArrowRight size={14} />
-                </span>
-              </div>
-            </Link>
+            <Link href="/stay" className="home-row-link">All stays <ArrowRight size={15} /></Link>
           </div>
+          <SwipeRow label="Rooms and cottages">
+            {roomTypes.map((room) => {
+              const cover = getScene(room.images[0].sceneId);
+              return (
+                <Link key={room.slug} href={`/stay/${room.slug}`} className="room-tile" role="listitem">
+                  <span className="room-tile-media">
+                    <Image src={cover.src} width={cover.width} height={cover.height} alt={room.images[0].alt} sizes="(max-width: 760px) 78vw, 320px" />
+                  </span>
+                  <span className="room-tile-name">{room.title}</span>
+                  <span className="room-tile-price">From {room.startingTariff} a night</span>
+                </Link>
+              );
+            })}
+          </SwipeRow>
+          <p className="home-row-note">{impression}</p>
         </section>
 
         {/* 4. Amenities */}
         <section id="amenities" className="amenities-section wrap" aria-labelledby="amenities-title" tabIndex={-1}>
-          <div className="amenities-heading" style={{ marginBottom: "28px" }}>
+          <Sketch name="zipline" className="sec-sketch sec-sketch--amenities" />
+          <div className="amenities-heading">
             <div className="status-line">
               <p className="section-note">Amenities &amp; recreation</p>
               <span className="section-status">For stays &amp; day visits</span>
             </div>
-            <h2 id="amenities-title">Recreation, wellness and adventure facilities.</h2>
-            <p style={{ marginTop: "12px", color: "var(--color-muted)", maxWidth: "56ch" }}>
-              Published operating windows and comprehensive facilities across swimming pools, wellness, adventure games, and core infrastructure.
-            </p>
+            <h2 id="amenities-title">Recreation, wellness and adventure facilities</h2>
           </div>
-          <AmenitiesCards amenities={amenitiesList} />
+          <AmenityGrid tiles={amenityTiles} />
         </section>
 
         {/* 5. Dining Showcase */}
         <section id="dining" className="dining-section wrap" aria-labelledby="dining-title" tabIndex={-1}>
+          <Sketch name="thali" className="sec-sketch sec-sketch--dining" />
           <div className="showcase-split-layout">
             <div className="showcase-left">
               <div className="status-line">
                 <p className="section-note">Dining destinations</p>
                 <span className="section-status">Six culinary outlets</span>
               </div>
-              <h2 id="dining-title">Distinct culinary outlets &amp; separate kitchens.</h2>
-              <p className="showcase-description">
-                From authentic regional pure vegetarian thalis and live barbecue grills to casual resto-bar dining and poolside coffee, the resort provides complete culinary variety with separate vegetarian and non-vegetarian kitchens.
-              </p>
+              <h2 id="dining-title">Distinct culinary outlets &amp; separate kitchens</h2>
+              <ul className="home-chips" aria-label="Dining outlets">
+                {diningOutlets.map((outlet) => <li key={outlet}>{outlet}</li>)}
+              </ul>
               <div className="showcase-cta-wrap">
                 <Link href="/dining" className="showcase-cta-btn">
                   <span>View dining destinations</span>
@@ -350,15 +203,10 @@ export default function Home() {
                   sizes="(max-width: 900px) 100vw, 560px"
                   className="showcase-media-img"
                 />
-                <div className="showcase-card-overlay">
-                  <span className="showcase-pill">6 Dining Destinations · Separate Kitchens</span>
-                </div>
               </div>
               <div className="showcase-card-body">
-                <span className="showcase-eyebrow">Pure Veg Kitchen · Multi-Cuisine Grill · Bar Lounge</span>
-                <h3 className="showcase-card-title">Explore All 6 Dining Destinations</h3>
                 <span className="showcase-card-link">
-                  View restaurant menus &amp; timings <ArrowRight size={14} />
+                  View menus &amp; timings <ArrowRight size={14} />
                 </span>
               </div>
             </Link>
@@ -366,61 +214,51 @@ export default function Home() {
         </section>
 
         {/* 6. Experiences Showcase */}
-        <section id="experiences" className="dining-section wrap" aria-labelledby="experiences-title" tabIndex={-1}>
-          <div className="showcase-split-layout">
-            <div className="showcase-left">
+        <section id="experiences" className="home-moments wrap" aria-labelledby="experiences-title" tabIndex={-1}>
+          <Sketch name="bonfire" className="sec-sketch sec-sketch--experiences" />
+          <div className="home-row-head">
+            <div>
               <div className="status-line">
                 <p className="section-note">Curated experiences</p>
-                <span className="section-status">Seven bespoke moments</span>
+                <span className="section-status">Seven to choose from</span>
               </div>
-              <h2 id="experiences-title">Signature moments &amp; full-day outings.</h2>
-              <p className="showcase-description">
-                From private poolside candlelight gazebos and open-air movie nights under the stars to starlit campfires and bundled full-day recreation packages, discover unforgettable moments tailored for couples, families, and groups.
-              </p>
-              <div className="showcase-cta-wrap">
-                <Link href="/experiences" className="showcase-cta-btn">
-                  <span>View curated experiences</span>
-                  <ArrowRight size={15} />
-                </Link>
-              </div>
+              <h2 id="experiences-title">Signature moments &amp; full&#8209;day outings</h2>
             </div>
-
-            <Link href="/experiences" className="showcase-right-card" aria-label="Explore all 7 signature experiences">
-              <div className="showcase-media-frame">
-                <Image
-                  src={getScene("dusk-pool-candidate-p38").src}
-                  alt="Golden Hills Resort poolside candlelight gazebo at dusk"
-                  fill
-                  sizes="(max-width: 900px) 100vw, 560px"
-                  className="showcase-media-img"
-                />
-                <div className="showcase-card-overlay">
-                  <span className="showcase-pill">7 Signature Experiences · Day Packages</span>
-                </div>
-              </div>
-              <div className="showcase-card-body">
-                <span className="showcase-eyebrow">Candlelight Gazebos · Starlit Campfires · Day Outings</span>
-                <h3 className="showcase-card-title">Explore All 7 Signature Experiences</h3>
-                <span className="showcase-card-link">
-                  View package pricing &amp; inclusions <ArrowRight size={14} />
-                </span>
-              </div>
-            </Link>
+            <Link href="/experiences" className="home-row-link">All experiences <ArrowRight size={15} /></Link>
           </div>
+          <ul className="moment-strip" aria-label="Experiences">
+            {moments.map((moment) => {
+              const scene = getScene(moment.scene);
+              return (
+                <li key={moment.name}>
+                  <Link href="/experiences" className="moment-tile">
+                    <Image src={scene.src} width={scene.width} height={scene.height} alt={moment.alt} sizes="(max-width: 760px) 78vw, 33vw" />
+                    <span className="moment-tile-caption">
+                      <strong>{moment.name}</strong>
+                      <span>{moment.detail}</span>
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="home-row-note">{impression}</p>
         </section>
 
         {/* 7. Room to Gather Showcase */}
         <section id="gatherings" className="stay-section wrap" aria-labelledby="gatherings-title" tabIndex={-1}>
-          <div className="showcase-split-layout">
+          <Sketch name="banquet" className="sec-sketch sec-sketch--gatherings" />
+          <div className="showcase-split-layout is-flipped">
             <div className="showcase-left">
               <div className="status-line">
                 <p className="section-note">Room to gather</p>
-                <span className="section-status">3 venues · 1,000 pax capacity</span>
               </div>
-              <h2 id="gatherings-title">Venues for weddings, conferences &amp; banquets.</h2>
-              <p className="showcase-description">
-                From climate-controlled indoor conference halls with acoustic timber ceilings to expansive open banquet lawns and poolside celebration decks, Golden Hills Resort accommodates up to 1,000 guests under a transparent zero hall-rental policy.
-              </p>
+              <h2 id="gatherings-title">Venues for weddings, conferences &amp; banquets</h2>
+              <dl className="home-numbers">
+                <div><dt>Venues</dt><dd>3</dd></div>
+                <div><dt>Guests</dt><dd>1,000</dd></div>
+                <div><dt>Hall rental</dt><dd>Zero</dd></div>
+              </dl>
               <div className="showcase-cta-wrap">
                 <Link href="/gatherings" className="showcase-cta-btn">
                   <span>View celebration venues</span>
@@ -438,13 +276,8 @@ export default function Home() {
                   sizes="(max-width: 900px) 100vw, 560px"
                   className="showcase-media-img"
                 />
-                <div className="showcase-card-overlay">
-                  <span className="showcase-pill">3 Venues · 1,000 Pax · Zero Hall Rental</span>
-                </div>
               </div>
               <div className="showcase-card-body">
-                <span className="showcase-eyebrow">Indoor AC Hall · Open Lawn · Poolside LED Lawn</span>
-                <h3 className="showcase-card-title">Explore All Celebration &amp; Banquet Venues</h3>
                 <span className="showcase-card-link">
                   View event spaces &amp; catering menus <ArrowRight size={14} />
                 </span>
@@ -455,32 +288,35 @@ export default function Home() {
 
         {/* 8. Gallery */}
         <section id="gallery" className="gallery-section wrap" aria-labelledby="gallery-title" tabIndex={-1}>
+          <Sketch name="pool" className="sec-sketch sec-sketch--gallery" />
           <div className="gallery-heading">
             <div className="status-line">
               <p className="section-note">Visual preview</p>
-              <span className="section-status">Full image library · 17 perspectives</span>
+              <span className="section-status">17 perspectives</span>
             </div>
-            <h2 id="gallery-title">Architectural design concepts &amp; spaces.</h2>
-            <p>Explore all 17 rendered perspectives across private pool villas, cottage gardens, specialized dining rooms, and gathering venues designed by Astu Architects and Rajvi Jhaveri.</p>
+            <h2 id="gallery-title">Architectural design concepts &amp; spaces</h2>
           </div>
           <GallerySlider />
         </section>
 
         {/* 9. Location & Nearby Attractions */}
         <section id="location" className="location-section wrap" aria-labelledby="location-title" tabIndex={-1}>
+          <Sketch name="temple" className="sec-sketch sec-sketch--location" />
           <div className="location-copy">
             <p className="section-note">Location &amp; heritage</p>
-            <h2 id="location-title">In the historic heart of northern Karnataka.</h2>
-            <p>Golden Hills Resort is located at Survey No. 162/2A, Anagawadi Village, Biligi Taluk, Bagalkote District, Karnataka (Coordinates: 16.239532° N, 75.625928° E).</p>
-            <LocationActions />
-            <p style={{ marginTop: "24px" }}>Situated directly along the National Highway corridor connecting Hubli and Vijayapur (30 km from Bagalkote town), the resort serves as an ideal base for exploring the region&apos;s historic Focus Tourism Destinations:</p>
-            <ul className="location-landmarks">
-              {nearbyAttractions.map(attraction => (
-                <li key={attraction.name}>
-                  <strong>{attraction.name}</strong>
-                  <span>{attraction.desc}</span>
-                </li>
-              ))}
+            <h2 id="location-title">In the historic heart of northern Karnataka</h2>
+            <p>On the Hubli–Vijayapur National Highway, 30 km from Bagalkote town.</p>
+            <ul className="home-distances" aria-label="Nearby heritage sites">
+              {nearbyAttractions.map((attraction) => {
+                const [place, km] = splitDistance(attraction.name);
+                return (
+                  <li key={attraction.name}>
+                    <MapPin size={16} />
+                    <span>{place}</span>
+                    <strong>{km}</strong>
+                  </li>
+                );
+              })}
             </ul>
           </div>
           <div className="location-aside">
@@ -490,13 +326,13 @@ export default function Home() {
 
         {/* 9. Resort Overview / Why Choose Us */}
         <section id="highlights" className="highlights-section wrap" aria-labelledby="highlights-title" tabIndex={-1}>
+          <Sketch name="tree" className="sec-sketch sec-sketch--highlights" />
           <div className="highlights-heading">
             <div className="status-line">
               <p className="section-note">Resort overview</p>
               <span className="section-status">Why choose us</span>
             </div>
-            <h2 id="highlights-title">Hospitality, recreation and celebration in one destination.</h2>
-            <p>Everything you need for a restful holiday, milestone gathering, or refreshing day outing in northern Karnataka.</p>
+            <h2 id="highlights-title">Hospitality, recreation and celebration in one destination</h2>
           </div>
           <HighlightsCards items={whyChooseUsHighlights} />
         </section>
@@ -512,49 +348,43 @@ export default function Home() {
                 sizes="(max-width: 900px) 100vw, 600px"
                 className="membership-teaser-img"
               />
-              <div className="membership-teaser-overlay">
-                <span className="membership-teaser-badge">
-                  <Sparkles size={15} /> 180 Privileges
-                </span>
-                <span className="membership-teaser-pill">55 Vouchers · 125 Coupons</span>
-              </div>
             </div>
 
             <div className="membership-teaser-content">
               <div className="status-line" style={{ marginBottom: "12px" }}>
                 <p className="section-note">Golden Hills Privilege Club</p>
-                <span className="section-status">Charter Enrollment Open</span>
+                <span className="section-status">Charter enrollment open</span>
               </div>
 
               <h2 id="offers-title" className="membership-teaser-heading">
-                Unlock 180 luxury privileges with the Privilege Club.
+                180 privileges with the Privilege Club
               </h2>
 
               <p className="membership-teaser-lead">
-                Receive 55 high-value vouchers and 125 privilege coupons — including 100% complimentary room stays, buy-one-get-one dining buffets, group recreation passes, free banquet rooms, 40% beverage discounts, and an executive welcome keepsake box.
+                55 vouchers and 125 coupons for stays, dining, outings and celebrations.
               </p>
 
               <div className="membership-teaser-features">
                 <div className="membership-feature-chip">
-                  <span className="chip-bullet">✓</span> 2 Free Room Stays &amp; 10 BOGO Nights
+                  <span className="chip-bullet">✓</span> 2 free room stays &amp; 10 BOGO nights
                 </div>
                 <div className="membership-feature-chip">
-                  <span className="chip-bullet">✓</span> 70 Dining, Buffet &amp; Brunch Deals
+                  <span className="chip-bullet">✓</span> 70 dining, buffet &amp; brunch deals
                 </div>
                 <div className="membership-feature-chip">
-                  <span className="chip-bullet">✓</span> 25 Full-Day Outing Recreation Passes
+                  <span className="chip-bullet">✓</span> 25 full-day outing recreation passes
                 </div>
                 <div className="membership-feature-chip">
-                  <span className="chip-bullet">✓</span> Up to 6 Free Rooms with Banquets
+                  <span className="chip-bullet">✓</span> Up to 6 free rooms with banquets
                 </div>
                 <div className="membership-feature-chip">
-                  <span className="chip-bullet">✓</span> 12 Months Validity · Fully Transferable
+                  <span className="chip-bullet">✓</span> 12 months validity · Fully transferable
                 </div>
               </div>
 
               <div className="membership-teaser-action-row">
                 <Link href="/membership" className="membership-teaser-btn">
-                  <span>Explore 180 Membership Privileges</span>
+                  <span>Explore 180 membership privileges</span>
                   <ArrowRight size={16} />
                 </Link>
                 <span className="membership-teaser-subtext">
@@ -574,7 +404,7 @@ export default function Home() {
           <div className="closing-inner wrap">
             <div className="closing-copy">
               <p>Stays · Dining · Celebrations · Recreation</p>
-              <h2 id="closing-title">Plan your stay in northern Karnataka.</h2>
+              <h2 id="closing-title">Plan your stay in northern Karnataka</h2>
               <p style={{ marginTop: "12px", color: "var(--color-chalk-82)", fontSize: "14px", maxWidth: "440px" }}>Connect with our concierge or explore our accommodations, dining, and celebration venues to plan your visit to northern Karnataka.</p>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "flex-end" }}>
