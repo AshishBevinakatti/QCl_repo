@@ -48,6 +48,15 @@ npm run dev           # http://localhost:3000
    - PostgreSQL: `localhost:5433` (not 5432); database `access_db`, user `access_svc`.
 4. Stop: `docker compose --env-file ERP_DEV/.env -f ERP_DEV/infra/docker-compose.yml down`. Add `-v` to also delete the dev data, which you need after editing the realm file.
 
+## 5b. Run the ERP locally (after §5)
+In three terminals, with `set -a; . ERP_DEV/.env; set +a` first in each backend terminal:
+```bash
+(cd ERP_DEV/services/access-service && ./mvnw spring-boot:run)   # :8091
+(cd ERP_DEV/services/api-gateway   && ./mvnw spring-boot:run)    # :8082
+(cd ERP_DEV/web && npm ci && npm run dev)                        # http://localhost:5173
+```
+Open http://localhost:5173 and press **Sign in**. Until slice S5 adds onboarding there is no employee to log in with. For a local test you can create one in the Keycloak admin console (realm gh-staff → Users), but the dashboard will say "ERP record not set up". S5 replaces this with the real Admin onboarding.
+
 ## 6. Your first change
 1. Create a branch: `git switch -c docs/<short-slug>`.
 2. Edit a doc, keeping the "why" and the source next to each rule.

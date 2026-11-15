@@ -167,8 +167,8 @@ sequenceDiagram
 6. **Dashboard.** `GET /api/v1/me` (access-service) returns the employee profile from `access_db`, plus the roles and permissions from the token. React builds the menu from it. Modules the employee can't use are hidden, and the backend refuses them anyway.
 
 ### React token and session handling
-- Library: `keycloak-js`, the same library the earlier ERP used, with its version matched to the Keycloak server (ADR-001). `init({ onLoad: 'login-required', pkceMethod: 'S256', checkLoginIframe: false })`.
-- Tokens are kept **in memory only**: no localStorage or sessionStorage, so XSS can't read them. A page reload re-authenticates silently while the Keycloak SSO session is alive.
+- Library: `keycloak-js` 26.2.5 (D-115). `init({ pkceMethod: 'S256', checkLoginIframe: false })` with **no forced login**: the ERP shows its own sign-in page (Ashish's step 1) and its button calls `keycloak.login()`. After the redirect back, `init` finishes the code exchange.
+- Tokens are kept **in memory only**: no localStorage or sessionStorage, so XSS can't read them. After a page reload the sign-in page shows again; pressing Sign in returns without a password prompt while the Keycloak SSO session is alive.
 - Before each API call: `updateToken(30)` refreshes the token if it expires within 30 s. If the refresh fails, the session has ended → `login()`.
 - A 401 from the API → one refresh and retry → if still 401, log in again. A 403 → show a "You don't have access to this" page, with no retry.
 - Strict Content-Security-Policy on the web app; no third-party scripts on ERP pages.

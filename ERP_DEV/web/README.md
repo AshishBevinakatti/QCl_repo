@@ -1,8 +1,25 @@
 # web — Staff ERP (React + TypeScript + Vite)
 
-- **Responsibility:** employee sign-in (redirect to Keycloak, code flow + PKCE via `keycloak-js`), session handling (tokens in memory, refresh, logout), dashboard, Employees admin screens (increment 1), lead queue and claim (increment 2). Role-based menus are cosmetic only; the backend enforces access.
-- **Port (dev):** 5173 · **Increment:** 1
-- **Design:** `docs/02-architecture/identity/AUTHENTICATION.md` §5–8; `api.md` §3–4.
-- **Stack:** React 19, TypeScript ~6.0, Vite 8, Vitest 5 + Testing Library, oxlint (ADR-001).
+- **Responsibility:** employee sign-in (ERP sign-in page → Keycloak hosted login, code flow + PKCE via `keycloak-js`), session handling (tokens in memory, refresh before expiry, one retry after a 401, sign-in again on a second 401, 403 → "no access"), dashboard built from `GET /api/v1/me`, sign-out (ends the Keycloak session). Menus are visibility only; the backend enforces access.
+- **Port (dev):** 5173 (fixed; it's the only origin the Keycloak client accepts in dev).
+- **Stack:** React 19.3.1, TypeScript 7.0.2, Vite 8.3.8, Vitest 5.1.0 + Testing Library + jsdom, oxlint, keycloak-js 26.2.5 (D-115).
+- **Design:** `docs/02-architecture/identity/AUTHENTICATION.md` §5–6.
 
-No code yet (Milestone 1 skeleton). CI builds it as soon as `package.json` exists.
+## Status (increment 1)
+| Slice | Done |
+|---|---|
+| S4 shell | ✅ sign-in page (no password field in the ERP), Keycloak redirect, `/me` dashboard + module menu, "ERP record not set up" message, sign-out |
+| S5/S6 Employees screens | not yet |
+
+## Commands
+```bash
+cd ERP_DEV/web
+npm ci
+npm run lint     # ✅ 0 problems
+npm test         # ✅ 10 tests
+npm run build    # ✅ tsc -b + vite build
+npm run dev      # http://localhost:5173 (needs the infra stack, access-service and api-gateway running)
+```
+Settings (not secrets; copy `.env.example` to `.env.local` only to change them): `VITE_API_URL` (gateway, default `http://localhost:8082`), `VITE_KEYCLOAK_URL`, `VITE_KEYCLOAK_REALM`, `VITE_KEYCLOAK_CLIENT_ID`.
+
+`index.html` sets a Content-Security-Policy that only allows the app itself, the gateway and Keycloak. Update it together with the URLs for staging/production.
