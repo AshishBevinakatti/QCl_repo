@@ -84,7 +84,7 @@ sequenceDiagram
   G->>S: forward (JWT already checked)
   S->>S: check JWT again + permission employees.manage; validate input
   S->>DB: INSERT employee (status PENDING_PROVISIONING)  — commit
-  S->>K: POST /admin/realms/gh-staff/users (enabled, emailVerified=false, requiredActions=[VERIFY_EMAIL, UPDATE_PASSWORD], attribute erp_employee_id)
+  S->>K: POST /admin/realms/gh-staff/users (enabled, emailVerified=false, requiredActions=[VERIFY_EMAIL, UPDATE_PASSWORD])
   K-->>S: 201 Location: …/users/{kcId}
   S->>K: POST …/users/{kcId}/role-mappings/realm  [SALES_EXECUTIVE]
   S->>K: PUT …/users/{kcId}/execute-actions-email?client_id=erp-web&redirect_uri=…&lifespan=86400  ["VERIFY_EMAIL","UPDATE_PASSWORD"]
@@ -109,7 +109,7 @@ Step by step (this matches Ashish's steps 1–5):
    - The request carries an `Idempotency-Key` header, so a double-click returns the first result.
 2. **Keycloak creates the account.**
    - `access-service` creates the user through the Admin REST API with the `access-service` confidential client (client-credentials grant; see KEYCLOAK-SETUP §5).
-   - It stores the Keycloak user id, and writes `erp_employee_id` onto the Keycloak user as an attribute, so the link works both ways.
+   - It stores the Keycloak user id on the employee row (one-way link). A custom attribute on the Keycloak user was dropped in S5: Keycloak 26's user profile discards unmanaged attributes unless the realm allows them (DEVLOG 2026-11-15).
    - It assigns the realm role.
 3. **The verification email is sent by Keycloak.** We use Keycloak's built-in `execute-actions-email` with `VERIFY_EMAIL` + `UPDATE_PASSWORD`. Keycloak's SMTP settings are in KEYCLOAK-SETUP §4. The ERP never sends this email itself.
 4. **The employee verifies the email and sets a password on Keycloak's own pages.**
@@ -263,7 +263,7 @@ idempotency_key
 | # | Scenario | What happens | Admin sees / action |
 |---|---|---|---|
 | F1 | Keycloak down when an employee is created | Row stays `PENDING_PROVISIONING`; API returns 202 with that status. The reconciliation job retries with backoff | "Provisioning pending" + Retry button |
-| F2 | Keycloak returns 409 (email/username taken) | If the existing Keycloak user has our `erp_employee_id` → adopt it (a safe retry). Otherwise → status `PENDING_PROVISIONING`, reason "conflict", API 409 | "Email or username already exists in identity system" |
+| F2 | Keycloak returns 409 (email/username taken) | Adopt the existing Keycloak user **only** if its username **and** email match this employee and no other employee is linked to it (our own earlier, half-finished attempt). Otherwise the row stays `PENDING_PROVISIONING` with the reason, and the API returns 202 | "Email or username already exists in identity system" + Retry after it is resolved |
 | F3 | User created, role assignment fails | Keep `keycloak_user_id`; retry role assignment (idempotent) | Retry |
 | F4 | SMTP down / invite email fails | `INVITE_EMAIL_FAILED`; the Keycloak user stays created | "Invite email failed" + Resend |
 | F5 | Invite link expired (after 24 h) | Keycloak shows "link expired" | Admin → Resend invite |

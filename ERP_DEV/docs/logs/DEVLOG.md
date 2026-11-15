@@ -84,3 +84,13 @@ History before 2026-11-15 is in `archive/hotel-draft:ERP_DEV/docs/logs/DEVLOG.md
 - Closed from S2: the live 401 for a wrong-audience token came from the audience rule, since real erp-api tokens are now accepted.
 - Not checked: keycloak-js running in a real browser (redirect handling inside React). Covered by unit tests with a fake session; needs a manual click-through, or Brave started with remote debugging.
 - Cleanup: jars, vite and the throwaway stack stopped (`down -v`); test password file deleted.
+- Commit `4a8ef19` feat(web): staff ERP shell (approved by Ashish).
+
+## 2026-11-15T14:36:25+05:30 — Increment 1, slice S5 (employee onboarding)
+- Chose a plain Testcontainers GenericContainer for Keycloak instead of testcontainers-keycloak 4.4.0 (approved, but it would add keycloak-admin-client/RESTEasy/Jackson 2 to the test classpath). The test imports the **real** `infra/keycloak/gh-staff-realm.json`.
+- Design change: dropped the `erp_employee_id` attribute on Keycloak users (Keycloak 26's user profile drops unmanaged attributes unless the realm allows them). Adoption on a 409 now requires the same username **and** email and no other linked employee. AUTHENTICATION §4/F2 and REQ-IAM-003 updated.
+- Built (access-service): KeycloakAdmin interface + KeycloakAdminClient (client-credentials token cache; Unavailable / Conflict / EmailFailed), EmployeeService (idempotency key claimed in the same transaction as the insert; provisioning under a SKIP LOCKED row lock; status derived from Keycloak), EmployeeController (POST/GET/GET id/retry; MANAGER can't manage, D-113), AccountJobs (sync every 5 min, idempotency clean-up, bootstrap ADMIN with a deterministic key), AuditLog. Web: Employees screen (list, add, retry), hash routing.
+- Bugs found by tests: (1) Jackson 3 rejects a missing primitive `boolean` → `whatsappOptIn` is now optional (Boolean, default false); (2) a class named `*IT` isn't run by surefire → renamed EmployeeOnboardingTest; (3) a test helper named `status` shadowed MockMvc's.
+- Tests: access-service **18/18** (incl. real Keycloak + Mailpit + PostgreSQL); web **14/14**, lint 0, build OK.
+- Live (throwaway stack): bootstrap ADMIN invited on start → email in Mailpit → link opens Keycloak's set-password page → short password refused → password set → login → list sync INVITED→ACTIVE → /me ADMIN → owner creates a Sales Executive via the gateway (201; same key returns the same employee; invite email sent) → 5 wrong passwords lock even the right one. **10/10.** Audit trail SYSTEM_BOOTSTRAP/SYSTEM_SYNC/owner recorded; 0 occurrences of the password, client secret or a JWT in either service log.
+- Not done (S6): deactivate/reactivate, resend invite, role change, last-admin/self guards.

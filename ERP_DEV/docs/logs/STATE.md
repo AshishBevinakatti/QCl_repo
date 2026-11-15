@@ -1,6 +1,6 @@
 # Project State
-Updated: 2026-11-15T12:22:28+05:30
-Phase: 1 (new baseline): Guest Acquisition, Identity & Sales Lead Operations. Work unit: **Increment 1: S1–S3 committed (8d5f9bc, bd8d799, 88176a5); S4 web shell done (15/15 live login checks), waiting for commit approval**. Branch `feature/phase1-inc1-identity`.
+Updated: 2026-11-15T14:36:25+05:30
+Phase: 1 (new baseline): Guest Acquisition, Identity & Sales Lead Operations. Work unit: **Increment 1: S1–S4 committed (…4a8ef19); S5 onboarding done (18 + 14 tests, 10/10 live), waiting for commit approval**. Branch `feature/phase1-inc1-identity`.
 Branch: `feature/phase1-fresh-start` (local, not pushed). Archive: `archive/hotel-draft` + tag `archive-hotel-draft-2026-11-15` (825f3fe, pushed).
 
 State:
@@ -11,7 +11,6 @@ State:
 4. Resource folder rule updated to `/run/media/ash_63/DATA/Intership wrok/ERP_Resouce` (Q-001 answered).
 
 Next action:
-1. Ashish approves the S4 commit.
-2. Optional: Ashish clicks through http://localhost:5173 in a real browser (keycloak-js in-browser redirect not yet seen live).
-3. Push still blocked: GitHub token needs the `workflow` scope.
-4. Then S5: employee onboarding (create → Keycloak user + role + invite email → status sync → bootstrap admin) + Employees screens; includes the brute-force lockout check and following the invite link.
+1. Ashish approves the S5 commit.
+2. Push still blocked: GitHub token needs the `workflow` scope.
+3. Then S6: deactivate/reactivate (Keycloak first, then logout, then DB), resend invite (3/hour), role change (`roles.assign`), last-admin and self guards, audit view.

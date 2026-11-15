@@ -9,7 +9,7 @@ function Root({ signedIn }: { signedIn: boolean }) {
   const request = useMemo(() => createApi(session), []);
   const loadMe = useCallback(() => request<Me>("/api/v1/me"), [request]);
   return signedIn
-    ? <Dashboard loadMe={loadMe} onSignOut={() => void session.logout()} />
+    ? <Dashboard loadMe={loadMe} request={request} onSignOut={() => void session.logout()} />
     : <SignIn onSignIn={() => void session.login()} />;
 }
 

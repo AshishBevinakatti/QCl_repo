@@ -73,6 +73,8 @@ Create request:
   "whatsappOptIn": false }
 ```
 
+`whatsappOptIn` is optional (default `false`). Response (`EmployeeView`): `{ id, firstName, lastName, email, username, mobile, jobRole, whatsappOptIn, status, statusReason, identityLinked, createdAt, updatedAt, version }`. Email and username are stored lowercase; spaces and dashes are removed from the mobile. Duplicate email/username/mobile → 409 with the field named in `message`.
+
 (Example values are illustrative, not client data. Extra fields such as staff code and joining date: Q-017.)
 
 ## 4. Staff — lead-service (increment 2)

@@ -32,6 +32,19 @@ public class Employee {
 
     protected Employee() { }
 
+    public Employee(UUID id, String firstName, String lastName, String email, String username, String mobileE164,
+                    String jobRole, boolean whatsappOptIn, UUID actor, Instant now) {
+        this.id = id; this.firstName = firstName; this.lastName = lastName; this.email = email; this.username = username;
+        this.mobileE164 = mobileE164; this.jobRole = jobRole; this.whatsappOptIn = whatsappOptIn;
+        this.status = "PENDING_PROVISIONING"; this.createdBy = actor; this.updatedBy = actor; this.createdAt = now; this.updatedAt = now;
+    }
+
+    public void linkKeycloak(UUID keycloakUserId) { this.keycloakUserId = keycloakUserId; }
+
+    public void setStatus(String status, String reason, UUID actor, Instant now) {
+        this.status = status; this.statusReason = reason; this.updatedBy = actor; this.updatedAt = now;
+    }
+
     public UUID getId() { return id; }
     public UUID getKeycloakUserId() { return keycloakUserId; }
     public String getFirstName() { return firstName; }
@@ -40,4 +53,11 @@ public class Employee {
     public String getUsername() { return username; }
     public String getJobRole() { return jobRole; }
     public String getStatus() { return status; }
+    public String getStatusReason() { return statusReason; }
+    public String getMobileE164() { return mobileE164; }
+    public boolean isWhatsappOptIn() { return whatsappOptIn; }
+    public UUID getCreatedBy() { return createdBy; }
+    public Instant getCreatedAt() { return createdAt; }
+    public Instant getUpdatedAt() { return updatedAt; }
+    public int getVersion() { return version; }
 }

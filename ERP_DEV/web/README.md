@@ -9,14 +9,15 @@
 | Slice | Done |
 |---|---|
 | S4 shell | ✅ sign-in page (no password field in the ERP), Keycloak redirect, `/me` dashboard + module menu, "ERP record not set up" message, sign-out |
-| S5/S6 Employees screens | not yet |
+| S5 Employees screen | ✅ list with readable account status, Add employee (Idempotency-Key per submission, server field errors inline), Retry for stuck invites; add/retry hidden without `employees.manage` |
+| S6 activate/deactivate, resend, role change | not yet |
 
 ## Commands
 ```bash
 cd ERP_DEV/web
 npm ci
 npm run lint     # ✅ 0 problems
-npm test         # ✅ 10 tests
+npm test         # ✅ 14 tests
 npm run build    # ✅ tsc -b + vite build
 npm run dev      # http://localhost:5173 (needs the infra stack, access-service and api-gateway running)
 ```

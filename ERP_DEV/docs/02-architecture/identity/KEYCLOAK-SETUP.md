@@ -156,7 +156,7 @@ Checked in S1 on 2026-11-15 against Keycloak 26.8.2 (throwaway stack, script out
 - [x] ✅ `erp-web` refuses a request without PKCE and refuses the password grant.
 - [x] ✅ Access token has `aud` containing `erp-api`, `realm_access.roles` and `resource_access.erp-api.roles` (checked with Keycloak's generated example token); lifespan 300 s.
 - [x] ✅ The `access-service` service account **can** create a user and map a realm role, and **cannot** create a client (403) or read realm roles directly (403).
-- [ ] After 5 wrong passwords the account is temporarily locked. Realm settings are confirmed; the behaviour is tested in S5 through a real browser login.
-- [x] ✅ Invite email ("Update Your Account") arrives in Mailpit. Following the link is tested in S5.
-- [ ] A disabled user can't log in, and refreshing their token fails.
+- [x] ✅ After 5 wrong passwords even the right password is refused (S5 live check 10).
+- [x] ✅ Invite email ("Update Your Account") arrives in Mailpit. Following the link opens Keycloak's set-password page, the 12-character policy is enforced, and the password is set (S5 live checks 1–3).
+- [ ] A disabled user can't log in, and refreshing their token fails (S6).
 - [x] ✅ CI job `realm-check` validates the realm file (14 rules, passed locally): it must contain `registrationAllowed=false`, `verifyEmail=true`, brute-force on, PKCE on `erp-web`, direct grants off, and no `secret` values in plain text.

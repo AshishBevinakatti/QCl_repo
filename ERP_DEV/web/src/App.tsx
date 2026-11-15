@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Me } from "./api";
+import { Employees } from "./Employees";
 
 export const MODULE_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
@@ -18,8 +19,21 @@ export function SignIn({ onSignIn }: { onSignIn: () => void }) {
   );
 }
 
-export function Dashboard({ loadMe, onSignOut }: { loadMe: () => Promise<Me>; onSignOut: () => void }) {
+type Request = <T>(path: string, init?: RequestInit) => Promise<T>;
+
+function useHash() {
+  const [hash, setHash] = useState(() => window.location.hash.slice(1));
+  useEffect(() => {
+    const on = () => setHash(window.location.hash.slice(1));
+    window.addEventListener("hashchange", on);
+    return () => window.removeEventListener("hashchange", on);
+  }, []);
+  return hash;
+}
+
+export function Dashboard({ loadMe, onSignOut, request }: { loadMe: () => Promise<Me>; onSignOut: () => void; request?: Request }) {
   const [me, setMe] = useState<Me | null>(null);
+  const page = useHash();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,9 +56,11 @@ export function Dashboard({ loadMe, onSignOut }: { loadMe: () => Promise<Me>; on
         {me.modules.map((m) => <a key={m} href={`#${m}`}>{MODULE_LABELS[m] ?? m}</a>)}
       </nav>
       <main>
-        {name ? <h1>Welcome, {name}</h1> : (
+        {!name ? (
           <p role="alert">Your sign-in works, but your ERP employee record is not set up yet. Ask an administrator.</p>
-        )}
+        ) : page === "employees" && me.modules.includes("employees") && request ? (
+          <Employees request={request} canManage={me.permissions.includes("employees.manage")} />
+        ) : <h1>Welcome, {name}</h1>}
       </main>
     </div>
   );

@@ -27,6 +27,26 @@ public class ErrorHandler {
                 CorrelationIdFilter.current(), Instant.now(), fields));
     }
 
+    @ExceptionHandler(ApiException.class)
+    ResponseEntity<ApiError> api(ApiException e) {
+        return body(e.status, e.code, e.getMessage());
+    }
+
+    @ExceptionHandler(org.springframework.security.authorization.AuthorizationDeniedException.class)
+    ResponseEntity<ApiError> denied(org.springframework.security.authorization.AuthorizationDeniedException e) {
+        return body(HttpStatus.FORBIDDEN, "FORBIDDEN", "You do not have permission to do this.");
+    }
+
+    @ExceptionHandler(org.springframework.web.bind.MissingRequestHeaderException.class)
+    ResponseEntity<ApiError> missingHeader(org.springframework.web.bind.MissingRequestHeaderException e) {
+        return body(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "Missing header: " + e.getHeaderName());
+    }
+
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    ResponseEntity<ApiError> unreadable(org.springframework.http.converter.HttpMessageNotReadableException e) {
+        return body(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "The request body is not valid JSON for this endpoint.");
+    }
+
     @ExceptionHandler(NoResourceFoundException.class)
     ResponseEntity<ApiError> notFound(NoResourceFoundException e) {
         return body(HttpStatus.NOT_FOUND, "NOT_FOUND", "Not found.");
