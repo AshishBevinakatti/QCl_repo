@@ -63,3 +63,12 @@ History before 2026-11-15 is in `archive/hotel-draft:ERP_DEV/docs/logs/DEVLOG.md
 - Mistakes during the check: (1) the folder path with a space broke an unquoted variable → rerun with an array; (2) `pkill -f` matched its own shell and killed it → used a stricter pgrep + kill. No effect on files.
 - CI: the service job now runs `./mvnw -B verify` in the service folder.
 - AUTHENTICATION §9 updated: audit_event has `actor_label` and `reason`, and append-only is enforced by a trigger.
+- Commit `bd8d799` feat(auth): access-service skeleton (approved by Ashish).
+
+## 2026-11-15T12:04:57+05:30 — Increment 1, slice S3 (api-gateway) + S2 file-mode fix
+- Found after committing S2 (`bd8d799`): `mvnw` was committed as 100644. The repo is on an NTFS (fuseblk) drive with `core.fileMode=false`, so git never sees +x and CI would fail. Fixed with `git update-index --chmod=+x` for both mvnw files and `infra/postgres/init/01-service-databases.sh`. `.gitattributes`: `*.cmd` CRLF, `*.sh` and `mvnw` LF. Included in the S3 commit.
+- Gateway: Spring Cloud 2025.1.4 BOM read from Maven Central (Gateway 5.0.4; WebFlux and WebMVC server starters). Chose WebFlux for the Redis rate limiter. **Boot 4.1.2 + Spring Cloud 2025.1.4 start fine** (the D-115 open point is closed).
+- Built: SecurityConfig (same token rules as access-service; validator duplicated, marked `shortcut:`), CorrelationIdWebFilter (runs before security so 401s carry the id), JSON 401/403, CORS (5173 + 3000 only), KeyResolver (employee `sub`, else peer IP), default filters RequestSize + RequestRateLimiter, route `/api/v1/me` + `/api/v1/admin/**` → access-service.
+- Tests: first run 7/10. Three test-side mistakes (stub `path()` drops the leading slash; Spring now names 413 CONTENT_TOO_LARGE). After the fix: **10/10** (GatewayRoutingTest 9, RateLimitTest 1) with real Redis 8.10.3 in Testcontainers.
+- Live (compose stack + both jars): gateway health UP; no token → 401 + X-Correlation-Id; real Keycloak token with the wrong audience → 401; CORS preflight 5173 → 200, evil.example → 403; 0 Redis errors with the password-protected Redis.
+- Known limit noted: the rate limiter fails open when Redis is down (R-011).

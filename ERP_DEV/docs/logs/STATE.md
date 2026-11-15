@@ -1,6 +1,6 @@
 # Project State
-Updated: 2026-11-15T11:55:38+05:30
-Phase: 1 (new baseline): Guest Acquisition, Identity & Sales Lead Operations. Work unit: **Increment 1: S1 committed (8d5f9bc); S2 access-service skeleton done, waiting for commit approval**. Branch `feature/phase1-inc1-identity`.
+Updated: 2026-11-15T12:04:57+05:30
+Phase: 1 (new baseline): Guest Acquisition, Identity & Sales Lead Operations. Work unit: **Increment 1: S1 (8d5f9bc) and S2 (bd8d799) committed; S3 api-gateway done + S2 file-mode fix, waiting for commit approval**. Branch `feature/phase1-inc1-identity`.
 Branch: `feature/phase1-fresh-start` (local, not pushed). Archive: `archive/hotel-draft` + tag `archive-hotel-draft-2026-11-15` (825f3fe, pushed).
 
 State:
@@ -11,7 +11,6 @@ State:
 4. Resource folder rule updated to `/run/media/ash_63/DATA/Intership wrok/ERP_Resouce` (Q-001 answered).
 
 Next action:
-1. Ashish approves the S2 commit.
+1. Ashish approves the S3 commit (which includes the mvnw executable-bit fix for S2).
 2. Push still blocked: GitHub token needs the `workflow` scope.
-3. Ashish adds the new variables from `ERP_DEV/.env.example` to his `ERP_DEV/.env`.
-4. Then S3: api-gateway (Spring Cloud 2025.1.4 + Boot 4.1.2 compatibility is checked there).
+3. Then S4: web shell (React 19.3 + Vite 8.3 + TypeScript 7, keycloak-js 26.2.5): sign-in redirect, tokens in memory, /me dashboard, sign-out. This is the first real browser login, which proves the full token path end to end.

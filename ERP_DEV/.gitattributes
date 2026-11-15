@@ -8,3 +8,6 @@
 *.pdf binary
 *.png binary
 *.jpg binary
+*.cmd text eol=crlf
+*.sh text eol=lf
+mvnw text eol=lf

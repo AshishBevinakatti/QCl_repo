@@ -13,3 +13,4 @@
 | R-009 | Resource folder moved; rule path stale | Certain / Low | Q-001 | Ashish |
 | R-010 | Landing page build only checked in CI, not locally (node_modules symlink) | Medium / Low | First CI run on the branch confirms it | Dev |
 | R-009 (update) | Closed on 2026-11-15: rule path updated (Q-001) | — | — | — |
+| R-011 | Gateway rate limiter fails open if Redis is unreachable | Low / Medium | Health alert on Redis in the ops increment; services still check tokens | Dev |
