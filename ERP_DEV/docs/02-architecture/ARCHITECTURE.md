@@ -23,7 +23,7 @@ flowchart LR
     LP["landing-page (Next.js) :3000"]
     WEB["web — staff ERP (React+TS+Vite) :5173"]
   end
-  KC["Keycloak :8081\nrealm gh-staff (employees)\nrealm gh-guests (guests, Q-003)"]
+  KC["Keycloak 26 :8081\nrealm gh-staff (employees)\nrealm gh-guests (guests, Q-003)"]
   GW["api-gateway (Spring Cloud Gateway) :8082\nJWT check · rate limit · correlation id · CORS"]
   subgraph Services["Spring Boot services (each own DB + Flyway)"]
     ACC["access-service :8091\nemployees · Keycloak Admin API · /me"]
@@ -31,9 +31,9 @@ flowchart LR
     LEAD["lead-service :8093\ninquiries · lead queue · claim · outbox"]
     NOTI["notification-service :8094\n(later increment)"]
   end
-  PG[("PostgreSQL 16\nkeycloak · access_db · guest_db · lead_db · notification_db")]
+  PG[("PostgreSQL 18\nkeycloak · access_db · guest_db · lead_db · notification_db")]
   KAFKA[["Kafka 3.7 (KRaft)"]]
-  REDIS[("Redis 7\ngateway rate limits")]
+  REDIS[("Redis 8\ngateway rate limits")]
   SMTP["SMTP (Mailpit in dev)"]
 
   LP -- "/api/v1/portal/**" --> GW
@@ -73,7 +73,7 @@ Each service is its own Maven project (its own `pom.xml`, Dockerfile, tests and 
 | `lead_db` | lead-service | `lead_svc` | `lead`, `lead_activity`, `outbox_event`, `idempotency_key` |
 | `notification_db` | notification-service | `notification_svc` | Delivery attempts (later) |
 
-One PostgreSQL 16 cluster with a separate database and a separate least-privilege user per service (Blueprint §6 allows this for the first environment). Flyway migrations per service. No hard deletes: use status changes.
+One PostgreSQL 18 cluster with a separate database and a separate least-privilege user per service (Blueprint §6 allows this for the first environment). Flyway migrations per service. No hard deletes: use status changes.
 
 ## 5. Communication
 
@@ -117,9 +117,13 @@ ERP_Resort/
 
 `notification-service/` isn't created until its increment starts (Blueprint §4: no empty placeholder services).
 
-## 8. Local environment (increment 1, not built yet)
+## 8. Local environment (increment 1, slice S1 — built)
 
-`docker compose -f ERP_DEV/infra/docker-compose.yml up` will start PostgreSQL 16, Keycloak 24, Kafka 3.7 (KRaft), Redis 7 and Mailpit. The services and the web app then run with `mvn spring-boot:run` / `npm run dev`. [DAY-ONE](../00-onboarding/DAY-ONE.md) will list the exact checked commands once they exist.
+```bash
+docker compose --env-file ERP_DEV/.env -f ERP_DEV/infra/docker-compose.yml up -d --wait
+```
+
+This starts PostgreSQL 18 (host port **5433**, because a system PostgreSQL often owns 5432), Keycloak 26.8.2 (:8081, realm `gh-staff` imported), Redis 8 (:6379, password required) and Mailpit (SMTP :1025, UI http://localhost:8025). All ports bind to 127.0.0.1. Kafka joins in increment 2. Exact steps: [DAY-ONE §5](../00-onboarding/DAY-ONE.md).
 
 ## 9. Observability (Blueprint ADR-014, increment 1 baseline)
 

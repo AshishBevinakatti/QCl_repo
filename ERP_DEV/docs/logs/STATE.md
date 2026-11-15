@@ -1,6 +1,6 @@
 # Project State
-Updated: 2026-11-15T11:23:49+05:30
-Phase: 1 (new baseline): Guest Acquisition, Identity & Sales Lead Operations. Work unit: **Milestone 1: documentation + skeleton** (no application code).
+Updated: 2026-11-15T11:44:30+05:30
+Phase: 1 (new baseline): Guest Acquisition, Identity & Sales Lead Operations. Work unit: **Increment 1, slice S1 done (infra + realm), waiting for commit approval**. Branch `feature/phase1-inc1-identity`.
 Branch: `feature/phase1-fresh-start` (local, not pushed). Archive: `archive/hotel-draft` + tag `archive-hotel-draft-2026-11-15` (825f3fe, pushed).
 
 State:
@@ -11,6 +11,7 @@ State:
 4. Resource folder rule updated to `/run/media/ash_63/DATA/Intership wrok/ERP_Resouce` (Q-001 answered).
 
 Next action:
-1. **Push blocked:** the GitHub token lacks the `workflow` scope. Ashish updates the token, then push `feature/phase1-fresh-start`.
-2. Ashish reviews `docs/03-phases/phase-1/inc1-PLAN.md`: approve the plan, the web lookups for current versions (§3) and the dependencies (§4, Q-023).
-3. Uncommitted: DEVLOG/OPEN_QUESTIONS/DECISIONS entries, Q-003 decided in api/REQUIREMENTS/TRACEABILITY/ARCHITECTURE/phase1_plan/READMEs, ADR-001 update, inc1-PLAN.md. Ask before committing.
+1. Ashish reviews slice S1 (infra + realm, 15/15 live checks) and approves the commit.
+2. Push still blocked: GitHub token needs the `workflow` scope.
+3. Ashish adds the new variables from `ERP_DEV/.env.example` to his `ERP_DEV/.env` (the agent doesn't edit it).
+4. Then slice S2: access-service skeleton (Spring Boot 4.1.2, resource server, /me, Flyway V1, 401 tests).

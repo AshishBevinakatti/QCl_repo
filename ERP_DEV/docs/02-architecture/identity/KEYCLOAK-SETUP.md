@@ -2,17 +2,17 @@
 
 - Status: **Proposed. Waiting for Ashish's review** (Milestone 1). The values below go into `ERP_DEV/infra/keycloak/gh-staff-realm.json` in Sprint 1. That file is imported at startup and contains **no secrets**; secrets come from `${ENV}` placeholders.
 - Why each setting exists: [AUTHENTICATION.md](AUTHENTICATION.md). Decision: [ADR-002](../adr/ADR-002-keycloak-employee-identity.md).
-- Keycloak version: **24.0** (same as the earlier stack, ADR-001). Upgrading is open question Q-020; settings that differ between versions are marked.
+- Keycloak version: **26.8.2** (D-115). Built and checked in increment 1 slice S1 (DEVLOG 2026-11-15): 15 live checks passed.
 
 ## 1. Deployment
 
 | Setting | Local dev | Staging / production |
 |---|---|---|
-| Image | `quay.io/keycloak/keycloak:24.0` | same tag, pinned by digest |
+| Image | `quay.io/keycloak/keycloak:26.8.2` | same tag, pinned by digest |
 | Command | `start-dev --import-realm` | `start --optimized --import-realm` (on first deploy only; later changes go through the Admin API/runbook) |
 | Database | `KC_DB=postgres`, own database `keycloak`, own DB user | same, on the managed cluster, backed up |
 | Hostname | `http://localhost:8081` | `KC_HOSTNAME=https://id.<client-domain>` (Q-025), `KC_PROXY_HEADERS=xforwarded`, TLS at the load balancer |
-| Master admin | `KEYCLOAK_ADMIN` / `KEYCLOAK_ADMIN_PASSWORD` from `.env` (KC 24 names; KC 26 uses `KC_BOOTSTRAP_ADMIN_*`) | from the secrets manager; used only for break-glass, never by applications |
+| Master admin | `KC_BOOTSTRAP_ADMIN_USERNAME` / `KC_BOOTSTRAP_ADMIN_PASSWORD` from `ERP_DEV/.env` | from the secrets manager; used only for break-glass, never by applications |
 | Health | `KC_HEALTH_ENABLED=true` → `/health/ready` | same |
 
 The master realm is only for administering Keycloak. All employees live in realm **`gh-staff`**. Guests will get a separate realm, `gh-guests` (Q-003).
@@ -66,7 +66,8 @@ The master realm is only for administering Keycloak. All employees live in realm
 - Valid post-logout redirect URIs: same origins. Web origins: same origins (no `*`).
 - Front-channel logout: on.
 - **Audience mapper:** type "Audience", included client audience = `erp-api`, added to the access token. Services reject tokens without `aud=erp-api`.
-- Default client scopes: `profile`, `email`, `roles`, `web-origins`. Drop `offline_access` (no offline tokens for a browser app).
+- Default client scopes: `basic` (carries `sub`), `web-origins`, `acr`, `profile`, `roles`, `email`. No optional scopes: no `offline_access` (no offline tokens for a browser app).
+- **Full scope allowed: off** (Keycloak 26 marks the switch deprecated). Only the job roles `ADMIN`/`MANAGER`/`SALES_EXECUTIVE` and the `erp-api` permission roles are mapped into its tokens (`scopeMappings` / `clientScopeMappings` in the realm file).
 
 ### 5.2 `erp-api` — the API audience and permission holder
 - Client authentication: on, with **all flows off**. Nobody logs in with it. It exists to define the `aud` value and to hold the **permission client roles** (AUTHENTICATION §3).
@@ -75,7 +76,9 @@ The master realm is only for administering Keycloak. All employees live in realm
 ### 5.3 `access-service` — Keycloak Admin API caller (confidential client)
 - Client authentication: **on** (secret from `KC_ACCESS_SERVICE_CLIENT_SECRET`; production can use signed JWT client auth). Standard flow off, direct access off, **service accounts on**.
 - Service-account roles: `realm-management` → **`manage-users`, `view-users`, `query-users` only**. **Not** `realm-admin`, `manage-clients` or `manage-realm`.
+- Default client scopes: `basic` (gives the `sub` claim) + `roles` + **`kc-admin-api`**. Keycloak 26.x rejects Admin API calls with **401** unless the token carries the Admin API audience that this scope adds (found in S1). Full scope off; only the three `realm-management` roles are mapped into its token.
 - Used only by `access-service` for: create user, map realm roles, `execute-actions-email`, enable/disable, logout, read status.
+- **Looking up a role to assign:** use `GET /users/{id}/role-mappings/realm/available` and pick the role by name. `GET /roles/{name}` needs `view-realm`, which we deliberately don't grant (S1 check 5x: 403).
 - Rotate the secret every 90 days, or at once if it might have leaked (F13).
 
 ## 6. Roles
@@ -127,15 +130,17 @@ Keycloak sends every employee email: invite / set password, verify email, reset 
 
 | Variable | Used by |
 |---|---|
-| `KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD` | Keycloak container (break-glass master admin) |
-| `KC_DB_USERNAME`, `KC_DB_PASSWORD` | Keycloak → its PostgreSQL DB |
+| `KC_BOOTSTRAP_ADMIN_USERNAME`, `KC_BOOTSTRAP_ADMIN_PASSWORD` | Keycloak container (break-glass master admin) |
+| `KC_DB_PASSWORD`, `ACCESS_DB_PASSWORD`, `POSTGRES_PASSWORD`, `POSTGRES_HOST_PORT` (default 5433) | PostgreSQL container and its init script |
+| `REDIS_PASSWORD` | Redis container, api-gateway |
+| `ERP_WEB_ORIGIN` | realm import: erp-web redirect/origin (default `http://localhost:5173`) |
 | `KEYCLOAK_URL` | gateway, services, web (`VITE_KEYCLOAK_URL`) |
 | `KEYCLOAK_REALM=gh-staff` | gateway, services, web (`VITE_KEYCLOAK_REALM`) |
-| `KC_ACCESS_SERVICE_CLIENT_ID`, `KC_ACCESS_SERVICE_CLIENT_SECRET` | access-service only |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Keycloak realm import placeholders |
+| `KC_ACCESS_SERVICE_CLIENT_SECRET` | access-service and the realm import (client id is fixed: `access-service`) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`, `SMTP_REPLY_TO`, `SMTP_AUTH`, `SMTP_STARTTLS`, `SMTP_USER`, `SMTP_PASSWORD` | Keycloak realm import placeholders (defaults point at Mailpit) |
 | `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_FIRST_NAME`, `BOOTSTRAP_ADMIN_LAST_NAME`, `BOOTSTRAP_ADMIN_USERNAME`, `BOOTSTRAP_ADMIN_MOBILE` | access-service, first start only (§10) |
 
-`ERP_DEV/.env.example` (Sprint 1) will list these names with empty values. The existing local `ERP_DEV/.env` is not touched.
+`ERP_DEV/.env.example` lists these names with empty values. Copy the ones you need into your own `ERP_DEV/.env`; the agent never edits that file.
 
 ## 10. Bootstrapping the first ADMIN
 
@@ -145,11 +150,13 @@ Keycloak sends every employee email: invite / set password, verify email, reset 
 
 ## 11. Checklist for Sprint 1 (to prove the configuration)
 
-- [ ] Realm imports cleanly; `GET /realms/gh-staff/.well-known/openid-configuration` returns 200.
-- [ ] `erp-web` refuses a request without PKCE and refuses the password grant.
-- [ ] Access token has `aud` containing `erp-api`, `realm_access.roles` and `resource_access.erp-api.roles`.
-- [ ] The `access-service` service account **can** create a user and **cannot** create a client (403).
-- [ ] After 5 wrong passwords the account is temporarily locked.
-- [ ] Invite email arrives in Mailpit, and the link sets a password and verifies the email.
+Checked in S1 on 2026-11-15 against Keycloak 26.8.2 (throwaway stack, script output in DEVLOG); ✅ = passed live.
+
+- [x] ✅ Realm imports cleanly; `GET /realms/gh-staff/.well-known/openid-configuration` returns 200.
+- [x] ✅ `erp-web` refuses a request without PKCE and refuses the password grant.
+- [x] ✅ Access token has `aud` containing `erp-api`, `realm_access.roles` and `resource_access.erp-api.roles` (checked with Keycloak's generated example token); lifespan 300 s.
+- [x] ✅ The `access-service` service account **can** create a user and map a realm role, and **cannot** create a client (403) or read realm roles directly (403).
+- [ ] After 5 wrong passwords the account is temporarily locked. Realm settings are confirmed; the behaviour is tested in S5 through a real browser login.
+- [x] ✅ Invite email ("Update Your Account") arrives in Mailpit. Following the link is tested in S5.
 - [ ] A disabled user can't log in, and refreshing their token fails.
-- [ ] A CI job validates the realm file: it must contain `registrationAllowed=false`, `verifyEmail=true`, brute-force on, PKCE on `erp-web`, direct grants off, and no `secret` values in plain text.
+- [x] ✅ CI job `realm-check` validates the realm file (14 rules, passed locally): it must contain `registrationAllowed=false`, `verifyEmail=true`, brute-force on, PKCE on `erp-web`, direct grants off, and no `secret` values in plain text.

@@ -1,6 +1,6 @@
 # Day One — new developer guide
 
-- Last checked: 2026-11-15, Milestone 1. **Only the commands marked ✅ have actually been run.** The backend and staff web app don't exist yet (increment 1); their run steps will be added here and checked from a clean clone at that time.
+- Last checked: 2026-11-15, increment 1 slice S1. **Only the commands marked ✅ have actually been run.** The backend services and staff web app arrive in later slices; their run steps will be added here and checked from a clean clone at that time.
 
 ## 1. What you are working on
 The Golden Hills Resort ERP, built by QuantumCLK Technologies. Phase 1 connects the public website (guest registers and inquires) to the staff ERP (employees log in with Keycloak; Sales Executives claim leads). Read in this order: `docs/README.md` → `phase1_plan.md` → `ARCHITECTURE.md` → `identity/AUTHENTICATION.md`.
@@ -12,7 +12,7 @@ The Golden Hills Resort ERP, built by QuantumCLK Technologies. Phase 1 connects 
 | Node.js | ≥ 20.9 (✅ checked with 24.22.0) | landing page; staff web later |
 | Java | 21 (Temurin) | backend services (increment 1) |
 | Maven | 3.9+ | backend builds (increment 1) |
-| Docker + Compose v2 | recent | PostgreSQL, Keycloak, Kafka, Redis, Mailpit (increment 1) |
+| Docker + Compose v2 | ✅ checked with Docker 29.9 / Compose 5.5 | PostgreSQL, Keycloak, Redis, Mailpit (Kafka in increment 2) |
 
 ## 3. Get the code
 ```bash
@@ -32,13 +32,29 @@ npm run dev           # http://localhost:3000
 - Guest register/login/inquiry calls go to `http://localhost:8082/api/v1/portal` (the gateway, increment 1/2). Until then those forms show a connection error. That is expected.
 - If `node_modules` is a symlink to a folder outside the project, `npm run build` fails with *"Symlink … points out of the filesystem root"*. Use a real `npm ci` install instead.
 
-## 5. Your first change (docs-only for now)
+## 5. Local infrastructure (increment 1, slice S1)
+1. Copy the variable names from `ERP_DEV/.env.example` into `ERP_DEV/.env` (git-ignored; create it if missing) and give every secret a value:
+   ```bash
+   python3 -c "import secrets; print(secrets.token_hex(32))"   # run once per secret
+   ```
+2. Start everything from the repo root:
+   ```bash
+   docker compose --env-file ERP_DEV/.env -f ERP_DEV/infra/docker-compose.yml up -d --wait
+   ```
+   ✅ Expected: four containers, `postgres`, `keycloak`, `redis` and `mailpit`, all `Healthy`. Keycloak takes about a minute on first start. A missing secret stops compose with `required variable … is missing a value`.
+3. Look around:
+   - Keycloak admin console: http://localhost:8081/admin, log in with `KC_BOOTSTRAP_ADMIN_USERNAME`/`PASSWORD`, then switch to realm **gh-staff**.
+   - Mailpit (all dev emails land here): http://localhost:8025
+   - PostgreSQL: `localhost:5433` (not 5432); database `access_db`, user `access_svc`.
+4. Stop: `docker compose --env-file ERP_DEV/.env -f ERP_DEV/infra/docker-compose.yml down`. Add `-v` to also delete the dev data, which you need after editing the realm file.
+
+## 6. Your first change
 1. Create a branch: `git switch -c docs/<short-slug>`.
 2. Edit a doc, keeping the "why" and the source next to each rule.
 3. Add an entry to `docs/logs/DEVLOG.md` (append only) and update `docs/logs/STATE.md`.
 4. Commit with Conventional Commits, e.g. `docs(core): clarify lead claim rule`. Every commit, merge and push needs the project owner's approval.
 
-## 6. Rules you must know on day one
+## 7. Rules you must know on day one
 - Client documents live only in the resource folder (read-only); `docs/01-requirements/source-extracts/` holds hash-stamped text copies. Never commit raw client files, personal data or secrets.
 - Never commit `.env`. Secrets come from environment variables; CI runs a gitleaks secret scan.
 - No custom login, password, OTP or token code: Keycloak owns identity (ADR-002).

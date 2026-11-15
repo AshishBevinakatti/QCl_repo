@@ -278,8 +278,8 @@ idempotency_key
 ## 11. Security considerations
 
 - **Least-privilege admin client:** the `access-service` service account gets only `realm-management` → `manage-users`, `view-users`, `query-users`.
-  - Risk: `manage-users` in Keycloak 24 can also map *any* realm role, including `ADMIN`.
-  - Mitigation: access-service only assigns roles from an allow-list, and only callers with `roles.assign` can ask; audited. With Keycloak ≥ 26.2, Fine-Grained Admin Permissions v2 can enforce this inside Keycloak (R-005, part of the version question Q-020).
+  - Risk: `manage-users` can also map *any* realm role, including `ADMIN`.
+  - Mitigation: access-service only assigns roles from an allow-list, and only callers with `roles.assign` can ask; audited. Keycloak 26.8 (D-115) supports Fine-Grained Admin Permissions v2, which could enforce this inside Keycloak too. Evaluate it in S6 (R-005).
 - Separate realms for staff (`gh-staff`) and guests (`gh-guests`, Q-003). A guest token has the wrong issuer, so it gets 401 on every staff endpoint (Blueprint §16 negative test).
 - Audience check (`aud=erp-api`) stops a token issued to another client from being replayed against the API.
 - Direct Access Grants (password grant) and Implicit flow are **off** on `erp-web`. Exact redirect URIs only, no wildcards.

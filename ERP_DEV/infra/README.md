@@ -1,8 +1,18 @@
-# infra — local and deployment infrastructure
+# infra — local development infrastructure
 
-Planned for increment 1 (not created yet):
-- `docker-compose.yml`: PostgreSQL 16 (databases `keycloak`, `access_db`, `guest_db`, `lead_db`, `notification_db`, each with its own user), Keycloak 24 (`start-dev --import-realm`), Kafka 3.7 (KRaft), Redis 7, Mailpit (SMTP 1025 / UI 8025; needs approval, Q-023).
-- `keycloak/gh-staff-realm.json`: realm import built from `docs/02-architecture/identity/KEYCLOAK-SETUP.md`, with secrets as `${ENV}` placeholders only.
-- `postgres/init/`: creates the per-service databases and least-privilege users.
+Built in increment 1, slice S1 (2026-11-15).
 
-Secrets come from `ERP_DEV/.env` (git-ignored). Never commit real values.
+| File | What |
+|---|---|
+| `docker-compose.yml` | PostgreSQL 18.7, Keycloak 26.8.2 (`start-dev --import-realm`), Redis 8.10.3, Mailpit 1.33.1. Ports bind to 127.0.0.1; PostgreSQL is published on **5433** |
+| `keycloak/gh-staff-realm.json` | Staff realm import, generated from `docs/02-architecture/identity/KEYCLOAK-SETUP.md`. Secrets and SMTP values are `${ENV}` placeholders only. CI job `realm-check` guards its security settings |
+| `postgres/init/01-service-databases.sh` | First-start script: databases `keycloak` and `access_db`, each with its own login (`keycloak`, `access_svc`). Increment 2 adds `guest_db` and `lead_db` the same way |
+
+Run (from the repo root), after putting the variables from `ERP_DEV/.env.example` into your `ERP_DEV/.env`:
+
+```bash
+docker compose --env-file ERP_DEV/.env -f ERP_DEV/infra/docker-compose.yml up -d --wait
+docker compose --env-file ERP_DEV/.env -f ERP_DEV/infra/docker-compose.yml down        # stop (keeps data)
+```
+
+The realm is imported only when it doesn't exist yet. After changing `gh-staff-realm.json` in dev, reset with `down -v` (**deletes the local dev database volume**).
