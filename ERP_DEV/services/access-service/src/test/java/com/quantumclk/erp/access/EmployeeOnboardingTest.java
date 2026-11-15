@@ -39,50 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Workflow 1 against a real Keycloak 26.8.2 importing infra/keycloak/gh-staff-realm.json, real Mailpit and real
  * PostgreSQL (REQ-IAM-002…005, 011, 012; D-113).
  */
-@SpringBootTest(properties = "erp.keycloak.issuer=" + TestSupport.ISSUER)
-@AutoConfigureMockMvc
-@Import(TestSupport.class)
-class EmployeeOnboardingTest {
-
-    static final Network NET = Network.newNetwork();
-    static final GenericContainer<?> MAILPIT = new GenericContainer<>("axllent/mailpit:v1.33.1")
-            .withNetwork(NET).withNetworkAliases("mailpit").withExposedPorts(8025);
-    static final GenericContainer<?> KEYCLOAK = new GenericContainer<>("quay.io/keycloak/keycloak:26.8.2")
-            .withNetwork(NET).withCommand("start-dev", "--import-realm")
-            .withCopyFileToContainer(MountableFile.forHostPath(Path.of("../../infra/keycloak/gh-staff-realm.json")),
-                    "/opt/keycloak/data/import/gh-staff-realm.json")
-            .withEnv("KC_BOOTSTRAP_ADMIN_USERNAME", "kcadmin").withEnv("KC_BOOTSTRAP_ADMIN_PASSWORD", "kcadmin-test")
-            .withEnv("KC_HEALTH_ENABLED", "true").withEnv("KC_ACCESS_SERVICE_CLIENT_SECRET", "test-secret")
-            .withEnv("ERP_WEB_ORIGIN", "http://localhost:5173")
-            .withEnv("SMTP_HOST", "mailpit").withEnv("SMTP_PORT", "1025").withEnv("SMTP_FROM", "no-reply@goldenhills.test")
-            .withEnv("SMTP_REPLY_TO", "").withEnv("SMTP_AUTH", "false").withEnv("SMTP_STARTTLS", "false")
-            .withEnv("SMTP_USER", "").withEnv("SMTP_PASSWORD", "")
-            .withExposedPorts(8080, 9000)
-            .waitingFor(Wait.forHttp("/health/ready").forPort(9000).withStartupTimeout(Duration.ofMinutes(3)));
-
-    static {
-        MAILPIT.start();
-        KEYCLOAK.start();
-    }
-
-    @DynamicPropertySource
-    static void keycloak(DynamicPropertyRegistry r) {
-        r.add("erp.keycloak.url", () -> "http://" + KEYCLOAK.getHost() + ":" + KEYCLOAK.getMappedPort(8080));
-    }
-
-    static final UUID ADMIN = UUID.randomUUID();
-    static final JsonMapper JSON = JsonMapper.builder().build();
-    static final HttpClient HTTP = HttpClient.newHttpClient();
-
-    @Autowired MockMvc mvc;
-    @Autowired JdbcTemplate jdbc;
-    @Autowired AccountJobs jobs;
-
-    private static String token(List<String> roles, List<String> perms) {
-        return "Bearer " + TestSupport.sign(TestSupport.claims(ADMIN, roles, perms).build());
-    }
-
-    private static final String ADMIN_TOKEN = token(List.of("ADMIN"), List.of("employees.read", "employees.manage", "roles.assign", "audit.read"));
+class EmployeeOnboardingTest extends KeycloakStack {
 
     private ResultActions create(String body, String key, String token) throws Exception {
         return mvc.perform(post("/api/v1/admin/employees").header("Authorization", token)
@@ -169,23 +126,4 @@ class EmployeeOnboardingTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM employee WHERE username = 'm.try'", Integer.class)).isZero();
     }
 
-    private static String mailpit() {
-        return "http://" + MAILPIT.getHost() + ":" + MAILPIT.getMappedPort(8025);
-    }
-
-    private static JsonNode admin(String method, String path, String body) throws Exception {
-        String base = "http://" + KEYCLOAK.getHost() + ":" + KEYCLOAK.getMappedPort(8080);
-        String t = JSON.readTree(send(HttpRequest.newBuilder(URI.create(base + "/realms/master/protocol/openid-connect/token"))
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .POST(HttpRequest.BodyPublishers.ofString("grant_type=password&client_id=admin-cli&username=kcadmin&password=kcadmin-test")).build()))
-                .get("access_token").asString();
-        HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(base + "/admin/realms/gh-staff" + path)).header("Authorization", "Bearer " + t)
-                .header("Content-Type", "application/json");
-        String out = send(body == null ? b.GET().build() : b.method(method, HttpRequest.BodyPublishers.ofString(body)).build());
-        return out.isBlank() ? null : JSON.readTree(out);
-    }
-
-    private static String send(HttpRequest r) throws Exception {
-        return HTTP.send(r, HttpResponse.BodyHandlers.ofString()).body();
-    }
 }

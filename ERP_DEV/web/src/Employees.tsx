@@ -19,7 +19,7 @@ export const STATUS_LABELS: Record<string, string> = {
 const ROLES = ["SALES_EXECUTIVE", "MANAGER", "ADMIN"];
 const EMPTY = { firstName: "", lastName: "", email: "", username: "", mobile: "", jobRole: "SALES_EXECUTIVE", whatsappOptIn: false };
 
-export function Employees({ request, canManage }: { request: Request; canManage: boolean }) {
+export function Employees({ request, canManage, canAssignRoles = false }: { request: Request; canManage: boolean; canAssignRoles?: boolean }) {
   const [list, setList] = useState<Employee[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(() => {
@@ -27,14 +27,26 @@ export function Employees({ request, canManage }: { request: Request; canManage:
   }, [request]);
   useEffect(load, [load]);
 
-  async function retry(id: string) {
+  async function act(path: string, init: RequestInit = { method: "POST" }) {
+    setError(null);
     try {
-      await request(`/api/v1/admin/employees/${id}/retry-provisioning`, { method: "POST" });
+      await request(path, init);
     } catch (e) {
       setError((e as Error).message);
     }
     load();
   }
+  const base = (id: string) => `/api/v1/admin/employees/${id}`;
+  // A reason is required for account changes; it goes into the audit trail (AUTHENTICATION §7).
+  const withReason = (question: string, send: (reason: string) => void) => {
+    const reason = window.prompt(question)?.trim();
+    if (reason) send(reason);
+  };
+  const setActive = (e: Employee, active: boolean) => withReason(
+    active ? `Why reactivate ${e.firstName} ${e.lastName}?` : `Why deactivate ${e.firstName} ${e.lastName}? They will be signed out everywhere.`,
+    (reason) => void act(`${base(e.id)}/status`, { method: "PATCH", body: JSON.stringify({ active, reason }) }));
+  const changeRole = (e: Employee, role: string) => withReason(`Why change ${e.firstName}'s role to ${role}?`,
+    (reason) => void act(`${base(e.id)}/role`, { method: "PUT", body: JSON.stringify({ role, reason }) }));
 
   return (
     <section>
@@ -49,8 +61,18 @@ export function Employees({ request, canManage }: { request: Request; canManage:
               <tr key={e.id}>
                 <td>{e.firstName} {e.lastName}</td><td>{e.username}</td><td>{e.email}</td><td>{e.jobRole}</td>
                 <td title={e.statusReason ?? ""}>{STATUS_LABELS[e.status] ?? e.status}{e.statusReason ? ` — ${e.statusReason}` : ""}</td>
-                <td>{canManage && (e.status === "PENDING_PROVISIONING" || e.status === "INVITE_EMAIL_FAILED") &&
-                  <button onClick={() => void retry(e.id)}>Retry</button>}</td>
+                <td className="actions">
+                  {canManage && (e.status === "PENDING_PROVISIONING" || e.status === "INVITE_EMAIL_FAILED" && !e.identityLinked) &&
+                    <button onClick={() => void act(`${base(e.id)}/retry-provisioning`)}>Retry</button>}
+                  {canManage && e.identityLinked && (e.status === "INVITED" || e.status === "INVITE_EMAIL_FAILED") &&
+                    <button onClick={() => void act(`${base(e.id)}/resend-invite`)}>Resend invite</button>}
+                  {canManage && e.identityLinked && e.status !== "DISABLED" && <button onClick={() => setActive(e, false)}>Deactivate</button>}
+                  {canManage && e.status === "DISABLED" && <button onClick={() => setActive(e, true)}>Activate</button>}
+                  {canAssignRoles && e.identityLinked && (
+                    <select aria-label={`Role for ${e.username}`} value={e.jobRole} onChange={(ev) => changeRole(e, ev.target.value)}>
+                      {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                    </select>)}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -112,5 +134,29 @@ function AddEmployee({ request, onCreated }: { request: Request; onCreated: () =
       <button type="submit" disabled={busy}>{busy ? "Saving…" : "Add employee"}</button>
       {message && <p role="status">{message}</p>}
     </form>
+  );
+}
+
+interface AuditEntry { id: string; occurredAt: string; actor: string; action: string; entityId: string | null; reason: string | null; outcome: string }
+
+export function AuditLog({ request }: { request: Request }) {
+  const [rows, setRows] = useState<AuditEntry[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    request<Page<AuditEntry>>("/api/v1/admin/audit?size=100").then((p) => setRows(p.items), (e: Error) => setError(e.message));
+  }, [request]);
+  return (
+    <section>
+      <h1>Audit log</h1>
+      {error && <p role="alert">{error}</p>}
+      {!rows ? <p>Loading…</p> : (
+        <table>
+          <thead><tr><th>When</th><th>Who</th><th>What</th><th>Reason</th><th>Outcome</th></tr></thead>
+          <tbody>{rows.map((r) => (
+            <tr key={r.id}><td>{new Date(r.occurredAt).toLocaleString()}</td><td>{r.actor}</td><td>{r.action}</td><td>{r.reason ?? ""}</td><td>{r.outcome}</td></tr>
+          ))}</tbody>
+        </table>
+      )}
+    </section>
   );
 }

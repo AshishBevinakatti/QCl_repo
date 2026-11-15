@@ -108,4 +108,55 @@ class ProvisioningFailureTest {
         mvc.perform(post("/api/v1/admin/employees/" + id + "/retry-provisioning").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("INVITED"));
     }
+
+    private String adminToken(UUID sub) {
+        return "Bearer " + TestSupport.sign(TestSupport.claims(sub, List.of("ADMIN"), List.of("employees.manage", "employees.read", "roles.assign")).build());
+    }
+
+    private String idOf(String username) {
+        return jdbc.queryForObject("SELECT id::text FROM employee WHERE username = ?", String.class, username);
+    }
+
+    @Test
+    void theLastActiveAdminCannotBeDeactivatedOrDemoted() throws Exception {
+        String owner = idOf("owner");   // the only ADMIN in this context (bootstrap)
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/v1/admin/employees/" + owner + "/status")
+                        .header("Authorization", adminToken(UUID.randomUUID())).contentType("application/json")
+                        .content("{\"active\":false,\"reason\":\"test\"}"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.message").value("This is the last active administrator; add another one first."));
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/admin/employees/" + owner + "/role")
+                        .header("Authorization", adminToken(UUID.randomUUID())).contentType("application/json")
+                        .content("{\"role\":\"MANAGER\",\"reason\":\"test\"}"))
+                .andExpect(status().isConflict());
+        assertThat(dbStatus("owner")).isEqualTo("INVITED");
+    }
+
+    @Test
+    void anAdminCannotDeactivateThemselves() throws Exception {
+        UUID ownerSub = jdbc.queryForObject("SELECT keycloak_user_id FROM employee WHERE username = 'owner'", UUID.class);
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/v1/admin/employees/" + idOf("owner") + "/status")
+                        .header("Authorization", adminToken(ownerSub)).contentType("application/json")
+                        .content("{\"active\":false,\"reason\":\"test\"}"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.message").value("You can't deactivate your own account."));
+    }
+
+    @Test
+    void keycloakDownOnDeactivateChangesNothing() throws Exception {
+        create("down.user", "down.user@example.test").andExpect(status().isCreated());
+        kc.down = true;
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/api/v1/admin/employees/" + idOf("down.user") + "/status")
+                        .header("Authorization", adminToken(UUID.randomUUID())).contentType("application/json")
+                        .content("{\"active\":false,\"reason\":\"test\"}"))
+                .andExpect(status().isBadGateway()).andExpect(jsonPath("$.code").value("UPSTREAM_FAILED"));
+        assertThat(dbStatus("down.user")).isEqualTo("INVITED");
+    }
+
+    @Test
+    void failedResendKeepsTheFailedStatus() throws Exception {
+        create("resend.fail", "resend.fail@example.test").andExpect(status().isCreated());
+        kc.emailBroken = true;
+        mvc.perform(post("/api/v1/admin/employees/" + idOf("resend.fail") + "/resend-invite").header("Authorization", adminToken(UUID.randomUUID())))
+                .andExpect(status().isBadGateway());
+        assertThat(dbStatus("resend.fail")).isEqualTo("INVITE_EMAIL_FAILED"); // not rolled back with the error
+    }
 }

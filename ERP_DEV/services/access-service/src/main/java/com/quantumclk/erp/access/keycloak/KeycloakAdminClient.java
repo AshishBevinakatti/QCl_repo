@@ -124,6 +124,35 @@ public class KeycloakAdminClient implements KeycloakAdmin {
         }
     }
 
+    @Override
+    public void setEnabled(UUID userId, boolean enabled) {
+        call(() -> http.put().uri(admin + "/users/{id}", userId).headers(h -> h.setBearerAuth(token()))
+                .contentType(MediaType.APPLICATION_JSON).body(Map.of("enabled", enabled)).retrieve().toBodilessEntity());
+    }
+
+    @Override
+    public void logout(UUID userId) {
+        call(() -> http.post().uri(admin + "/users/{id}/logout", userId).headers(h -> h.setBearerAuth(token()))
+                .retrieve().toBodilessEntity());
+    }
+
+    @Override
+    public void replaceJobRole(UUID userId, String role, java.util.Collection<String> jobRoles) {
+        call(() -> {
+            List<Map<String, Object>> mapped = http.get().uri(admin + "/users/{id}/role-mappings/realm", userId)
+                    .headers(h -> h.setBearerAuth(token())).retrieve().body(LIST);
+            List<Map<String, Object>> remove = mapped == null ? List.of() : mapped.stream()
+                    .filter(r -> jobRoles.contains(r.get("name")) && !role.equals(r.get("name"))).toList();
+            if (!remove.isEmpty()) {
+                http.method(org.springframework.http.HttpMethod.DELETE).uri(admin + "/users/{id}/role-mappings/realm", userId)
+                        .headers(h -> h.setBearerAuth(token())).contentType(MediaType.APPLICATION_JSON).body(remove)
+                        .retrieve().toBodilessEntity();
+            }
+            return null;
+        });
+        assignRealmRole(userId, role);
+    }
+
     private synchronized String token() {
         if (Instant.now().isBefore(tokenExpires)) return token;
         var form = new LinkedMultiValueMap<String, String>();

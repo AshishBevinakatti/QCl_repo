@@ -14,3 +14,4 @@ form[aria-label="Add employee"] h2, form[aria-label="Add employee"] [role="statu
 label { display: grid; gap: 0.25rem; font-size: 0.9rem; }
 input, select { font: inherit; padding: 0.4rem; border: 1px solid var(--line); border-radius: 4px; }
 input[aria-invalid="true"] { border-color: #8a2d1c; }
+.actions { display: flex; gap: 0.4rem; flex-wrap: wrap; } .actions button { padding: 0.25rem 0.6rem; font-size: 0.85rem; }

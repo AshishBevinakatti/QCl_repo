@@ -8,6 +8,7 @@ afterEach(cleanup);
 const ravi: Employee = { id: "e1", firstName: "Ravi", lastName: "Kumar", email: "ravi@example.test", username: "ravi.kumar",
   mobile: "+919876543210", jobRole: "SALES_EXECUTIVE", status: "INVITED", statusReason: null, identityLinked: true };
 const stuck: Employee = { ...ravi, id: "e2", username: "stuck", status: "INVITE_EMAIL_FAILED", statusReason: "Invite email could not be sent" };
+const pending: Employee = { ...ravi, id: "e4", username: "pending", status: "PENDING_PROVISIONING", statusReason: "Identity system unavailable; retrying automatically", identityLinked: false };
 
 function fakeRequest(handlers: Record<string, (init?: RequestInit) => unknown>) {
   return vi.fn(async (path: string, init?: RequestInit) => {
@@ -23,10 +24,11 @@ function fill(label: string, value: string) {
 
 describe("Employees", () => {
   it("lists employees with readable account status", async () => {
-    render(<Employees request={fakeRequest({ "/api/v1/admin/employees": () => ({ items: [ravi, stuck], page: 0, size: 100, total: 2 }) })} canManage />);
+    render(<Employees request={fakeRequest({ "/api/v1/admin/employees": () => ({ items: [ravi, stuck, pending], page: 0, size: 100, total: 3 }) })} canManage />);
     expect(await screen.findByText("Invited")).toBeTruthy();
     expect(screen.getByText("Invite email failed — Invite email could not be sent")).toBeTruthy();
-    expect(screen.getAllByRole("button", { name: "Retry" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "Retry" })).toHaveLength(1);           // only the unlinked one
+    expect(screen.getAllByRole("button", { name: "Resend invite" })).toHaveLength(2);   // linked + not finished
   });
 
   it("hides the add form and retry for read-only users (MANAGER)", async () => {
@@ -61,5 +63,51 @@ describe("Employees", () => {
     fill("First name", "A"); fill("Last name", "B"); fill("Email", "a@b.test"); fill("Username", "ab1"); fill("Mobile (e.g. +91 98765 43210)", "123");
     fireEvent.click(screen.getByRole("button", { name: "Add employee" }));
     expect(await screen.findByText("international format")).toBeTruthy();
+  });
+});
+
+describe("Employees account actions", () => {
+  const disabled: Employee = { ...ravi, id: "e3", username: "gone", status: "DISABLED" };
+
+  it("deactivates with the reason the admin typed", async () => {
+    const calls: [string, RequestInit | undefined][] = [];
+    const request = vi.fn(async (path: string, init?: RequestInit) => {
+      calls.push([path, init]);
+      return path.includes("?") ? { items: [ravi], page: 0, size: 100, total: 1 } : ravi;
+    }) as unknown as <T>(path: string, init?: RequestInit) => Promise<T>;
+    vi.spyOn(window, "prompt").mockReturnValue("Left the company");
+    render(<Employees request={request} canManage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Deactivate" }));
+    await screen.findByText("ravi.kumar");
+    const [path, init] = calls.find(([p]) => p.endsWith("/status"))!;
+    expect(path).toBe("/api/v1/admin/employees/e1/status");
+    expect(init!.method).toBe("PATCH");
+    expect(JSON.parse(init!.body as string)).toEqual({ active: false, reason: "Left the company" });
+  });
+
+  it("does nothing when the reason prompt is cancelled", async () => {
+    const paths: string[] = [];
+    const request = vi.fn(async (path: string) => { paths.push(path); return { items: [ravi], page: 0, size: 100, total: 1 }; }) as unknown as
+      <T>(path: string, init?: RequestInit) => Promise<T>;
+    vi.spyOn(window, "prompt").mockReturnValue(null);
+    render(<Employees request={request} canManage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Deactivate" }));
+    expect(paths.some((p) => p.endsWith("/status"))).toBe(false);
+  });
+
+  it("offers Activate for disabled employees and Resend for invited ones", async () => {
+    render(<Employees request={fakeRequest({ "/api/v1/admin/employees": () => ({ items: [ravi, disabled], page: 0, size: 100, total: 2 }) })} canManage />);
+    expect(await screen.findByRole("button", { name: "Activate" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Resend invite" })).toBeTruthy();
+  });
+
+  it("shows the role selector only with roles.assign", async () => {
+    const list = fakeRequest({ "/api/v1/admin/employees": () => ({ items: [ravi], page: 0, size: 100, total: 1 }) });
+    render(<Employees request={list} canManage />);
+    await screen.findByText("ravi.kumar");
+    expect(screen.queryByLabelText("Role for ravi.kumar")).toBeNull();
+    cleanup();
+    render(<Employees request={list} canManage canAssignRoles />);
+    expect(await screen.findByLabelText("Role for ravi.kumar")).toBeTruthy();
   });
 });

@@ -39,6 +39,18 @@ public class FakeKeycloak implements KeycloakAdmin {
         if (down) throw new Unavailable("down", null);
         roles.computeIfAbsent(userId, k -> new ArrayList<>()).add(role);
     }
+    @Override public void setEnabled(UUID userId, boolean enabled) {
+        if (down) throw new Unavailable("down", null);
+        UserState u = users.get(userId);
+        users.put(userId, new UserState(u.id(), u.username(), u.email(), enabled, u.emailVerified(), u.requiredActions()));
+    }
+    @Override public void logout(UUID userId) {
+        if (down) throw new Unavailable("down", null);
+    }
+    @Override public void replaceJobRole(UUID userId, String role, java.util.Collection<String> jobRoles) {
+        if (down) throw new Unavailable("down", null);
+        roles.put(userId, new ArrayList<>(List.of(role)));
+    }
     @Override public void sendSetupEmail(UUID userId) {
         if (down) throw new Unavailable("down", null);
         if (emailBroken) throw new EmailFailed("smtp", null);

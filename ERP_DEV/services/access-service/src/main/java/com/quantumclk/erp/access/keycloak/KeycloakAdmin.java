@@ -27,6 +27,15 @@ public interface KeycloakAdmin {
     /** Keycloak's own "set up your account" email (VERIFY_EMAIL + UPDATE_PASSWORD), link valid 24 h. @throws EmailFailed */
     void sendSetupEmail(UUID userId);
 
+    /** enabled=false blocks login and token refresh at once (AUTHENTICATION §7). */
+    void setEnabled(UUID userId, boolean enabled);
+
+    /** Ends all of the user's sessions and revokes their refresh tokens. */
+    void logout(UUID userId);
+
+    /** Leaves exactly one of the given job roles mapped: removes the others, adds {@code role}. */
+    void replaceJobRole(UUID userId, String role, java.util.Collection<String> jobRoles);
+
     /** Keycloak can't be reached or answered 5xx: nothing to blame on the request; retry later. */
     class Unavailable extends RuntimeException {
         public Unavailable(String message, Throwable cause) { super(message, cause); }

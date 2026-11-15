@@ -204,15 +204,16 @@ Known limit: an access token that was already issued stays valid until it expire
 
 **Reactivate:** `{active:true}` → Keycloak `enabled=true` → status becomes `ACTIVE`, or `INVITED` if their setup was never finished. If the link has expired, the admin uses "Resend invite".
 
-**Resend invite:** `POST /api/v1/admin/employees/{id}/resend-invite` calls `execute-actions-email` again. Allowed for `INVITED` and `INVITE_EMAIL_FAILED`. Limited to 3 per hour per employee.
+**Resend invite:** `POST /api/v1/admin/employees/{id}/resend-invite` calls `execute-actions-email` again. Allowed for `INVITED` and `INVITE_EMAIL_FAILED` once the Keycloak user exists. Limited to 3 per hour per employee, counted from the audit trail, so the limit survives restarts → 429. If the email fails, the status becomes `INVITE_EMAIL_FAILED` and the API returns 502; the status change is kept.
 
-**Change role:** replace the realm-role mapping in Keycloak, then audit. The new role takes effect on the next token refresh (≤ 5 min). To apply it at once, also run the `logout` call. Changing a role needs `roles.assign`.
+**Change role:** `PUT /api/v1/admin/employees/{id}/role {role, reason}` (needs `roles.assign`, i.e. ADMIN). Removes the other job roles in Keycloak, adds the new one, then **always logs the user out**, so the new permissions apply at their next sign-in (verified live in S6). Audited with before/after and the reason.
 
 **Change email:** update it in Keycloak with `emailVerified=false` and add the `VERIFY_EMAIL` required action, then send the actions email.
 
-**Safety guards:**
+**Safety guards (409):**
 - An admin can't deactivate themself or remove their own ADMIN role.
-- The last active ADMIN can't be deactivated or demoted.
+- The last active ADMIN can't be deactivated or demoted. Checks run under a PostgreSQL advisory lock, so two admins can't remove each other at the same moment.
+- Changes need a reason (400 without one). A row that the sync job is working on returns 409 "try again" instead of waiting.
 - Employees are never deleted, and the ERP offers no delete action in Phase 1: deactivate instead. This follows the engineering "no hard deletes" rule and SRS §11.1, where delete is reserved for the Owner/MD.
 
 **Status sync (Keycloak → access_db):**

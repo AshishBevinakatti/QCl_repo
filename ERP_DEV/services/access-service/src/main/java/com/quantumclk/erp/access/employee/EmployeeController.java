@@ -44,11 +44,16 @@ public class EmployeeController {
         static <T> PageView<T> of(Page<T> p) { return new PageView<>(p.getContent(), p.getNumber(), p.getSize(), p.getTotalElements()); }
     }
 
+    public record StatusRequest(@NotNull Boolean active, String reason) { }
+    public record RoleRequest(@NotNull JobRole role, String reason) { }
+
     private final EmployeeService service;
+    private final AccountService accounts;
     private final EmployeeRepository employees;
 
-    EmployeeController(EmployeeService service, EmployeeRepository employees) {
+    EmployeeController(EmployeeService service, AccountService accounts, EmployeeRepository employees) {
         this.service = service;
+        this.accounts = accounts;
         this.employees = employees;
     }
 
@@ -82,6 +87,24 @@ public class EmployeeController {
         service.get(id); // 404 if unknown
         service.provision(id, actor(auth, http));
         return service.get(id);
+    }
+
+    @org.springframework.web.bind.annotation.PatchMapping("/{id}/status")
+    @PreAuthorize("hasAuthority('PERM_employees.manage')")
+    EmployeeView status(@PathVariable UUID id, @Valid @RequestBody StatusRequest r, JwtAuthenticationToken auth, HttpServletRequest http) {
+        return accounts.setActive(id, r.active(), r.reason(), actor(auth, http));
+    }
+
+    @PostMapping("/{id}/resend-invite")
+    @PreAuthorize("hasAuthority('PERM_employees.manage')")
+    EmployeeView resend(@PathVariable UUID id, JwtAuthenticationToken auth, HttpServletRequest http) {
+        return accounts.resendInvite(id, actor(auth, http));
+    }
+
+    @org.springframework.web.bind.annotation.PutMapping("/{id}/role")
+    @PreAuthorize("hasAuthority('PERM_roles.assign')")
+    EmployeeView role(@PathVariable UUID id, @Valid @RequestBody RoleRequest r, JwtAuthenticationToken auth, HttpServletRequest http) {
+        return accounts.changeRole(id, r.role(), r.reason(), actor(auth, http));
     }
 
     /** The acting employee's ERP id when known (it goes into created_by/updated_by), else the Keycloak subject. */

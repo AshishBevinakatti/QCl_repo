@@ -41,6 +41,10 @@ public class Employee {
 
     public void linkKeycloak(UUID keycloakUserId) { this.keycloakUserId = keycloakUserId; }
 
+    public void setJobRole(String jobRole, UUID actor, Instant now) {
+        this.jobRole = jobRole; this.updatedBy = actor; this.updatedAt = now;
+    }
+
     public void setStatus(String status, String reason, UUID actor, Instant now) {
         this.status = status; this.statusReason = reason; this.updatedBy = actor; this.updatedAt = now;
     }

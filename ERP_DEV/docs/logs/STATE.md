@@ -1,6 +1,6 @@
 # Project State
-Updated: 2026-11-15T14:36:25+05:30
-Phase: 1 (new baseline): Guest Acquisition, Identity & Sales Lead Operations. Work unit: **Increment 1: S1–S4 committed (…4a8ef19); S5 onboarding done (18 + 14 tests, 10/10 live), waiting for commit approval**. Branch `feature/phase1-inc1-identity`.
+Updated: 2026-11-15T14:44:41+05:30
+Phase: 1 (new baseline): Guest Acquisition, Identity & Sales Lead Operations. Work unit: **Increment 1: S1–S5 committed (…524d862); S6 account management done (26 + 18 tests, 16/16 live), waiting for commit approval**. Branch `feature/phase1-inc1-identity`.
 Branch: `feature/phase1-fresh-start` (local, not pushed). Archive: `archive/hotel-draft` + tag `archive-hotel-draft-2026-11-15` (825f3fe, pushed).
 
 State:
@@ -11,6 +11,6 @@ State:
 4. Resource folder rule updated to `/run/media/ash_63/DATA/Intership wrok/ERP_Resouce` (Q-001 answered).
 
 Next action:
-1. Ashish approves the S5 commit.
+1. Ashish approves the S6 commit.
 2. Push still blocked: GitHub token needs the `workflow` scope.
-3. Then S6: deactivate/reactivate (Keycloak first, then logout, then DB), resend invite (3/hour), role change (`roles.assign`), last-admin and self guards, audit view.
+3. Then S7 (close increment 1): DAY-ONE followed literally from a clean clone, increment report, traceability check, then ask about merging into feature/phase1-fresh-start.

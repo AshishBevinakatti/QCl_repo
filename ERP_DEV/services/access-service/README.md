@@ -39,3 +39,8 @@ curl -s localhost:8091/api/v1/me              # ✅ 401 {"code":"AUTH_REQUIRED",
 - `AccountJobs`: every `ACCOUNT_SYNC_INTERVAL` (default 5 min) retries pending provisioning, syncs INVITED/ACTIVE from Keycloak, deletes idempotency keys older than 24 h; on start invites the bootstrap ADMIN while no ADMIN exists.
 - Keycloak Admin API via `KeycloakAdminClient` (plain RestClient, client credentials, 3 s connect / 15 s read timeouts). Needs `KC_ACCESS_SERVICE_CLIENT_SECRET`; optional `BOOTSTRAP_ADMIN_*`, `ERP_WEB_ORIGIN`.
 - Tests: 18 (`EmployeeOnboardingTest` starts real Keycloak 26.8.2 with `infra/keycloak/gh-staff-realm.json` + Mailpit; about 40 s).
+
+## S6: account management (built)
+- `PATCH /{id}/status {active, reason}`, `POST /{id}/resend-invite` (`employees.manage`); `PUT /{id}/role {role, reason}` (`roles.assign`); `GET /api/v1/admin/audit` (`audit.read`).
+- Order is Keycloak first (disable + logout / role swap + logout), then the database. Guards: self, last admin (advisory lock), reason required, resend 3/hour.
+- Tests: 26 (`AccountManagementTest` shares the real Keycloak/Mailpit stack with `EmployeeOnboardingTest` via `KeycloakStack`).

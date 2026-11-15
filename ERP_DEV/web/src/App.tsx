@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Me } from "./api";
-import { Employees } from "./Employees";
+import { AuditLog, Employees } from "./Employees";
 
 export const MODULE_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
@@ -59,7 +59,10 @@ export function Dashboard({ loadMe, onSignOut, request }: { loadMe: () => Promis
         {!name ? (
           <p role="alert">Your sign-in works, but your ERP employee record is not set up yet. Ask an administrator.</p>
         ) : page === "employees" && me.modules.includes("employees") && request ? (
-          <Employees request={request} canManage={me.permissions.includes("employees.manage")} />
+          <Employees request={request} canManage={me.permissions.includes("employees.manage")}
+                     canAssignRoles={me.permissions.includes("roles.assign")} />
+        ) : page === "audit" && me.modules.includes("audit") && request ? (
+          <AuditLog request={request} />
         ) : <h1>Welcome, {name}</h1>}
       </main>
     </div>
