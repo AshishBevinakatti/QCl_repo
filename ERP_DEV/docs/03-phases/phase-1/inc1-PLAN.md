@@ -64,11 +64,11 @@ R-001 setup work (Compose kept small: 4 containers); R-002 is resolved by D-112;
 Q-017 (extra employee fields), Q-019 (session lengths), Q-021 (MFA), Q-022 (retention), Q-023 (§4 above), Q-024 (SMTP for staging), Q-026 (password policy). Their proposed defaults apply until answered.
 
 ## 9. Definition of done
-- [ ] Slices S1–S7 done, with test output shown.
-- [ ] `mvn -B verify` green for access-service and api-gateway; web `lint`, `test` and `build` green; CI green on GitHub.
-- [ ] No password, OTP, token or secret in code, logs, DB or git (gitleaks).
-- [ ] Docs updated in the same commits; DEVLOG, STATE and TRACEABILITY updated.
-- [ ] You approve each commit; push and merge are asked for separately.
+- [x] Slices S1–S7 done, with test output shown (inc1-REPORT).
+- [x] `./mvnw -B verify` green for access-service (26) and api-gateway (10); web lint/test (18)/build green. - [ ] CI on GitHub: not run (push blocked by token scope).
+- [x] No password, OTP, token or secret in code, logs, DB or git (checked; gitleaks runs in CI).
+- [x] Docs updated in the same commits; DEVLOG, STATE and TRACEABILITY updated.
+- [x] You approve each commit; push and merge are asked for separately.
 
 ## 10. Branch
 `feature/phase1-inc1-identity`, branched from `feature/phase1-fresh-start`.

@@ -1,6 +1,6 @@
 # Day One — new developer guide
 
-- Last checked: 2026-11-15, increment 1 slice S1. **Only the commands marked ✅ have actually been run.** The backend services and staff web app arrive in later slices; their run steps will be added here and checked from a clean clone at that time.
+- Last checked: 2026-11-15, end of increment 1: **followed literally from a clean clone** (landing page, infrastructure, both services, web app, first-admin sign-in, and every README test command). Commands marked ✅ were run.
 
 ## 1. What you are working on
 The Golden Hills Resort ERP, built by QuantumCLK Technologies. Phase 1 connects the public website (guest registers and inquires) to the staff ERP (employees log in with Keycloak; Sales Executives claim leads). Read in this order: `docs/README.md` → `phase1_plan.md` → `ARCHITECTURE.md` → `identity/AUTHENTICATION.md`.
@@ -10,8 +10,8 @@ The Golden Hills Resort ERP, built by QuantumCLK Technologies. Phase 1 connects 
 |---|---|---|
 | Git | any recent | |
 | Node.js | ≥ 20.9 (✅ checked with 24.22.0) | landing page; staff web later |
-| Java | 21 (Temurin) | backend services (increment 1) |
-| Maven | 3.9+ | backend builds (increment 1) |
+| Java | 21 or newer (✅ built with JDK 25; code targets 21) | backend services |
+| Maven | not needed: each service has `./mvnw` (Maven 3.10.0, sha256-checked) | backend builds |
 | Docker + Compose v2 | ✅ checked with Docker 29.9 / Compose 5.5 | PostgreSQL, Keycloak, Redis, Mailpit (Kafka in increment 2) |
 
 ## 3. Get the code

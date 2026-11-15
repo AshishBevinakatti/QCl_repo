@@ -1,6 +1,6 @@
 # Project State
-Updated: 2026-11-15T14:44:41+05:30
-Phase: 1 (new baseline): Guest Acquisition, Identity & Sales Lead Operations. Work unit: **Increment 1: S1–S5 committed (…524d862); S6 account management done (26 + 18 tests, 16/16 live), waiting for commit approval**. Branch `feature/phase1-inc1-identity`.
+Updated: 2026-11-15T14:53:16+05:30
+Phase: 1 (new baseline): Guest Acquisition, Identity & Sales Lead Operations. Work unit: **Increment 1 complete (S1–S7); report in docs/03-phases/phase-1/inc1-REPORT.md; S7 waiting for commit approval**. Branch `feature/phase1-inc1-identity`.
 Branch: `feature/phase1-fresh-start` (local, not pushed). Archive: `archive/hotel-draft` + tag `archive-hotel-draft-2026-11-15` (825f3fe, pushed).
 
 State:
@@ -11,6 +11,8 @@ State:
 4. Resource folder rule updated to `/run/media/ash_63/DATA/Intership wrok/ERP_Resouce` (Q-001 answered).
 
 Next action:
-1. Ashish approves the S6 commit.
-2. Push still blocked: GitHub token needs the `workflow` scope.
-3. Then S7 (close increment 1): DAY-ONE followed literally from a clean clone, increment report, traceability check, then ask about merging into feature/phase1-fresh-start.
+1. Ashish approves the S7 commit.
+2. Ask: merge `feature/phase1-inc1-identity` into `feature/phase1-fresh-start` (--no-ff)?
+3. Push still blocked: GitHub token needs the `workflow` scope; CI hasn't run yet.
+4. Optional: Ashish clicks through http://localhost:5173 in a real browser (keycloak-js in-browser).
+5. Increment 2 starts with its own plan (guest-service + lead-service) for approval.
