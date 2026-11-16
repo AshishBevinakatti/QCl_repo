@@ -27,4 +27,14 @@ public record MemberView(UUID id, String membershipId, String firstName, String 
     public record PageView(List<MemberView> items, int page, int size, long total, Long pendingCount) { }
 
     public record NextNumber(String membershipId, boolean provisional) { }
+
+    /**
+     * Memberships one executive brought in (D-140), for registrations created in the period. verifiedAmount: rupees as
+     * a two-decimal string ("75000.00"), only payments an admin or manager verified.
+     */
+    public record ExecutiveMemberships(UUID employeeId, String username, String name, long enrolledCount, long activeCount,
+                                       long pendingCount, long rejectedCount, String verifiedAmount) { }
+
+    public record MembershipSummary(List<ExecutiveMemberships> executives, long enrolledCount, long activeCount,
+                                    long pendingCount, String verifiedAmount, OffsetDateTime from, OffsetDateTime to) { }
 }

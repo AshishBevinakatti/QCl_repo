@@ -1,5 +1,7 @@
 package com.quantumclk.erp.access.employee;
 
+import com.quantumclk.erp.access.membership.IdentityNumbers;
+
 import com.quantumclk.erp.access.employee.AuditLog.Actor;
 import com.quantumclk.erp.access.keycloak.KeycloakAdmin;
 import com.quantumclk.erp.access.keycloak.KeycloakAdmin.UserState;
@@ -35,8 +37,11 @@ public class EmployeeService {
 
     private static final Logger log = LoggerFactory.getLogger(EmployeeService.class);
 
+    /** pan: the normalised full PAN, or null (bootstrap ADMIN). Used only to mask and hash it; never stored or logged. */
     public record CreateCommand(String firstName, String lastName, String email, String username, String mobile,
-                                JobRole jobRole, boolean whatsappOptIn) { }
+                                JobRole jobRole, boolean whatsappOptIn, String pan) {
+        @Override public String toString() { return "CreateCommand[" + username + "]"; }
+    }
 
     public record Result(EmployeeView employee, boolean provisioned) { }
 
@@ -46,9 +51,11 @@ public class EmployeeService {
     private final TransactionTemplate tx;
     private final JdbcTemplate jdbc;
     private final JsonMapper json;
+    private final IdentityNumbers ids;
 
     EmployeeService(EmployeeRepository employees, KeycloakAdmin keycloak, AuditLog audit, TransactionTemplate tx,
-                    JdbcTemplate jdbc, JsonMapper json) {
+                    JdbcTemplate jdbc, JsonMapper json, IdentityNumbers ids) {
+        this.ids = ids;
         this.employees = employees;
         this.keycloak = keycloak;
         this.audit = audit;
@@ -59,7 +66,11 @@ public class EmployeeService {
 
     public Result create(CreateCommand raw, Actor actor, UUID idempotencyKey) {
         CreateCommand c = normalise(raw);
-        String hash = sha256(json.writeValueAsString(c));
+        String panHash = c.pan() == null ? null : ids.hash(IdentityNumbers.PAN, c.pan());
+        String panMasked = c.pan() == null ? null : IdentityNumbers.mask(IdentityNumbers.PAN, c.pan());
+        // The request hash covers the PAN's keyed hash, not the PAN itself.
+        String hash = sha256(json.writeValueAsString(new CreateCommand(c.firstName(), c.lastName(), c.email(), c.username(),
+                c.mobile(), c.jobRole(), c.whatsappOptIn(), panHash)));
         Result replay = replay(actor, idempotencyKey, hash);
         if (replay != null) return replay;
 
@@ -70,7 +81,7 @@ public class EmployeeService {
                 jdbc.update("INSERT INTO idempotency_key (key, actor_id, request_hash, created_at) VALUES (?, ?, ?, ?)",
                         idempotencyKey, actor.idOrNil(), hash, Timestamp.from(Instant.now()));
                 Employee e = new Employee(id, c.firstName(), c.lastName(), c.email(), c.username(), c.mobile(),
-                        c.jobRole().name(), c.whatsappOptIn(), actor.idOrNil(), Instant.now());
+                        c.jobRole().name(), c.whatsappOptIn(), panMasked, panHash, actor.idOrNil(), Instant.now());
                 employees.saveAndFlush(e);
                 audit.record(actor, "EMPLOYEE_CREATED", id, null, EmployeeView.of(e), null, true);
             });
@@ -185,12 +196,14 @@ public class EmployeeService {
 
     private static CreateCommand normalise(CreateCommand c) {
         return new CreateCommand(c.firstName().strip(), c.lastName().strip(), c.email().strip().toLowerCase(),
-                c.username().strip().toLowerCase(), c.mobile().replaceAll("[\\s-]", ""), c.jobRole(), c.whatsappOptIn());
+                c.username().strip().toLowerCase(), c.mobile().replaceAll("[\\s-]", ""), c.jobRole(), c.whatsappOptIn(),
+                c.pan() == null ? null : IdentityNumbers.normalise(IdentityNumbers.PAN, c.pan()));
     }
 
     private static ApiException duplicate(DataIntegrityViolationException e) {
         String m = String.valueOf(e.getMostSpecificCause().getMessage());
-        String field = m.contains("email") ? "email" : m.contains("username") ? "username" : m.contains("mobile") ? "mobile" : "field";
+        String field = m.contains("email") ? "email" : m.contains("username") ? "username" : m.contains("mobile") ? "mobile"
+                : m.contains("pan_hash") ? "PAN" : "field";
         return new ApiException(HttpStatus.CONFLICT, "CONFLICT", "An employee with this " + field + " already exists.");
     }
 

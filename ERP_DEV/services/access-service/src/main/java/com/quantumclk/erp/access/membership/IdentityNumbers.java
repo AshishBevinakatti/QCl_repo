@@ -13,7 +13,8 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 /**
- * ID proof numbers of Gold Members (D-131): Aadhaar or driving licence (client, Discovery Call 2026-10-28 [22:56]).
+ * ID proof numbers of Gold Members (D-131): Aadhaar or driving licence (client, Discovery Call 2026-10-28 [22:56]),
+ * and the PAN of employees (D-139).
  *
  * <p>Checks and normalises a number, and turns it into the only two things we store: a masked form for people and a
  * keyed hash (HMAC-SHA256) that lets the database refuse a second live membership for the same ID. The full number
@@ -25,6 +26,7 @@ public class IdentityNumbers {
 
     public static final String AADHAAR = "AADHAAR";
     public static final String DRIVING_LICENCE = "DRIVING_LICENCE";
+    public static final String PAN = "PAN";
 
     // Verhoeff tables (dihedral group D5), as used by UIDAI for the Aadhaar check digit.
     private static final int[][] D = {
@@ -41,6 +43,10 @@ public class IdentityNumbers {
     private static final Pattern AADHAAR_SHAPE = Pattern.compile("^[2-9][0-9]{11}$");
     /** State code + RTO number + the rest (e.g. KA01 20190001234). Older licences vary in length (Q-038). */
     private static final Pattern LICENCE_SHAPE = Pattern.compile("^[A-Z]{2}[0-9]{2}[0-9A-Z]{9,13}$");
+
+    /** 5 letters, 4 digits, 1 letter; the 4th letter is the holder type, P = individual (Income Tax Dept.). */
+    private static final Pattern PAN_SHAPE = Pattern.compile("^[A-Z]{3}P[A-Z][0-9]{4}[A-Z]$");
+    private static final Pattern PAN_ANY_HOLDER = Pattern.compile("^[A-Z]{5}[0-9]{4}[A-Z]$");
 
     private final byte[] key;
 
@@ -75,7 +81,12 @@ public class IdentityNumbers {
     }
 
     /** Why a number is not acceptable, or null when it is. */
-    static String problem(String type, String normalised) {
+    public static String problem(String type, String normalised) {
+        if (PAN.equals(type)) {
+            if (!PAN_ANY_HOLDER.matcher(normalised).matches()) return "PAN has 10 characters: 5 letters, 4 digits, 1 letter (e.g. ABCPE1234F).";
+            return PAN_SHAPE.matcher(normalised).matches() ? null
+                    : "The 4th letter of a person's PAN is P. Check it on the card.";
+        }
         if (AADHAAR.equals(type)) {
             if (normalised.length() != 12) return "Aadhaar has 12 digits.";
             if (!AADHAAR_SHAPE.matcher(normalised).matches()) return "An Aadhaar number can't start with 0 or 1.";
@@ -90,22 +101,22 @@ public class IdentityNumbers {
     }
 
     /** Aadhaar: digits only. Licence: upper case without spaces, hyphens or slashes. */
-    static String normalise(String type, String raw) {
+    public static String normalise(String type, String raw) {
         if (raw == null) return "";
         return AADHAAR.equals(type) ? raw.replaceAll("[^0-9]", "")
                 : raw.toUpperCase(Locale.ROOT).replaceAll("[\\s/-]", "");
     }
 
-    /** Aadhaar → XXXX-XXXX-0123; licence → X…X + last 4. */
-    static String mask(String type, String normalised) {
+    /** Aadhaar → XXXX-XXXX-0123; licence and PAN → X…X + last 4 (PAN: XXXXXX234F). */
+    public static String mask(String type, String normalised) {
         String last4 = normalised.substring(normalised.length() - 4);
         return AADHAAR.equals(type) ? "XXXX-XXXX-" + last4 : "X".repeat(normalised.length() - 4) + last4;
     }
 
     /** Hex HMAC-SHA256 of "type:number" under the configured key. */
-    String hash(String type, String normalised) {
+    public String hash(String type, String normalised) {
         if (key == null) {
-            throw new IllegalStateException("erp.membership.id-hash-key (MEMBERSHIP_ID_HASH_KEY) is not set; Gold Member registration needs it");
+            throw new IllegalStateException("erp.membership.id-hash-key (MEMBERSHIP_ID_HASH_KEY) is not set; Gold Member registration and employee PAN need it");
         }
         try {
             Mac mac = Mac.getInstance("HmacSHA256");

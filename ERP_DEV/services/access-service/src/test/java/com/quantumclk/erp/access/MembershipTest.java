@@ -512,6 +512,41 @@ class MembershipTest {
         mvc.perform(form(customer(), null).header("Idempotency-Key", UUID.randomUUID().toString())).andExpect(status().isUnauthorized());
     }
 
+    // --- Sales Performance: memberships per executive (D-140) ----------------------------------------------------
+
+    @Test
+    void adminSeesMembershipsEachExecutiveBroughtIn() throws Exception {
+        UUID se3 = UUID.randomUUID();
+        employee(se3, "sita.three", "SALES_EXECUTIVE", "+919811100005");
+        String sita = token(se3, "SALES_EXECUTIVE", SE_PERMS);
+        String[] ids = new String[4];
+        for (int i = 0; i < 4; i++) ids[i] = registerOk(sita, customer(), null).get("id").asString();
+        verify(mgr(), ids[0]).andExpect(status().isOk());
+        verify(mgr(), ids[1]).andExpect(status().isOk());
+        reject(mgr(), ids[2], "Payment not received").andExpect(status().isOk());   // ids[3] stays pending
+
+        String me = "$.executives[?(@.username == 'sita.three')]";
+        mvc.perform(get("/api/v1/admin/memberships/summary").header("Authorization", "Bearer " + admin()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(me + ".name", hasItem("Sita Test")))
+                .andExpect(jsonPath(me + ".enrolledCount", hasItem(4)))
+                .andExpect(jsonPath(me + ".activeCount", hasItem(2)))
+                .andExpect(jsonPath(me + ".pendingCount", hasItem(1)))
+                .andExpect(jsonPath(me + ".rejectedCount", hasItem(1)))
+                .andExpect(jsonPath(me + ".verifiedAmount", hasItem("50000.00")));   // only verified payments count
+
+        mvc.perform(get("/api/v1/admin/memberships/summary").param("from", "2999-01-01T00:00:00+05:30")
+                        .header("Authorization", "Bearer " + admin()))
+                .andExpect(status().isOk()).andExpect(jsonPath(me).isEmpty());
+
+        mvc.perform(get("/api/v1/admin/memberships").param("enrolledBy", "sita.three").header("Authorization", "Bearer " + admin()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(4));
+
+        // Sales Admin only: a manager (who can verify) and an executive are refused.
+        mvc.perform(get("/api/v1/admin/memberships/summary").header("Authorization", "Bearer " + mgr())).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/admin/memberships/summary").header("Authorization", "Bearer " + sita)).andExpect(status().isForbidden());
+    }
+
     // --- Verification ------------------------------------------------------------------------------------------------
 
     private ResultActions verify(String token, String id) throws Exception {

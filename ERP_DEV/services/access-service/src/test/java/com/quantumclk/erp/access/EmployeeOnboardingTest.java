@@ -48,8 +48,8 @@ class EmployeeOnboardingTest extends KeycloakStack {
 
     private static String body(String username, String email, String mobile) {
         return """
-                {"firstName":"Ravi","lastName":"Kumar","email":"%s","username":"%s","mobile":"%s","jobRole":"SALES_EXECUTIVE","whatsappOptIn":true}"""
-                .formatted(email, username, mobile);
+                {"firstName":"Ravi","lastName":"Kumar","email":"%s","username":"%s","mobile":"%s","jobRole":"SALES_EXECUTIVE","whatsappOptIn":true,"pan":"%s"}"""
+                .formatted(email, username, mobile, TestSupport.pan(username.toLowerCase()));
     }
 
     @Test

@@ -1,7 +1,11 @@
 package com.quantumclk.erp.access.employee;
 
+
 import com.quantumclk.erp.access.employee.AuditLog.Actor;
 import com.quantumclk.erp.access.employee.EmployeeService.CreateCommand;
+import com.quantumclk.erp.access.membership.IdentityNumbers;
+import com.quantumclk.erp.access.web.ApiException;
+import com.quantumclk.erp.access.web.FieldErrorsException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -24,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /** Employee administration (api.md §3). Permissions come from the token; MANAGER cannot manage (D-113). */
@@ -37,7 +42,8 @@ public class EmployeeController {
             @NotBlank @Email @Size(max = 254) String email,
             @NotBlank @Pattern(regexp = "^[A-Za-z0-9._-]{3,50}$", message = "3–50 letters, digits, dot, dash or underscore") String username,
             @NotBlank @Pattern(regexp = "^\\+[1-9][0-9 -]{7,18}$", message = "international format, e.g. +91 98765 43210") String mobile,
-            @NotNull JobRole jobRole,
+            JobRole jobRole,             // optional; a Sales Admin may only create Sales Executives (D-138)
+            @NotBlank(message = "PAN is required.") @Size(max = 20) String pan,   // shape checked after normalising (D-139)
             Boolean whatsappOptIn) { }   // optional, default false (Jackson 3 rejects a missing primitive)
 
     public record PageView<T>(List<T> items, int page, int size, long total) {
@@ -61,8 +67,15 @@ public class EmployeeController {
     @PreAuthorize("hasAuthority('PERM_employees.manage')")
     ResponseEntity<EmployeeView> create(@Valid @RequestBody CreateRequest r, @RequestHeader("Idempotency-Key") UUID key,
                                         JwtAuthenticationToken auth, HttpServletRequest http) {
+        // D-138: staff created through the API are Sales Executives only. The bootstrap ADMIN goes through the
+        // service directly (AccountJobs), not this endpoint.
+        if (r.jobRole() != null && r.jobRole() != JobRole.SALES_EXECUTIVE)
+            throw new FieldErrorsException(Map.of("jobRole", "Only Sales Executive accounts can be created."));
+        String pan = IdentityNumbers.normalise(IdentityNumbers.PAN, r.pan());
+        String panProblem = IdentityNumbers.problem(IdentityNumbers.PAN, pan);
+        if (panProblem != null) throw new FieldErrorsException(Map.of("pan", panProblem));
         var result = service.create(new CreateCommand(r.firstName(), r.lastName(), r.email(), r.username(), r.mobile(),
-                r.jobRole(), Boolean.TRUE.equals(r.whatsappOptIn())), actor(auth, http), key);
+                JobRole.SALES_EXECUTIVE, Boolean.TRUE.equals(r.whatsappOptIn()), pan), actor(auth, http), key);
         // 201 when Keycloak is set up; 202 when it is still pending (AUTHENTICATION §10 F1/F2).
         return ResponseEntity.status(result.provisioned() ? HttpStatus.CREATED : HttpStatus.ACCEPTED).body(result.employee());
     }
@@ -104,6 +117,9 @@ public class EmployeeController {
     @org.springframework.web.bind.annotation.PutMapping("/{id}/role")
     @PreAuthorize("hasAuthority('PERM_roles.assign')")
     EmployeeView role(@PathVariable UUID id, @Valid @RequestBody RoleRequest r, JwtAuthenticationToken auth, HttpServletRequest http) {
+        // D-138: no promotions to Manager or Administrator from the ERP; moving someone to Sales Executive is allowed.
+        if (r.role() != JobRole.SALES_EXECUTIVE)
+            throw new ApiException(HttpStatus.FORBIDDEN, "ROLE_NOT_ALLOWED", "Employees can only be given the Sales Executive role.");
         return accounts.changeRole(id, r.role(), r.reason(), actor(auth, http));
     }
 

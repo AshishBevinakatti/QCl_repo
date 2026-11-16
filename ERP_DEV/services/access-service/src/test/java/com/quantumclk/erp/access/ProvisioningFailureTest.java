@@ -55,8 +55,8 @@ class ProvisioningFailureTest {
         return mvc.perform(post("/api/v1/admin/employees").header("Authorization", "Bearer " + token)
                 .header("Idempotency-Key", UUID.randomUUID().toString()).contentType("application/json")
                 .content("""
-                        {"firstName":"Test","lastName":"Person","email":"%s","username":"%s","mobile":"+91 98000 %05d","jobRole":"SALES_EXECUTIVE"}"""
-                        .formatted(email, username, Math.abs(username.hashCode()) % 100000)));
+                        {"firstName":"Test","lastName":"Person","email":"%s","username":"%s","mobile":"+91 98000 %05d","jobRole":"SALES_EXECUTIVE","pan":"%s"}"""
+                        .formatted(email, username, Math.abs(username.hashCode()) % 100000, TestSupport.pan(username))));
     }
 
     private String dbStatus(String username) {
@@ -126,7 +126,7 @@ class ProvisioningFailureTest {
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.message").value("This is the last active administrator; add another one first."));
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/admin/employees/" + owner + "/role")
                         .header("Authorization", adminToken(UUID.randomUUID())).contentType("application/json")
-                        .content("{\"role\":\"MANAGER\",\"reason\":\"test\"}"))
+                        .content("{\"role\":\"SALES_EXECUTIVE\",\"reason\":\"test\"}"))
                 .andExpect(status().isConflict());
         assertThat(dbStatus("owner")).isEqualTo("INVITED");
     }

@@ -23,8 +23,8 @@ class AccountManagementTest extends KeycloakStack {
 
     private String createSales(String username) throws Exception {
         String body = """
-                {"firstName":"Sam","lastName":"Lee","email":"%s@example.test","username":"%s","mobile":"+9198%08d","jobRole":"SALES_EXECUTIVE"}"""
-                .formatted(username, username, Math.abs(username.hashCode()) % 100000000);
+                {"firstName":"Sam","lastName":"Lee","email":"%s@example.test","username":"%s","mobile":"+9198%08d","jobRole":"SALES_EXECUTIVE","pan":"%s"}"""
+                .formatted(username, username, Math.abs(username.hashCode()) % 100000000, TestSupport.pan(username));
         String r = mvc.perform(post("/api/v1/admin/employees").header("Authorization", ADMIN_TOKEN)
                         .header("Idempotency-Key", UUID.randomUUID().toString()).contentType("application/json").content(body))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
@@ -59,17 +59,65 @@ class AccountManagementTest extends KeycloakStack {
     }
 
     @Test
-    void roleChangeReplacesTheKeycloakRoleAndNeedsRolesAssign() throws Exception {
+    void roleChangeNeedsRolesAssignAndOnlyAllowsSalesExecutive() throws Exception {   // D-138
         String id = createSales("role.user");
         String manager = token(List.of("MANAGER"), List.of("employees.read"));
         mvc.perform(put("/api/v1/admin/employees/" + id + "/role").header("Authorization", manager)
-                .contentType("application/json").content("{\"role\":\"MANAGER\",\"reason\":\"x\"}")).andExpect(status().isForbidden());
+                .contentType("application/json").content("{\"role\":\"SALES_EXECUTIVE\",\"reason\":\"x\"}")).andExpect(status().isForbidden());
 
+        for (String role : List.of("MANAGER", "ADMIN")) {
+            mvc.perform(put("/api/v1/admin/employees/" + id + "/role").header("Authorization", ADMIN_TOKEN)
+                    .contentType("application/json").content("{\"role\":\"" + role + "\",\"reason\":\"Promotion\"}"))
+                    .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("ROLE_NOT_ALLOWED"));
+        }
         mvc.perform(put("/api/v1/admin/employees/" + id + "/role").header("Authorization", ADMIN_TOKEN)
-                .contentType("application/json").content("{\"role\":\"MANAGER\",\"reason\":\"Promoted to sales supervisor\"}"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.jobRole").value("MANAGER"));
+                .contentType("application/json").content("{\"role\":\"SALES_EXECUTIVE\",\"reason\":\"No change\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.jobRole").value("SALES_EXECUTIVE"));
         JsonNode roles = admin("GET", "/users/" + kcId(id) + "/role-mappings/realm", null);
-        assertThat(roles.findValuesAsString("name")).contains("MANAGER").doesNotContain("SALES_EXECUTIVE", "ADMIN");
+        assertThat(roles.findValuesAsString("name")).contains("SALES_EXECUTIVE").doesNotContain("MANAGER", "ADMIN");
+    }
+
+    @Test
+    void onlySalesExecutivesCanBeCreated() throws Exception {   // D-138
+        for (String role : List.of("MANAGER", "ADMIN")) {
+            String body = """
+                    {"firstName":"Max","lastName":"Roy","email":"max.%s@example.test","username":"max.%s","mobile":"+919811111111","jobRole":"%s","pan":"ABCPM1111M"}"""
+                    .formatted(role.toLowerCase(), role.toLowerCase(), role);
+            mvc.perform(post("/api/v1/admin/employees").header("Authorization", ADMIN_TOKEN)
+                            .header("Idempotency-Key", UUID.randomUUID().toString()).contentType("application/json").content(body))
+                    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.fields.jobRole").exists());
+        }
+        String noRole = """
+                {"firstName":"Nia","lastName":"Das","email":"nia.das@example.test","username":"nia.das","mobile":"+919822222222","pan":"abcpn 2222 n"}""";
+        mvc.perform(post("/api/v1/admin/employees").header("Authorization", ADMIN_TOKEN)
+                        .header("Idempotency-Key", UUID.randomUUID().toString()).contentType("application/json").content(noRole))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.jobRole").value("SALES_EXECUTIVE"))
+                .andExpect(jsonPath("$.panMasked").value("XXXXXX222N"));   // normalised, then masked
+        // Only the mask and a keyed hash are stored, never the PAN itself.
+        assertThat(jdbc.queryForObject("SELECT pan_masked || pan_hash FROM employee WHERE username = 'nia.das'", String.class))
+                .startsWith("XXXXXX222N").doesNotContain("ABCPN");
+    }
+
+    @Test
+    void panIsRequiredValidatedAndUnique() throws Exception {   // D-139
+        String base = """
+                {"firstName":"Pan","lastName":"Test","email":"%s@example.test","username":"%s","mobile":"%s"%s}""";
+        String[][] bad = {{"pan.none", "+919833333331", ""}, {"pan.short", "+919833333332", ",\"pan\":\"ABCP1234F\""},
+                {"pan.company", "+919833333333", ",\"pan\":\"ABCCE1234F\""}};
+        for (String[] b : bad) {
+            mvc.perform(post("/api/v1/admin/employees").header("Authorization", ADMIN_TOKEN)
+                            .header("Idempotency-Key", UUID.randomUUID().toString()).contentType("application/json")
+                            .content(base.formatted(b[0], b[0], b[1], b[2])))
+                    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.fields.pan").exists());
+        }
+        mvc.perform(post("/api/v1/admin/employees").header("Authorization", ADMIN_TOKEN)
+                        .header("Idempotency-Key", UUID.randomUUID().toString()).contentType("application/json")
+                        .content(base.formatted("pan.one", "pan.one", "+919833333334", ",\"pan\":\"ABCPQ4444Q\"")))
+                .andExpect(status().isCreated());
+        mvc.perform(post("/api/v1/admin/employees").header("Authorization", ADMIN_TOKEN)
+                        .header("Idempotency-Key", UUID.randomUUID().toString()).contentType("application/json")
+                        .content(base.formatted("pan.two", "pan.two", "+919833333335", ",\"pan\":\"abcpq4444q\"")))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.message").value("An employee with this PAN already exists."));
     }
 
     @Test

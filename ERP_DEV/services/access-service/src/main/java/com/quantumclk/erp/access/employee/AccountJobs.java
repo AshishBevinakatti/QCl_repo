@@ -60,7 +60,7 @@ public class AccountJobs {
             // Same key on every restart, so a crash mid-way can't create the admin twice.
             UUID key = UUID.nameUUIDFromBytes(("bootstrap:" + bootstrap.email().toLowerCase()).getBytes(StandardCharsets.UTF_8));
             var r = service.create(new CreateCommand(bootstrap.firstName(), bootstrap.lastName(), bootstrap.email(),
-                    bootstrap.username(), bootstrap.mobile(), JobRole.ADMIN, false), Actor.BOOTSTRAP, key);
+                    bootstrap.username(), bootstrap.mobile(), JobRole.ADMIN, false, null), Actor.BOOTSTRAP, key);
             log.info("Bootstrap ADMIN {} is {}", r.employee().username(), r.employee().status());
         } catch (RuntimeException e) {
             log.error("Bootstrap ADMIN could not be created: {}", e.getMessage());

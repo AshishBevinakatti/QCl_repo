@@ -22,6 +22,9 @@ public class Employee {
     @Column(name = "mobile_e164") private String mobileE164;
     @Column(name = "job_role") private String jobRole;
     @Column(name = "whatsapp_opt_in") private boolean whatsappOptIn;
+    /** Masked PAN only (XXXXXX234F) plus its keyed hash; the full PAN is never stored (D-139). */
+    @Column(name = "pan_masked") private String panMasked;
+    @Column(name = "pan_hash") private String panHash;
     private String status;
     @Column(name = "status_reason") private String statusReason;
     @Column(name = "created_by") private UUID createdBy;
@@ -33,7 +36,8 @@ public class Employee {
     protected Employee() { }
 
     public Employee(UUID id, String firstName, String lastName, String email, String username, String mobileE164,
-                    String jobRole, boolean whatsappOptIn, UUID actor, Instant now) {
+                    String jobRole, boolean whatsappOptIn, String panMasked, String panHash, UUID actor, Instant now) {
+        this.panMasked = panMasked; this.panHash = panHash;
         this.id = id; this.firstName = firstName; this.lastName = lastName; this.email = email; this.username = username;
         this.mobileE164 = mobileE164; this.jobRole = jobRole; this.whatsappOptIn = whatsappOptIn;
         this.status = "PENDING_PROVISIONING"; this.createdBy = actor; this.updatedBy = actor; this.createdAt = now; this.updatedAt = now;
@@ -60,6 +64,7 @@ public class Employee {
     public String getStatusReason() { return statusReason; }
     public String getMobileE164() { return mobileE164; }
     public boolean isWhatsappOptIn() { return whatsappOptIn; }
+    public String getPanMasked() { return panMasked; }
     public UUID getCreatedBy() { return createdBy; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }

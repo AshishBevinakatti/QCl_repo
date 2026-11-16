@@ -53,4 +53,14 @@ class IdentityNumbersTest {
         assertThatThrownBy(() -> new IdentityNumbers("").hash("AADHAAR", "234567890123")).hasMessageContaining("MEMBERSHIP_ID_HASH_KEY");
         assertThatThrownBy(() -> new IdentityNumbers("c2hvcnQ=")).hasMessageContaining("at least 32 bytes");
     }
+
+    @Test
+    void panIsNormalisedCheckedAndMasked() {   // D-139
+        String pan = IdentityNumbers.normalise(IdentityNumbers.PAN, " abcpe 1234-f ");
+        assertThat(pan).isEqualTo("ABCPE1234F");
+        assertThat(IdentityNumbers.problem(IdentityNumbers.PAN, pan)).isNull();
+        assertThat(IdentityNumbers.problem(IdentityNumbers.PAN, "ABCP1234F")).contains("10 characters");
+        assertThat(IdentityNumbers.problem(IdentityNumbers.PAN, "ABCCE1234F")).contains("4th letter");   // a company PAN
+        assertThat(IdentityNumbers.mask(IdentityNumbers.PAN, pan)).isEqualTo("XXXXXX234F");
+    }
 }

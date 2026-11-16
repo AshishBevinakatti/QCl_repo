@@ -439,9 +439,59 @@ public class MembershipService {
         return page(" WHERE m.enrolled_by_id = ?", List.of(by.employeeId()), page, size, false);
     }
 
+    /** Open ends of a period ("all time"). */
+    static final OffsetDateTime BEGINNING = OffsetDateTime.of(2000, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    static final OffsetDateTime END = OffsetDateTime.of(9999, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+
+    /** Per enrolling executive, registrations created in [from, to) and the verified money they brought in (D-140). */
+    public MemberView.MembershipSummary summary(OffsetDateTime from, OffsetDateTime to) {
+        OffsetDateTime f = from != null ? from : BEGINNING;
+        OffsetDateTime t = to != null ? to : END;
+        List<MemberView.ExecutiveMemberships> rows = jdbc.query("""
+                SELECT m.enrolled_by_id,
+                       COALESCE(e.username, max(m.enrolled_by_username)) AS username,
+                       COALESCE(e.first_name || ' ' || e.last_name, max(m.enrolled_by_name)) AS name,
+                       count(*) AS enrolled,
+                       count(*) FILTER (WHERE m.status = 'ACTIVE') AS active,
+                       count(*) FILTER (WHERE m.status = 'PENDING_VERIFICATION') AS pending,
+                       count(*) FILTER (WHERE m.status = 'REJECTED') AS rejected,
+                       COALESCE(sum(p.amount) FILTER (WHERE p.status = 'VERIFIED'), 0) AS verified
+                  FROM resort_member m
+                  JOIN member_payment p ON p.member_id = m.id
+                  LEFT JOIN employee e ON e.id = m.enrolled_by_id
+                 WHERE m.created_at >= ? AND m.created_at < ?
+                 GROUP BY m.enrolled_by_id, e.username, e.first_name, e.last_name
+                 ORDER BY username""",
+                (rs, i) -> new MemberView.ExecutiveMemberships(rs.getObject("enrolled_by_id", UUID.class), rs.getString("username"),
+                        rs.getString("name"), rs.getLong("enrolled"), rs.getLong("active"), rs.getLong("pending"),
+                        rs.getLong("rejected"), money(rs.getBigDecimal("verified"))),
+                f, t);
+        BigDecimal total = rows.stream().map(r -> new BigDecimal(r.verifiedAmount())).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new MemberView.MembershipSummary(rows,
+                rows.stream().mapToLong(MemberView.ExecutiveMemberships::enrolledCount).sum(),
+                rows.stream().mapToLong(MemberView.ExecutiveMemberships::activeCount).sum(),
+                rows.stream().mapToLong(MemberView.ExecutiveMemberships::pendingCount).sum(),
+                money(total), from, to);
+    }
+
+    private static String money(BigDecimal b) {
+        return (b == null ? BigDecimal.ZERO : b).setScale(2, RoundingMode.HALF_UP).toPlainString();
+    }
+
     public PageView list(String status, String q, int page, int size) {
+        return list(status, q, null, null, null, page, size);
+    }
+
+    /** enrolledBy: the enrolling executive's username; from/to: registration created in [from, to). */
+    public PageView list(String status, String q, String enrolledBy, OffsetDateTime from, OffsetDateTime to, int page, int size) {
         StringBuilder where = new StringBuilder(" WHERE true");
         List<Object> args = new ArrayList<>();
+        if (enrolledBy != null && !enrolledBy.isBlank()) {
+            where.append(" AND m.enrolled_by_id IN (SELECT id FROM employee WHERE username = ?)");
+            args.add(enrolledBy.strip().toLowerCase(Locale.ROOT));
+        }
+        if (from != null) { where.append(" AND m.created_at >= ?"); args.add(from); }
+        if (to != null) { where.append(" AND m.created_at < ?"); args.add(to); }
         if (status != null && !status.isBlank()) {
             if (!List.of("PENDING_VERIFICATION", "ACTIVE", "REJECTED").contains(status)) {
                 throw new FieldErrorsException(Map.of("status", "Unknown status."));

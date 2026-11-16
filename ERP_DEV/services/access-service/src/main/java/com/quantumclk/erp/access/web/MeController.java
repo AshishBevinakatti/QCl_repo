@@ -36,14 +36,20 @@ public class MeController {
         List<String> permissions = strip(auth, "PERM_");
         Profile profile = parseUuid(auth.getToken().getSubject())
                 .flatMap(employees::findByKeycloakUserId).map(Profile::of).orElse(null);
-        return new Me(profile, roles, permissions, modules(permissions));
+        return new Me(profile, roles, permissions, modules(roles, permissions));
     }
 
     // Cosmetic only: the backend still checks every request (AUTHENTICATION §5 step 6).
-    static List<String> modules(List<String> permissions) {
-        List<String> m = new ArrayList<>(List.of("dashboard"));
+    static List<String> modules(List<String> roles, List<String> permissions) {
+        // A Sales Executive's ERP is their Gold Membership work only; the web app shows it as their "Dashboard"
+        // (owner decision D-135, 2026-11-16). Leads come back here when increment 2 builds that screen.
+        if (roles.equals(List.of("SALES_EXECUTIVE")) && permissions.contains("memberships.register")) return List.of("memberships");
+        // Sales Admin (ADMIN) has no Dashboard and no Leads tab: executive lead performance lives inside Employees
+        // (D-137), so Employees opens first.
+        boolean admin = roles.contains("ADMIN");
+        List<String> m = new ArrayList<>(admin ? List.of() : List.of("dashboard"));
         if (permissions.contains("employees.read")) m.add("employees");
-        if (permissions.contains("leads.read_queue") || permissions.contains("leads.read_team")) m.add("leads");
+        if (!admin && (permissions.contains("leads.read_queue") || permissions.contains("leads.read_team"))) m.add("leads");
         if (permissions.contains("memberships.register") || permissions.contains("memberships.read_all")) m.add("memberships");
         if (permissions.contains("audit.read")) m.add("audit");
         return m;

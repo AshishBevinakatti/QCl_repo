@@ -63,6 +63,12 @@ public class TestSupport {
         return d;
     }
 
+    /** A valid, individual PAN derived from a seed: the same seed always gives the same PAN (D-139). */
+    public static String pan(String seed) {
+        int n = Math.abs(seed.hashCode() % 1_000_000_000);
+        return "ABCP" + (char) ('A' + n / 10_000 % 26) + String.format("%04d", n % 10_000) + (char) ('A' + n / 260_000 % 26);
+    }
+
     /** A token as Keycloak would issue it; override any claim with the builder. */
     public static JWTClaimsSet.Builder claims(UUID sub, List<String> realmRoles, List<String> permissions) {
         Instant now = Instant.now();

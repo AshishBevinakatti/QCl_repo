@@ -61,7 +61,15 @@ class MeEndpointTest {
                 .andExpect(jsonPath("$.employee.username").value("asha.rao"))
                 .andExpect(jsonPath("$.roles", contains("ADMIN")))
                 .andExpect(jsonPath("$.permissions", containsInAnyOrder("employees.read", "employees.manage", "audit.read")))
-                .andExpect(jsonPath("$.modules", contains("dashboard", "employees", "audit")));
+                .andExpect(jsonPath("$.modules", contains("employees", "audit")));
+    }
+
+    @Test
+    void adminWithLeadsPermissionDoesNotSeeLeadsModule() throws Exception {
+        String t = TestSupport.sign(TestSupport.claims(ADMIN_SUB, List.of("ADMIN"),
+                List.of("employees.read", "employees.manage", "leads.read_team", "audit.read")).build());
+        me(t).andExpect(status().isOk())
+                .andExpect(jsonPath("$.modules", contains("employees", "audit")));
     }
 
     @Test
@@ -71,6 +79,13 @@ class MeEndpointTest {
         me(t).andExpect(status().isOk())
                 .andExpect(jsonPath("$.employee").value(nullValue()))
                 .andExpect(jsonPath("$.modules", contains("dashboard", "leads")));
+    }
+
+    @Test
+    void aSalesExecutiveSeesOnlyMemberships() throws Exception {   // D-135: shown as their Dashboard
+        String t = TestSupport.sign(TestSupport.claims(UUID.randomUUID(), List.of("SALES_EXECUTIVE"),
+                List.of("leads.read_queue", "memberships.register", "memberships.read_own")).build());
+        me(t).andExpect(status().isOk()).andExpect(jsonPath("$.modules", contains("memberships")));
     }
 
     @Test
