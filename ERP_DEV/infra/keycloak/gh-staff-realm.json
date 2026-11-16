@@ -179,6 +179,11 @@
         {
           "name": "memberships.verify",
           "clientRole": true
+        },
+        {
+          "name": "guests.provision",
+          "description": "Service permission: access-service may create member accounts in gh-guests through guest-service (D-120)",
+          "clientRole": true
         }
       ]
     }
@@ -265,6 +270,9 @@
       "enabled": true,
       "serviceAccountClientId": "access-service",
       "clientRoles": {
+        "erp-api": [
+          "guests.provision"
+        ],
         "realm-management": [
           "manage-users",
           "view-users",
@@ -285,6 +293,12 @@
   ],
   "clientScopeMappings": {
     "erp-api": [
+      {
+        "client": "access-service",
+        "roles": [
+          "guests.provision"
+        ]
+      },
       {
         "client": "erp-web",
         "roles": [

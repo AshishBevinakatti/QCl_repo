@@ -47,3 +47,6 @@ Thumbs.db
 # Runtime JSON logs (Loki/Promtail input); docs/logs/ stays tracked
 /logs/
 /services/erp-app/logs/
+
+# Built Keycloak extension jars (infra/keycloak-extensions/*, mounted into Keycloak)
+infra/keycloak-providers/

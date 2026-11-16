@@ -8,6 +8,8 @@
   - Ashish's instruction of 2026-11-15 (DEVLOG).
 - Scope: **employees (staff) only.** Guest identity is a separate realm and is still open ([Q-003](../../logs/OPEN_QUESTIONS.md)).
 
+> **Guests and members** (customers on the landing page) use a separate realm, `gh-guests`, with Authorization Code + PKCE and a one-time welcome link: see [MEMBER-LOGIN.md](MEMBER-LOGIN.md) (D-119…D-122, which supersede D-114). This document covers staff only.
+
 ## 1. Rules (non-negotiable)
 
 1. Keycloak is the **single source of truth for authentication**: login, passwords, email verification, password reset, tokens, sessions and account enabled/disabled.

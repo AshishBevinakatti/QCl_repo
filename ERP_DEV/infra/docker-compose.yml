@@ -13,6 +13,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in ERP_DEV/.env}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD:?set KC_DB_PASSWORD in ERP_DEV/.env}
       ACCESS_DB_PASSWORD: ${ACCESS_DB_PASSWORD:?set ACCESS_DB_PASSWORD in ERP_DEV/.env}
+      GUEST_DB_PASSWORD: ${GUEST_DB_PASSWORD:?set GUEST_DB_PASSWORD in ERP_DEV/.env}
     ports:
       - "127.0.0.1:${POSTGRES_HOST_PORT:-5433}:5432"   # 5433: a system PostgreSQL often already owns 5432
     volumes:
@@ -42,6 +43,10 @@ services:
       KC_PROXY_HEADERS: "xforwarded"
       # Placeholders resolved inside infra/keycloak/gh-staff-realm.json at import time
       KC_ACCESS_SERVICE_CLIENT_SECRET: ${KC_ACCESS_SERVICE_CLIENT_SECRET:?set KC_ACCESS_SERVICE_CLIENT_SECRET in ERP_DEV/.env}
+      # Realm gh-guests (Gold Membership members, D-119…D-122): guest-service's client secret and the public
+      # landing-page origin (redirect URIs, web origins, the welcome-email link).
+      KC_GUEST_SERVICE_CLIENT_SECRET: ${KC_GUEST_SERVICE_CLIENT_SECRET:?set KC_GUEST_SERVICE_CLIENT_SECRET in ERP_DEV/.env}
+      LANDING_PUBLIC_URL: ${LANDING_PUBLIC_URL:-http://localhost:3000}
       ERP_WEB_ORIGIN: ${ERP_WEB_ORIGIN:-http://localhost:5173}
       SMTP_HOST: ${SMTP_HOST:-mailpit}
       SMTP_PORT: ${SMTP_PORT:-1025}
@@ -56,6 +61,9 @@ services:
       - "${KEYCLOAK_BIND:-127.0.0.1}:8081:8081"
     volumes:
       - ./keycloak:/opt/keycloak/data/import:ro
+      # Our Keycloak extension (member activation link + Golden Hills themes). Build it first:
+      #   (cd ERP_DEV/infra/keycloak-extensions/gh-member-activation && ./mvnw -q package -DskipTests)
+      - ./keycloak-providers:/opt/keycloak/providers:ro
     depends_on:
       postgres:
         condition: service_healthy

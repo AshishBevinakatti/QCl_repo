@@ -153,6 +153,22 @@ $K add-roles -r gh-staff --rname SALES_EXECUTIVE --cclientid erp-api --rolename 
 
 Check: `kcadm.sh get clients/$WEB/scope-mappings/clients/$API -r gh-staff --fields name` lists the four `memberships.*` roles. Staff must **sign in again** to get them in their token. The scope-mapping step matters: without it the roles are assigned but never appear in `erp-web` tokens.
 
+### 5.5 `guests.provision`: access-service may create member accounts (Gold Membership, D-120)
+
+guest-service's `/internal/guests/**` accepts only a gh-staff token whose `erp-api` roles contain `guests.provision`. Only the **service account of `access-service`** holds it (not a job role, so no employee gets it), and it is in the `access-service` client's scope (fullScopeAllowed is false). The realm file has it. To add it to an existing realm:
+
+```bash
+docker exec golden-hills-erp-keycloak-1 sh -c '
+K=/opt/keycloak/bin/kcadm.sh
+$K config credentials --server http://localhost:8081 --realm master --user "$KC_BOOTSTRAP_ADMIN_USERNAME" --password "$KC_BOOTSTRAP_ADMIN_PASSWORD"
+API=$($K get clients -r gh-staff -q clientId=erp-api --fields id --format csv --noquotes)
+SVC=$($K get clients -r gh-staff -q clientId=access-service --fields id --format csv --noquotes)
+$K create clients/$API/roles -r gh-staff -s name=guests.provision
+$K add-roles -r gh-staff --uusername service-account-access-service --cclientid erp-api --rolename guests.provision
+{ printf "["; $K get clients/$API/roles/guests.provision -r gh-staff --fields id,name; printf "]"; } > /tmp/role.json
+$K create clients/$SVC/scope-mappings/clients/$API -r gh-staff -f /tmp/role.json'
+```
+
 ## 6. Roles
 
 - **Realm roles** (job roles): `ADMIN`, `MANAGER`, `SALES_EXECUTIVE`. Each is a **composite** of `erp-api` client roles, using the default grants in AUTHENTICATION §3.
@@ -237,3 +253,21 @@ Checked in S1 on 2026-11-15 against Keycloak 26.8.2 (throwaway stack, script out
 - [x] ✅ Invite email ("Update Your Account") arrives in Mailpit. Following the link opens Keycloak's set-password page, the 12-character policy is enforced, and the password is set (S5 live checks 1–3).
 - [x] ✅ A disabled user can't log in ("account disabled"), and refreshing their token fails at once (S6 live checks 5–6).
 - [x] ✅ CI job `realm-check` validates the realm file (14 rules, passed locally): it must contain `registrationAllowed=false`, `verifyEmail=true`, brute-force on, PKCE on `erp-web`, direct grants off, and no `secret` values in plain text.
+
+## 13. Realm `gh-guests` (members and guests) and the extension `gh-member-activation`
+
+Design and security rules: [MEMBER-LOGIN.md](MEMBER-LOGIN.md). Realm file: `infra/keycloak/gh-guests-realm.json`. Extension source: `infra/keycloak-extensions/gh-member-activation` (README there).
+
+1. **Build the extension** (once, and after every change to it). The jar lands in `infra/keycloak-providers/`, which compose mounts as `/opt/keycloak/providers`:
+   ```bash
+   (cd ERP_DEV/infra/keycloak-extensions/gh-member-activation && ./mvnw -q package -DskipTests)
+   ```
+2. **Settings in `ERP_DEV/.env`:** `KC_GUEST_SERVICE_CLIENT_SECRET` (random) and `LANDING_PUBLIC_URL` (the landing page's public origin; with the shared tunnel, the same value as `ERP_WEB_ORIGIN`). Compose refuses to start without the secret.
+3. **Start or recreate Keycloak:** `docker compose --env-file ERP_DEV/.env -f ERP_DEV/infra/docker-compose.yml up -d keycloak`. `--import-realm` creates `gh-guests` the first time and leaves an existing `gh-staff` untouched. The values of `${...}` are taken **at import**. To change the secret or the landing URL later, edit the client in the admin console (or delete the realm and recreate the container).
+4. **Check:** `curl -s http://localhost:8081/realms/gh-guests` returns the realm; the admin console shows realm *gh-guests* with flow *gh-member-browser*, clients *guest-web* and *guest-service*.
+
+Things learned while building it (2026-11-16):
+- **`kc-admin-api` scope:** Keycloak 26.8 answers 401 to Admin API calls whose token lacks the admin-API audience. Service clients need the default client scope `kc-admin-api` (both `access-service` and `guest-service` have it).
+- **Placeholders in realm files:** `${...}` in a realm file is replaced from the environment at import. Never use it for anything else, e.g. user-profile display names.
+- **Our own flow in a realm file:** declaring one keeps Keycloak's standard flows (browser, registration, reset credentials, direct grant). This is checked by `ActivationFlowIT`.
+- **Secure cookies over plain HTTP:** Keycloak marks its login cookies `Secure` even over http. Browsers accept that for `localhost` and HTTPS; plain-HTTP LAN addresses do not work.
