@@ -6,7 +6,7 @@ import { Sketch } from "./pencil";
 import GallerySlider from "./gallery-slider";
 import MotionProvider from "./motion-provider";
 import SiteFooter from "./site-footer";
-import { ArrowRight, ArrowDown, MapPin } from "./icons";
+import { ArrowRight, MapPin } from "./icons";
 import { getScene, impression } from "./resort-assets";
 import Reveal from "./reveal";
 import LocationMapCard from "./location-map-card";
@@ -395,26 +395,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 12. Booking / Contact CTA */}
-        <section id="contact" className="closing-section" aria-labelledby="closing-title">
-          <div className="closing-media" aria-hidden="true">
-            <Image src={getScene("dusk-pool-candidate-p38").src} alt="" fill sizes="100vw" />
-          </div>
-          <div className="closing-scrim" aria-hidden="true" />
-          <div className="closing-inner wrap">
-            <div className="closing-copy">
-              <p>Stays · Dining · Celebrations · Recreation</p>
-              <h2 id="closing-title">Plan your stay in northern Karnataka</h2>
-              <p style={{ marginTop: "12px", color: "var(--color-chalk-82)", fontSize: "14px", maxWidth: "440px" }}>Connect with our concierge or explore our accommodations, dining, and celebration venues to plan your visit to northern Karnataka.</p>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "flex-end" }}>
-              <Link className="explore-button closing-cta" href="/plan-ahead#bookings">Explore planning options <ArrowRight size={16} /></Link>
-              <a href="#location" style={{ color: "var(--color-chalk)", fontSize: "13px", display: "inline-flex", alignItems: "center", gap: "6px" }}>Find us on map <ArrowDown size={14} /></a>
-            </div>
-          </div>
-        </section>
-
-        {/* 13. Footer */}
+        {/* 12. Footer */}
       </main>
       <SiteFooter />
     </MotionProvider>
