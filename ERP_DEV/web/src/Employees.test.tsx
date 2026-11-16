@@ -46,29 +46,38 @@ describe("Employees", () => {
     });
     render(<Employees request={request} canManage />);
     fill("First name", "Ravi"); fill("Last name", "Kumar"); fill("Email", "ravi@example.test");
-    fill("Username", "ravi.kumar"); fill("Mobile (e.g. +91 98765 43210)", "+91 98765 43210");
+    fill("Username", "ravi.kumar"); fill("Mobile (e.g. +91 98765 43210)", "+91 98765 43210"); fill("PAN", "abcpe 1234-f");
+    expect(screen.getByText("Valid PAN · saved as XXXXXX234F")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Add employee" }));
     expect(await screen.findByRole("status")).toBeTruthy();
     expect(screen.getByRole("status").textContent).toContain("was invited");
     expect(new Headers(sent!.headers).get("Idempotency-Key")).toMatch(/^[0-9a-f-]{36}$/);
-    expect(JSON.parse(sent!.body as string)).toMatchObject({ email: "ravi@example.test", jobRole: "SALES_EXECUTIVE", whatsappOptIn: false });
+    expect(JSON.parse(sent!.body as string)).toMatchObject({ email: "ravi@example.test", jobRole: "SALES_EXECUTIVE", whatsappOptIn: false, pan: "ABCPE1234F" });
   });
 
-  it("picks the job role from role cards", async () => {
-    let sent: RequestInit | undefined;
-    const request = fakeRequest({
-      "/api/v1/admin/employees?": () => ({ items: [], page: 0, size: 100, total: 0 }),
-      "/api/v1/admin/employees": (init) => { sent = init; return { ...ravi, jobRole: "MANAGER" }; },
-    });
+  it("only creates Sales Executives: no role picker", async () => {
+    render(<Employees request={fakeRequest({ "/api/v1/admin/employees?": () => ({ items: [], page: 0, size: 100, total: 0 }) })} canManage />);
+    await screen.findByRole("form", { name: "Add employee" });
+    expect(screen.queryByRole("radio")).toBeNull();
+    expect(screen.getByText(/Only Sales Executive accounts can be created/)).toBeTruthy();
+  });
+
+  it("checks the PAN before sending: a company PAN is refused", async () => {
+    const paths: string[] = [];
+    const request = vi.fn(async (path: string) => { paths.push(path); return { items: [], page: 0, size: 100, total: 0 }; }) as unknown as
+      <T>(path: string, init?: RequestInit) => Promise<T>;
     render(<Employees request={request} canManage />);
-    expect((screen.getByRole("radio", { name: /Sales executive/ }) as HTMLInputElement).checked).toBe(true);
-    fireEvent.click(screen.getByRole("radio", { name: /Manager/ }));
-    expect((screen.getByRole("radio", { name: /Manager/ }) as HTMLInputElement).checked).toBe(true);
-    fill("First name", "Ravi"); fill("Last name", "Kumar"); fill("Email", "ravi@example.test");
-    fill("Username", "ravi.kumar"); fill("Mobile (e.g. +91 98765 43210)", "+91 98765 43210");
+    fill("First name", "A"); fill("Last name", "B"); fill("Email", "a@b.test"); fill("Username", "ab1");
+    fill("Mobile (e.g. +91 98765 43210)", "+91 98765 43210"); fill("PAN", "ABCCE1234F");
+    expect(screen.getByText(/4th letter of a person's PAN is P/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Add employee" }));
-    await screen.findByRole("status");
-    expect(JSON.parse(sent!.body as string)).toMatchObject({ jobRole: "MANAGER" });
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(paths.filter((p) => !p.includes("?"))).toHaveLength(0);   // nothing was POSTed
+  });
+
+  it("shows masked PAN in the roster", async () => {
+    render(<Employees request={fakeRequest({ "/api/v1/admin/employees": () => ({ items: [{ ...ravi, panMasked: "XXXXXX234F" }], page: 0, size: 100, total: 1 }) })} canManage={false} />);
+    expect(await screen.findByText(/PAN XXXXXX234F/)).toBeTruthy();
   });
 
   it("shows the server's field errors next to the inputs", async () => {
@@ -77,7 +86,7 @@ describe("Employees", () => {
       "/api/v1/admin/employees": () => { throw new ApiError(400, { code: "VALIDATION_FAILED", message: "Some fields are invalid.", fields: { mobile: "international format" } } as never); },
     });
     render(<Employees request={request} canManage />);
-    fill("First name", "A"); fill("Last name", "B"); fill("Email", "a@b.test"); fill("Username", "ab1"); fill("Mobile (e.g. +91 98765 43210)", "123");
+    fill("First name", "A"); fill("Last name", "B"); fill("Email", "a@b.test"); fill("Username", "ab1"); fill("Mobile (e.g. +91 98765 43210)", "123"); fill("PAN", "ABCPE1234F");
     fireEvent.click(screen.getByRole("button", { name: "Add employee" }));
     expect(await screen.findByText("international format")).toBeTruthy();
   });
@@ -118,13 +127,34 @@ describe("Employees account actions", () => {
     expect(screen.getByRole("button", { name: "Resend invite" })).toBeTruthy();
   });
 
-  it("shows the role selector only with roles.assign", async () => {
-    const list = fakeRequest({ "/api/v1/admin/employees": () => ({ items: [ravi], page: 0, size: 100, total: 1 }) });
-    render(<Employees request={list} canManage />);
+  it("never offers a role selector", async () => {
+    render(<Employees request={fakeRequest({ "/api/v1/admin/employees": () => ({ items: [ravi], page: 0, size: 100, total: 1 }) })} canManage />);
     await screen.findByText("ravi.kumar");
     expect(screen.queryByLabelText("Role for ravi.kumar")).toBeNull();
+    expect(screen.queryByRole("combobox")).toBeNull();
+  });
+});
+
+describe("Employees tabs (Sales Admin)", () => {
+  it("shows Team Roster and Sales Performance tabs only for the Sales Admin", async () => {
+    window.location.hash = "";
+    const list = fakeRequest({ "/api/v1/admin/employees": () => ({ items: [ravi], page: 0, size: 100, total: 1 }) });
+    render(<Employees request={list} canManage={false} />);
+    await screen.findByText("ravi.kumar");
+    expect(screen.queryByRole("tab")).toBeNull();
+    expect(screen.queryByRole("button", { name: /View leads/ })).toBeNull();
     cleanup();
-    render(<Employees request={list} canManage canAssignRoles />);
-    expect(await screen.findByLabelText("Role for ravi.kumar")).toBeTruthy();
+    render(<Employees request={list} canManage={false} showPerformance />);
+    expect(await screen.findByRole("tab", { name: "Team Roster" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Sales Performance" })).toBeTruthy();
+  });
+
+  it("View leads on a Sales Executive row opens their performance page", async () => {
+    window.location.hash = "";
+    render(<Employees request={fakeRequest({ "/api/v1/admin/employees": () => ({ items: [ravi], page: 0, size: 100, total: 1 }) })}
+                      canManage={false} showPerformance />);
+    fireEvent.click(await screen.findByRole("button", { name: "View leads for Ravi Kumar" }));
+    expect(window.location.hash).toBe("#employees/performance/ravi.kumar");
+    window.location.hash = "";
   });
 });

@@ -7,7 +7,7 @@ afterEach(cleanup);
 
 const admin: Me = {
   employee: { id: "1", firstName: "Asha", lastName: "Rao", email: "a@example.test", username: "asha.rao", jobRole: "ADMIN", status: "ACTIVE" },
-  roles: ["ADMIN"], permissions: ["employees.read"], modules: ["dashboard", "employees", "audit"],
+  roles: ["ADMIN"], permissions: ["employees.read"], modules: ["employees", "audit"],
 };
 
 describe("SignIn", () => {
@@ -27,12 +27,46 @@ describe("SignIn", () => {
 });
 
 describe("Dashboard", () => {
-  it("shows the employee and only the modules /me allows", async () => {
-    render(<Dashboard loadMe={() => Promise.resolve(admin)} onSignOut={() => {}} />);
-    expect(await screen.findByText("Welcome, Asha Rao")).toBeTruthy();
+  it("a Sales Admin has no Dashboard or Leads tab and opens on Employees", async () => {
+    window.location.hash = "";
+    const request = vi.fn(async () => ({ items: [], page: 0, size: 100, total: 0 })) as never;
+    render(<Dashboard loadMe={() => Promise.resolve(admin)} onSignOut={() => {}} request={request} />);
+    expect(await screen.findByRole("heading", { name: "Employees" })).toBeTruthy();
     expect(screen.getByText(/Sales Admin/)).toBeTruthy(); // the token role, in friendly words
-    const links = screen.getAllByRole("link").map((a) => a.textContent);
-    expect(links).toEqual(["Dashboard", "Employees", "Audit log"]);
+    expect(screen.getAllByRole("link").map((a) => a.textContent)).toEqual(["Employees", "Audit log"]);
+    expect(screen.getByRole("tab", { name: "Sales Performance" })).toBeTruthy();
+    expect(screen.queryByText("Keycloak Verified")).toBeNull();
+  });
+
+  it("opens Sales Performance for an executive from the hash route", async () => {
+    window.location.hash = "#employees/performance/rohan";
+    const request = vi.fn(async (path: string) => {
+      if (path.startsWith("/api/v1/admin/employees")) {
+        return { items: [{ id: "2", firstName: "Rohan", lastName: "Sharma", username: "rohan", email: "rohan@example.com",
+          mobile: "+919800000002", jobRole: "SALES_EXECUTIVE", status: "ACTIVE", statusReason: null, identityLinked: true }], total: 1 };
+      }
+      if (path.startsWith("/api/v1/sales/leads/summary")) {
+        return { executives: [{ username: "rohan", attendedCount: 5, inProgressCount: 2, convertedCount: 2, lostCount: 1,
+          conversionRate: 0.4, avgFirstResponseMinutes: 30 }], unclaimedCount: 0 };
+      }
+      return [];
+    }) as never;
+    render(<Dashboard loadMe={() => Promise.resolve(admin)} onSignOut={() => {}} request={request} />);
+    expect(await screen.findByRole("heading", { name: "Rohan Sharma" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Sales Performance" }).getAttribute("aria-selected")).toBe("true");
+    window.location.hash = "";
+  });
+
+  it("a Sales Executive gets only Memberships, named Dashboard and opened by default", async () => {
+    const se: Me = {
+      employee: { id: "2", firstName: "Sam", lastName: "One", email: "s@example.test", username: "sam.one", jobRole: "SALES_EXECUTIVE", status: "ACTIVE" },
+      roles: ["SALES_EXECUTIVE"], permissions: ["memberships.register", "memberships.read_own"], modules: ["memberships"],
+    };
+    const request = vi.fn(async () => ({ membershipId: "GRH-LM-0105", provisional: true, items: [], total: 0 })) as never;
+    render(<Dashboard loadMe={() => Promise.resolve(se)} onSignOut={() => {}} request={request} />);
+    expect(await screen.findByRole("heading", { name: "Gold Membership" })).toBeTruthy();
+    expect(screen.getAllByRole("link").map((a) => a.textContent)).toEqual(["Dashboard"]);
+    expect(screen.queryByText(/Leads/)).toBeNull();
   });
 
   it("explains when the ERP record is missing", async () => {

@@ -91,6 +91,20 @@ export const maskLicence = (raw: string) => {
   return "X".repeat(Math.max(0, n.length - 4)) + n.slice(-4);
 };
 
+// --- PAN (employees, D-139) ---------------------------------------------------------------------------------------------
+
+/** Upper case, letters and digits only, at most 10 characters ("abcpe 1234-f" → "ABCPE1234F"). */
+export const panNormalised = (raw: string) => raw.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10);
+
+/** 5 letters, 4 digits, 1 letter; the 4th letter is P for a person. Same messages as the server. */
+export function panProblem(raw: string): string | null {
+  const p = panNormalised(raw);
+  if (!/^[A-Z]{5}\d{4}[A-Z]$/.test(p)) return "PAN has 10 characters: 5 letters, 4 digits, 1 letter (e.g. ABCPE1234F).";
+  return p[3] === "P" ? null : "The 4th letter of a person's PAN is P. Check it on the card.";
+}
+
+export const maskPan = (raw: string) => "XXXXXX" + panNormalised(raw).slice(-4);
+
 // --- Mobile (+91) -------------------------------------------------------------------------------------------------------
 
 /**

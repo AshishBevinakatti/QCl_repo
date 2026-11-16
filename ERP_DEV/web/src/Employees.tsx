@@ -1,10 +1,15 @@
 // Employees admin (api.md §3; AUTHENTICATION §4, §8). The backend checks permissions; this only hides what can't be used.
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { ApiError } from "./api";
+import { navigate, useRoute } from "./route";
+import { SalesPerformance } from "./SalesPerformance";
+import { maskPan, panNormalised, panProblem } from "./smartFields";
 
 export interface Employee {
   id: string; firstName: string; lastName: string; email: string; username: string; mobile: string;
   jobRole: string; status: string; statusReason: string | null; identityLinked: boolean;
+  /** XXXXXX234F; the full PAN is never returned or stored (D-139). Null for employees added before PAN. */
+  panMasked?: string | null;
 }
 interface Page<T> { items: T[]; page: number; size: number; total: number }
 type Request = <T>(path: string, init?: RequestInit) => Promise<T>;
@@ -16,20 +21,52 @@ export const STATUS_LABELS: Record<string, string> = {
   ACTIVE: "Active",
   DISABLED: "Disabled",
 };
-const ROLES = ["SALES_EXECUTIVE", "MANAGER", "ADMIN"];
 const ROLE_LABELS: Record<string, string> = { SALES_EXECUTIVE: "Sales executive", MANAGER: "Manager", ADMIN: "Administrator" };
-const ROLE_DESCRIPTIONS: Record<string, string> = {
-  SALES_EXECUTIVE: "Front desk, guest bookings & enquiries",
-  MANAGER: "Resort operations & shift oversight",
-  ADMIN: "Security, employee roles & audit logs",
-};
-const EMPTY = { firstName: "", lastName: "", email: "", username: "", mobile: "", jobRole: "SALES_EXECUTIVE", whatsappOptIn: false };
+// D-138: the ERP creates Sales Executives only; there is no role picker and no promotion.
+const EMPTY = { firstName: "", lastName: "", email: "", username: "", mobile: "", pan: "", jobRole: "SALES_EXECUTIVE", whatsappOptIn: false };
 
 function getInitials(first: string, last: string) {
   return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "GH";
 }
 
-export function Employees({ request, canManage, canAssignRoles = false }: { request: Request; canManage: boolean; canAssignRoles?: boolean }) {
+/**
+ * Employees page. With `showPerformance` (Sales Admin, D-137) it has two tabs: Team Roster and Sales Performance.
+ * Routes: #employees, #employees/performance, #employees/performance/<username>.
+ */
+export function Employees({ request, canManage, showPerformance = false }: { request: Request; canManage: boolean; showPerformance?: boolean }) {
+  const route = useRoute();
+  const tab = showPerformance && route[0] === "employees" && route[1] === "performance" ? "performance" : "roster";
+
+  return (
+    <section>
+      <div style={{ marginBottom: "1.5rem" }}>
+        <h1>Employees</h1>
+        <p>{tab === "performance"
+          ? "See how each Sales Executive is doing with leads."
+          : "Manage staff accounts and oversee onboarding status."}</p>
+      </div>
+
+      {showPerformance && (
+        <div className="mem-tabs" role="tablist" aria-label="Employees">
+          <button type="button" role="tab" aria-selected={tab === "roster"} className={tab === "roster" ? "active" : ""}
+                  onClick={() => navigate("employees")}>
+            Team Roster
+          </button>
+          <button type="button" role="tab" aria-selected={tab === "performance"} className={tab === "performance" ? "active" : ""}
+                  onClick={() => navigate("employees", "performance")}>
+            Sales Performance
+          </button>
+        </div>
+      )}
+
+      {tab === "performance"
+        ? <SalesPerformance request={request} selected={route[2]} />
+        : <Roster request={request} canManage={canManage} showPerformance={showPerformance} />}
+    </section>
+  );
+}
+
+function Roster({ request, canManage, showPerformance }: { request: Request; canManage: boolean; showPerformance: boolean }) {
   const [list, setList] = useState<Employee[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -57,8 +94,6 @@ export function Employees({ request, canManage, canAssignRoles = false }: { requ
   const setActive = (e: Employee, active: boolean) => withReason(
     active ? `Why reactivate ${e.firstName} ${e.lastName}?` : `Why deactivate ${e.firstName} ${e.lastName}? They will be signed out everywhere.`,
     (reason) => void act(`${base(e.id)}/status`, { method: "PATCH", body: JSON.stringify({ active, reason }) }));
-  const changeRole = (e: Employee, role: string) => withReason(`Why change ${e.firstName}'s role to ${role}?`,
-    (reason) => void act(`${base(e.id)}/role`, { method: "PUT", body: JSON.stringify({ role, reason }) }));
   const filtered = list?.filter((e) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
@@ -69,12 +104,7 @@ export function Employees({ request, canManage, canAssignRoles = false }: { requ
   });
 
   return (
-    <section>
-      <div style={{ marginBottom: "1.5rem" }}>
-        <h1>Employees</h1>
-        <p>Manage staff accounts, assign operational roles, and oversee onboarding status.</p>
-      </div>
-
+    <>
       {canManage && <AddEmployee request={request} onCreated={load} />}
 
       {error && <p role="alert">{error}</p>}
@@ -127,7 +157,7 @@ export function Employees({ request, canManage, canAssignRoles = false }: { requ
                           <div className="row-avatar">{getInitials(e.firstName, e.lastName)}</div>
                           <div className="row-user-info">
                             <span className="row-name">{e.firstName} {e.lastName}</span>
-                            <span className="row-sub">{e.mobile}</span>
+                            <span className="row-sub">{e.mobile}{e.panMasked ? ` · PAN ${e.panMasked}` : ""}</span>
                           </div>
                         </div>
                       </td>
@@ -168,10 +198,11 @@ export function Employees({ request, canManage, canAssignRoles = false }: { requ
                             Activate
                           </button>
                         )}
-                        {canAssignRoles && e.identityLinked && (
-                          <select aria-label={`Role for ${e.username}`} value={e.jobRole} onChange={(ev) => changeRole(e, ev.target.value)}>
-                            {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-                          </select>
+                        {showPerformance && e.jobRole === "SALES_EXECUTIVE" && (
+                          <button className="btn-outline" aria-label={`View leads for ${e.firstName} ${e.lastName}`}
+                                  onClick={() => navigate("employees", "performance", e.username)}>
+                            View leads
+                          </button>
                         )}
                       </td>
                     </tr>
@@ -182,7 +213,7 @@ export function Employees({ request, canManage, canAssignRoles = false }: { requ
           </div>
         </div>
       )}
-    </section>
+    </>
   );
 }
 
@@ -197,6 +228,8 @@ function AddEmployee({ request, onCreated }: { request: Request; onCreated: () =
 
   async function submit(ev: FormEvent) {
     ev.preventDefault();
+    const pan = panProblem(form.pan);
+    if (pan) { setFields({ pan }); setMessage(null); return; }   // the server checks it too
     setBusy(true); setFields({}); setMessage(null);
     try {
       const e = await request<Employee>("/api/v1/admin/employees", {
@@ -244,7 +277,7 @@ function AddEmployee({ request, onCreated }: { request: Request; onCreated: () =
             </svg>
             Add employee
           </h2>
-          <p>Provide contact details and assign resort operational roles. Keycloak sends an account activation invite.</p>
+          <p>New accounts are Sales Executives. Keycloak sends an account activation invite.</p>
         </div>
       </div>
 
@@ -260,30 +293,33 @@ function AddEmployee({ request, onCreated }: { request: Request; onCreated: () =
           {input("mobile", "Mobile (e.g. +91 98765 43210)", "tel", "+91 98765 43210")}
         </div>
 
-        <fieldset className="role-cards-container">
-          <legend>Job role</legend>
-          <div className="role-cards">
-            {ROLES.map((r) => {
-              const isSelected = form.jobRole === r;
-              return (
-                <label key={r} className={`role-card${isSelected ? " selected" : ""}`}>
-                  <div className="role-card-header">
-                    <span>{ROLE_LABELS[r]}</span>
-                    <input
-                      type="radio"
-                      name="jobRole"
-                      value={r}
-                      checked={isSelected}
-                      onChange={() => set("jobRole")(r)}
-                    />
-                  </div>
-                  <small>{r}</small>
-                  <span className="role-desc">{ROLE_DESCRIPTIONS[r]}</span>
-                </label>
-              );
-            })}
-          </div>
-        </fieldset>
+        <div className="form-row two-col">
+          <label>PAN
+            <input
+              type="text"
+              aria-label="PAN"
+              required
+              value={form.pan}
+              placeholder="e.g. ABCPE1234F"
+              autoComplete="off"
+              spellCheck={false}
+              maxLength={14}
+              style={{ textTransform: "uppercase", letterSpacing: "0.08em" }}
+              onChange={(e) => set("pan")(panNormalised(e.target.value))}
+              aria-invalid={!!fields.pan || (form.pan.length === 10 && !!panProblem(form.pan))}
+            />
+            {fields.pan ? <small role="alert">{fields.pan}</small>
+              : form.pan.length === 10 && (panProblem(form.pan)
+                ? <span className="smart-pill bad" aria-live="polite">{panProblem(form.pan)}</span>
+                : <span className="smart-pill ok" aria-live="polite">Valid PAN · saved as {maskPan(form.pan)}</span>)}
+            <span className="smart-note">Only a masked PAN is stored; the full number is never kept.</span>
+          </label>
+        </div>
+
+        <div className="role-fixed" aria-label="Job role">
+          <span className="role-badge role-sales_executive">Sales executive</span>
+          <small>Front desk, guest bookings &amp; enquiries. Only Sales Executive accounts can be created.</small>
+        </div>
 
         <div className="form-footer">
           <label className="checkbox-label">

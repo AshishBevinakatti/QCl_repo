@@ -1092,3 +1092,74 @@ textarea[aria-invalid="true"] { border-color: var(--danger-dot); background: var
 @media (max-width: 640px) {
   .mem-pills.compact { grid-template-columns: 1fr 1fr; }
 }
+
+/* ---------- Employees → Sales Performance (D-137) ---------- */
+.role-fixed { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin: 0.5rem 0 1rem; }
+.role-fixed small { color: var(--muted); }
+
+.perf-toolbar { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.perf-toolbar h2 { margin: 0 0 0.25rem; }
+.perf-toolbar p { margin: 0; color: var(--muted); }
+.perf-periods { display: inline-flex; gap: 0.25rem; padding: 0.25rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-full); flex-wrap: wrap; }
+.perf-periods button { background: transparent; color: var(--ink-light); border: 0; border-radius: var(--radius-full); padding: 0.35rem 0.85rem; font-size: 0.85rem; box-shadow: none; }
+.perf-periods button.active { background: var(--primary); color: #fff; }
+
+.perf-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.9rem; margin-bottom: 1.25rem; }
+.perf-kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1rem 1.1rem; box-shadow: var(--shadow-xs); display: flex; flex-direction: column; gap: 0.2rem; }
+.perf-kpi-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.perf-kpi-value { font-size: 1.7rem; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.perf-kpi small { color: var(--muted-light); font-size: 0.78rem; }
+.perf-kpi.tone-good .perf-kpi-value { color: var(--success-text); }
+.perf-kpi.tone-warn { background: var(--warning-bg); border-color: var(--warning-border); }
+.perf-kpi.tone-warn .perf-kpi-value { color: var(--warning-text); }
+
+.perf-top { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; padding: 0.8rem 1.1rem; margin-bottom: 1.25rem; background: var(--primary-light); border: 1px solid var(--primary-border); border-radius: var(--radius-lg); }
+.perf-top span:last-child { color: var(--ink-light); }
+.perf-top-badge { background: var(--primary); color: #fff; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.2rem 0.6rem; border-radius: var(--radius-full); }
+.perf-star { color: var(--primary); font-weight: 700; }
+
+.perf-legend { display: flex; gap: 0.9rem; font-size: 0.8rem; color: var(--muted); flex-wrap: wrap; }
+.perf-legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.perf-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+.perf-sort { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; box-shadow: none; }
+.perf-row { cursor: pointer; }
+.perf-row:hover td { background: var(--primary-light); }
+.perf-rank { font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.perf-name { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: var(--ink); cursor: pointer; text-align: left; box-shadow: none; }
+.perf-name:hover { color: var(--primary); text-decoration: underline; }
+.perf-good { color: var(--success-text); font-weight: 700; }
+.perf-bar-col { min-width: 140px; }
+.perf-bar { display: flex; height: 10px; border-radius: var(--radius-full); overflow: hidden; background: var(--line); }
+.perf-bar-empty { opacity: 0.5; }
+.seg-converted { background: var(--success-dot); }
+.seg-progress { background: var(--warning-dot); }
+.seg-lost { background: var(--muted-light); }
+.perf-empty { padding: 2.5rem 1.5rem; text-align: center; color: var(--muted); margin: 0; }
+
+.perf-back { margin-bottom: 1rem; }
+.perf-detail-head { display: flex; align-items: center; gap: 0.9rem; margin-bottom: 1.25rem; }
+.perf-detail-head h2 { margin: 0; }
+.perf-detail-head small { color: var(--muted); }
+.perf-detail-avatar { width: 48px; height: 48px; font-size: 1.05rem; }
+.perf-filters { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.perf-ref { font-size: 0.85rem; color: var(--primary); background: var(--primary-light); padding: 0.15rem 0.45rem; border-radius: var(--radius-sm); }
+.perf-high { display: block; margin-top: 0.25rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--danger-text); }
+.perf-notes { max-width: 280px; color: var(--ink-light); font-size: 0.85rem; }
+.row-sub a { color: inherit; text-decoration: none; }
+.lead-pill { display: inline-block; padding: 0.2rem 0.6rem; border-radius: var(--radius-full); font-size: 0.8rem; font-weight: 600; white-space: nowrap; }
+.lead-new { background: var(--info-bg); color: var(--info-text); }
+.lead-progress { background: var(--warning-bg); color: var(--warning-text); }
+.lead-converted { background: var(--success-bg); color: var(--success-text); }
+.lead-lost { background: var(--line); color: var(--ink-light); }
+
+@media (max-width: 640px) {
+  .perf-bar-col { display: none; }
+  .perf-kpi-value { font-size: 1.4rem; }
+}
+
+/* Memberships in Sales Performance (D-140) */
+.perf-money { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.perf-note { margin: -0.5rem 0 1.25rem; color: var(--danger-text); font-size: 0.9rem; }
+.perf-section { margin-bottom: 1.25rem; }
+.perf-top + .perf-top { margin-top: -0.6rem; }

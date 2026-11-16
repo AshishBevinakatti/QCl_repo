@@ -63,3 +63,63 @@ export interface Me {
   permissions: string[];
   modules: string[];
 }
+
+export interface LeadRecord {
+  id: string;
+  publicReference: string;
+  name: string;
+  email: string;
+  phone: string;
+  checkinDate: string;
+  checkoutDate: string;
+  roomCategory: string;
+  guestCount: number;
+  notes?: string;
+  status: "NEW" | "IN_PROGRESS" | "CONVERTED" | "LOST";
+  priority: string;
+  assignedTo?: string;
+  claimedBy?: string;
+  claimedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** One executive's lead performance in a period (lead-service GET /api/v1/sales/leads/summary, D-137). */
+export interface ExecutiveLeadSummary {
+  username: string;
+  attendedCount: number;
+  inProgressCount: number;
+  convertedCount: number;
+  lostCount: number;
+  /** converted / attended, 0..1 */
+  conversionRate: number;
+  /** Average minutes from a lead arriving to the executive claiming it; null when unknown. */
+  avgFirstResponseMinutes: number | null;
+}
+
+/** Memberships one executive brought in (access-service GET /api/v1/admin/memberships/summary, D-140). */
+export interface ExecutiveMemberships {
+  employeeId: string;
+  username: string;
+  name: string;
+  enrolledCount: number;
+  activeCount: number;
+  pendingCount: number;
+  rejectedCount: number;
+  /** Verified payments only, rupees as a two-decimal string ("75000.00"). */
+  verifiedAmount: string;
+}
+
+export interface MembershipSummary {
+  executives: ExecutiveMemberships[];
+  enrolledCount: number;
+  activeCount: number;
+  pendingCount: number;
+  verifiedAmount: string;
+}
+
+export interface TeamLeadSummary {
+  executives: ExecutiveLeadSummary[];
+  /** New leads nobody has claimed yet. */
+  unclaimedCount: number;
+}

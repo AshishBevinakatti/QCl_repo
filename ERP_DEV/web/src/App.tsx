@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import type { Me } from "./api";
 import { AuditLog, Employees } from "./Employees";
 import { Memberships } from "./Memberships";
+import { useRoute } from "./route";
 
 export const MODULE_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
   employees: "Employees",
-  leads: "Leads",
   memberships: "Memberships",
   audit: "Audit log",
 };
@@ -21,7 +21,7 @@ export const ROLE_LABELS: Record<string, string> = {
 /** The workspaces offered on the start screen. Both open the same Keycloak login: the card only
  *  starts the flow, the account's role decides what loads (backend enforces every request). */
 const WORKSPACES = [
-  { role: "ADMIN", title: "Sales Admin", detail: "Employees, roles and the audit log" },
+  { role: "ADMIN", title: "Sales Admin", detail: "Sales team, lead performance and the audit log" },
   { role: "SALES_EXECUTIVE", title: "Sales Executive", detail: "Lead queue and guest enquiries" },
 ];
 
@@ -55,19 +55,9 @@ export function SignIn({ onSignIn }: { onSignIn: () => void }) {
 
 type Request = <T>(path: string, init?: RequestInit) => Promise<T>;
 
-function useHash() {
-  const [hash, setHash] = useState(() => window.location.hash.slice(1));
-  useEffect(() => {
-    const on = () => setHash(window.location.hash.slice(1));
-    window.addEventListener("hashchange", on);
-    return () => window.removeEventListener("hashchange", on);
-  }, []);
-  return hash;
-}
-
 export function Dashboard({ loadMe, onSignOut, request }: { loadMe: () => Promise<Me>; onSignOut: () => void; request?: Request }) {
   const [me, setMe] = useState<Me | null>(null);
-  const page = useHash();
+  const [page] = useRoute();   // "#employees/performance/rohan" → "employees"
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -94,6 +84,12 @@ export function Dashboard({ loadMe, onSignOut, request }: { loadMe: () => Promis
   const name = me.employee ? `${me.employee.firstName} ${me.employee.lastName}` : null;
   const initials = me.employee ? getInitials(me.employee.firstName, me.employee.lastName) : "GH";
   const friendlyRole = me.roles.map((r) => ROLE_LABELS[r] ?? r).join(", ") || "no role";
+  // Without a "dashboard" module the first module is the home page: Memberships for a Sales Executive (shown as
+  // "Dashboard", D-135), Employees for the Sales Admin (keeps its name, D-137).
+  const home = me.modules.includes("dashboard") ? "dashboard" : (me.modules[0] ?? "dashboard");
+  const current = page && me.modules.includes(page) ? page : home;
+  const label = (m: string) => (m === home && m === "memberships" ? "Dashboard" : MODULE_LABELS[m] ?? m);
+  const isSalesAdmin = me.roles.includes("ADMIN");
 
   return (
     <div className="shell">
@@ -128,10 +124,10 @@ export function Dashboard({ loadMe, onSignOut, request }: { loadMe: () => Promis
       <nav aria-label="Modules">
         {/* Visibility only; the backend checks every request (AUTHENTICATION §5 step 6). */}
         {me.modules.map((m) => {
-          const isActive = page === m || (page === "" && m === "dashboard");
+          const isActive = current === m;
           return (
             <a key={m} href={`#${m}`} className={isActive ? "active" : ""} data-active={isActive}>
-              {MODULE_LABELS[m] ?? m}
+              {label(m)}
             </a>
           );
         })}
@@ -140,39 +136,16 @@ export function Dashboard({ loadMe, onSignOut, request }: { loadMe: () => Promis
       <main>
         {!name ? (
           <p role="alert">Your sign-in works, but your ERP employee record is not set up yet. Ask an administrator.</p>
-        ) : page === "employees" && me.modules.includes("employees") && request ? (
-          <Employees request={request} canManage={me.permissions.includes("employees.manage")}
-                     canAssignRoles={me.permissions.includes("roles.assign")} />
-        ) : page === "memberships" && me.modules.includes("memberships") && request ? (
+        ) : current === "employees" && request ? (
+          <Employees request={request} canManage={me.permissions.includes("employees.manage")} showPerformance={isSalesAdmin} />
+        ) : current === "memberships" && request ? (
           <Memberships me={me} request={request} />
-        ) : page === "audit" && me.modules.includes("audit") && request ? (
+        ) : current === "audit" && request ? (
           <AuditLog request={request} />
         ) : (
           <section>
-            <div style={{ marginBottom: "2rem" }}>
-              <h1>Welcome, {name}</h1>
-              <p>Welcome to Golden Hills Resort operational management portal.</p>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.25rem", marginBottom: "2rem" }}>
-              <div className="form-card" style={{ margin: 0, padding: "1.5rem" }}>
-                <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--primary)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Identity & Access</span>
-                <h3 style={{ margin: "0.5rem 0 0.25rem" }}>Keycloak Verified</h3>
-                <p style={{ fontSize: "0.85rem", margin: 0 }}>Active SSO session on gh-staff realm</p>
-              </div>
-
-              <div className="form-card" style={{ margin: 0, padding: "1.5rem" }}>
-                <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--success-text)", textTransform: "uppercase", letterSpacing: "0.06em" }}>System Status</span>
-                <h3 style={{ margin: "0.5rem 0 0.25rem" }}>Operational</h3>
-                <p style={{ fontSize: "0.85rem", margin: 0 }}>API Gateway, Keycloak & Database Active</p>
-              </div>
-
-              <div className="form-card" style={{ margin: 0, padding: "1.5rem" }}>
-                <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Authorized Modules</span>
-                <h3 style={{ margin: "0.5rem 0 0.25rem" }}>{me.modules.length} Active</h3>
-                <p style={{ fontSize: "0.85rem", margin: 0 }}>{me.modules.map(m => MODULE_LABELS[m] ?? m).join(", ")}</p>
-              </div>
-            </div>
+            <h1>Welcome, {name}</h1>
+            <p>Golden Hills Resort operations portal. Choose a module above.</p>
           </section>
         )}
       </main>
