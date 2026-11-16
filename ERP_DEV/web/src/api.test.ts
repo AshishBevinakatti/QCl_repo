@@ -57,4 +57,19 @@ describe("api request", () => {
     const fetchFn = vi.fn().mockResolvedValue(json(409, { code: "CONFLICT", message: "Email already exists." }));
     await expect(createApi(fakeSession(), fetchFn)("/x")).rejects.toThrow("Email already exists.");
   });
+
+  it("leaves the multipart Content-Type of a FormData upload to the browser", async () => {
+    const fetchFn = vi.fn().mockResolvedValue(json(201, { ok: true }));
+    const body = new FormData();
+    body.append("firstName", "Rohan");
+    await createApi(fakeSession(), fetchFn)("/upload", { method: "POST", body });
+    expect(new Headers(fetchFn.mock.calls[0][1].headers).has("Content-Type")).toBe(false);
+  });
+
+  it("returns images as a Blob", async () => {
+    const fetchFn = vi.fn().mockResolvedValue(new Response(new Uint8Array([1, 2, 3]), { status: 200, headers: { "Content-Type": "image/png" } }));
+    const blob = await createApi(fakeSession(), fetchFn)<Blob>("/proof");
+    expect(blob).toBeInstanceOf(Blob);
+    expect(blob.size).toBe(3);
+  });
 });

@@ -940,3 +940,132 @@ tbody tr:hover {
   color: var(--muted-light);
   margin: 0;
 }
+
+/* ===== Gold Membership (Memberships.tsx; ERP-05) ===== */
+textarea {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: var(--ink);
+  resize: vertical;
+}
+textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+textarea[aria-invalid="true"] { border-color: var(--danger-dot); background: var(--danger-bg); }
+
+.visually-hidden {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.mem-tabs { display: flex; gap: 0.4rem; margin-bottom: 1.25rem; overflow-x: auto; }
+.mem-tabs button {
+  background: var(--surface); color: var(--ink-light); border: 1px solid var(--line);
+  display: inline-flex; align-items: center; gap: 0.5rem; white-space: nowrap;
+}
+.mem-tabs button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.mem-badge {
+  min-width: 1.4rem; padding: 0.05rem 0.45rem; border-radius: var(--radius-full);
+  background: var(--danger-dot); color: #fff; font-size: 0.75rem; font-weight: 700; text-align: center;
+}
+
+.mem-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1.25rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.mem-head h2 { margin: 0 0 0.25rem; }
+.mem-head p { margin: 0; }
+
+/* The brass tag: the member number as the customer will see it on the card. */
+.mem-tag {
+  display: flex; flex-direction: column; gap: 0.15rem; padding: 0.75rem 1.1rem;
+  border-radius: var(--radius-md); color: #3a2a10;
+  background: linear-gradient(135deg, #e9d29a 0%, #c9a45c 45%, #f3e2b3 70%, #b8914a 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), var(--shadow-sm);
+}
+.mem-tag strong { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 1.25rem; letter-spacing: 0.06em; }
+.mem-tag small { font-size: 0.72rem; opacity: 0.8; }
+.mem-tag-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+
+.mem-section { border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1rem 1.1rem 1.2rem; margin: 0 0 1rem; display: grid; gap: 1rem; }
+.mem-section legend { font-weight: 700; color: var(--primary); padding: 0 0.4rem; font-size: 0.85rem; }
+
+.mem-gold { display: flex; align-items: center; gap: 0.9rem; }
+.mem-gold small { display: block; color: var(--muted); }
+.mem-gold-chip {
+  padding: 0.35rem 0.7rem; border-radius: var(--radius-sm); font-weight: 800; letter-spacing: 0.12em; font-size: 0.75rem;
+  color: #3a2a10; background: linear-gradient(135deg, #e9d29a, #c9a45c);
+}
+
+.mem-pills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+.mem-pill {
+  position: relative; border: 1px solid var(--line-strong); border-radius: var(--radius-md); padding: 0.7rem 0.8rem;
+  cursor: pointer; gap: 0.15rem; background: #fff; min-height: 44px;
+}
+.mem-pill input { position: absolute; opacity: 0; pointer-events: none; }
+.mem-pill span { font-size: 0.95rem; color: var(--ink); }
+.mem-pill small { font-weight: 500; color: var(--muted); }
+.mem-pill.selected { border-color: var(--primary); background: var(--primary-light); box-shadow: 0 0 0 3px var(--primary-glow); }
+.mem-pill:focus-within { box-shadow: 0 0 0 3px var(--primary-glow); }
+
+.mem-qr { display: flex; justify-content: center; }
+.mem-qr img { width: min(220px, 70vw); height: auto; border-radius: var(--radius-md); border: 1px solid var(--line); }
+.mem-qr figcaption { text-align: center; font-size: 0.8rem; color: var(--muted); margin-top: 0.3rem; }
+.mem-qr-missing { padding: 0.9rem 1rem; border: 1px dashed var(--warning-dot); background: var(--warning-bg); color: var(--warning-text); border-radius: var(--radius-md); font-size: 0.85rem; }
+
+.mem-proof { display: grid; gap: 0.6rem; }
+.mem-proof-title { font-size: 0.825rem; font-weight: 600; color: var(--ink-light); }
+.mem-proof-pick, .mem-proof-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.mem-proof-pick button { flex: 1 1 10rem; min-height: 48px; }
+.mem-proof-preview { display: grid; gap: 0.6rem; }
+.mem-proof-preview img { max-width: 100%; max-height: 320px; object-fit: contain; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-alt); }
+
+.mem-exec { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin: 0; }
+.mem-exec div, .mem-details div { background: var(--surface-alt); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 0.55rem 0.75rem; }
+.mem-exec dt, .mem-details dt { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.mem-exec dd, .mem-details dd { margin: 0.15rem 0 0; font-weight: 600; word-break: break-word; }
+
+.mem-ok { padding: 0.75rem 1rem; border-radius: var(--radius-md); background: var(--success-bg); color: var(--success-text); border: 1px solid var(--success-border); }
+.mem-error { padding: 0.75rem 1rem; border-radius: var(--radius-md); background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); }
+.mem-note { padding: 0.75rem 1rem; border-radius: var(--radius-md); background: var(--info-bg); color: var(--info-text); border: 1px solid var(--info-border); }
+.mem-empty { padding: 1.25rem; color: var(--muted); }
+
+.status-pill.mem-status-pending_verification { background: var(--warning-bg); color: var(--warning-text); border-color: var(--warning-border); }
+.status-pill.mem-status-pending_verification .status-dot { background: var(--warning-dot); }
+.status-pill.mem-status-active { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
+.status-pill.mem-status-active .status-dot { background: var(--success-dot); }
+.status-pill.mem-status-rejected { background: var(--danger-bg); color: var(--danger-text); border-color: var(--danger-border); }
+.status-pill.mem-status-rejected .status-dot { background: var(--danger-dot); }
+
+.mem-filters { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.mem-filters button { background: #fff; color: var(--ink-light); border: 1px solid var(--line); padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+.mem-filters button.active { background: var(--primary-light); color: var(--primary); border-color: var(--primary-border); }
+
+.mem-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(22, 32, 26, 0.45); display: flex; justify-content: flex-end; }
+.mem-drawer {
+  width: min(560px, 100vw); height: 100%; overflow-y: auto; background: var(--surface);
+  padding: 1.25rem 1.25rem 2rem; box-shadow: var(--shadow-lg); display: grid; gap: 1rem; align-content: start;
+}
+.mem-drawer-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.mem-drawer-head h2 { margin: 0.2rem 0 0.4rem; }
+.mem-details { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; margin: 0; }
+.mem-details .wide { grid-column: 1 / -1; }
+.mem-shot { display: grid; gap: 0.5rem; }
+.mem-shot small { color: var(--muted); font-family: ui-monospace, Menlo, Consolas, monospace; }
+.mem-shot-img { max-width: 100%; max-height: 420px; object-fit: contain; border: 1px solid var(--line); border-radius: var(--radius-md); cursor: zoom-in; background: var(--surface-alt); }
+.mem-reject { display: grid; gap: 0.75rem; }
+.mem-drawer-actions { display: flex; justify-content: flex-end; gap: 0.6rem; flex-wrap: wrap; }
+.mem-drawer-actions button { min-height: 44px; }
+.mem-lightbox { position: fixed; inset: 0; z-index: 110; background: rgba(0, 0, 0, 0.9); display: flex; align-items: center; justify-content: center; cursor: zoom-out; overflow: auto; }
+.mem-lightbox img { max-width: none; width: auto; height: auto; min-width: min(100vw, 900px); }
+
+@media (max-width: 640px) {
+  /* Field use on phones (Sales Executives register members on site). */
+  .shell header { padding: 0.6rem 1rem; }
+  .shell nav { padding: 0 1rem; overflow-x: auto; }
+  .shell nav a { white-space: nowrap; }
+  main { padding-left: 1rem; padding-right: 1rem; }
+  .mem-pills { grid-template-columns: 1fr; }
+  .mem-exec, .mem-details { grid-template-columns: 1fr; }
+  .mem-tag { width: 100%; }
+  .mem-drawer { padding: 1rem 1rem 2rem; }
+}

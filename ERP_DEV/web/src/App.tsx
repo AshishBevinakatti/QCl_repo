@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import type { Me } from "./api";
 import { AuditLog, Employees } from "./Employees";
+import { Memberships } from "./Memberships";
 
 export const MODULE_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
   employees: "Employees",
   leads: "Leads",
+  memberships: "Memberships",
   audit: "Audit log",
 };
 
@@ -141,6 +143,8 @@ export function Dashboard({ loadMe, onSignOut, request }: { loadMe: () => Promis
         ) : page === "employees" && me.modules.includes("employees") && request ? (
           <Employees request={request} canManage={me.permissions.includes("employees.manage")}
                      canAssignRoles={me.permissions.includes("roles.assign")} />
+        ) : page === "memberships" && me.modules.includes("memberships") && request ? (
+          <Memberships me={me} request={request} />
         ) : page === "audit" && me.modules.includes("audit") && request ? (
           <AuditLog request={request} />
         ) : (

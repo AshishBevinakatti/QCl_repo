@@ -1,6 +1,6 @@
 # Module: Gold Membership (SOW ERP-05 Membership & Loyalty)
 
-Status: **slice S1 built** (field registration, verification, encrypted payment proofs). Customer account, welcome email and the member pages on the landing page follow in slices S3–S6 of [inc-membership-PLAN.md](../03-phases/phase-1/inc-membership-PLAN.md).
+Status: **slices S1 + S5 built** (backend: registration, verification, encrypted payment proofs; staff ERP screen **Memberships**). Customer account, welcome email and the member pages on the landing page follow in slices S3, S4 and S6 of [inc-membership-PLAN.md](../03-phases/phase-1/inc-membership-PLAN.md).
 Decisions: D-116…D-125 ([DECISIONS.md](../logs/DECISIONS.md)). Open questions: Q-030…Q-037. API: [api.md §3a](../02-architecture/api.md).
 
 ## What it does
@@ -25,6 +25,16 @@ Decisions: D-116…D-125 ([DECISIONS.md](../logs/DECISIONS.md)). Open questions:
 | The fee is entered by the executive; nothing checks it against a price | The client has not given the Gold fee yet | Q-030 |
 | Every change is in `audit_event` (`entity_type = 'MEMBER'`) | Append-only history of who registered, verified or rejected, with the reason | Rules §6 |
 | Members are never deleted | A rejected registration is part of the payment history | — |
+
+## Staff ERP screen (`web/src/Memberships.tsx`, menu **Memberships**)
+
+| Tab | Who | What |
+|---|---|---|
+| Register member | anyone with `memberships.register` | Customer details; the brass **provisional** member number (confirmed on submit); the Gold badge; payment pills **Cash / Card / Scan QR** with only the fields each one needs; for Scan QR the resort UPI QR (`VITE_UPI_QR_URL`, "not configured" until the client supplies it, Q-031) and the screenshot: **Choose from gallery** or **Open camera** (`capture="environment"` opens the rear camera on phones), preview with Replace / Retake / Remove. Photos over 1.5 MB are shrunk in the browser to at most 2000 px (JPEG) before upload. The executive card (name, username, today's date) is read-only, taken from the signed-in account |
+| My members | `memberships.read_own` | The executive's own registrations and their status |
+| Verification queue | `memberships.read_all` | Badge with the pending count; filter Pending / Active / Rejected / All; **Review** opens a drawer with all details and the screenshot (tap to zoom to read the UTR); **Verify & activate**, or **Reject** with a required reason. On a registration the viewer enrolled, the buttons are replaced by a note (the server refuses it anyway) |
+
+The screen only hides what the person can't use; every rule is enforced by the server. The CSP allows `blob:` images for the preview and the screenshot viewer. Phone layout: tabs, menu and payment pills stack below 640 px.
 
 ## Data (access_db, migration `V2__gold_membership.sql`)
 
@@ -55,8 +65,8 @@ Keycloak (`gh-staff`, client `erp-api`): roles `memberships.register`, `membersh
 
 ## Tests
 
-`MembershipTest` (21 tests, real PostgreSQL via Testcontainers): validation per field, payment rules, gap-free numbering (sequential and 6 in parallel), idempotency, encryption on disk, who may download a proof, uniqueness after rejection, RBAC, self-verification, the verify/reject state machine and the audit rows. Gateway: `GatewayRoutingTest` checks the per-route upload limit.
+Web: `Memberships.test.tsx` (10 tests: provisional ID and locked executive card, multipart submit with Idempotency-Key, card/QR fields, camera and gallery inputs, preview/remove, no submit without a screenshot, server field errors, my members, queue badge, review + verify, reject needs a reason, no Verify on one's own registration) and `api.test.ts` (FormData, image Blob). Backend: `MembershipTest` (21 tests, real PostgreSQL via Testcontainers): validation per field, payment rules, gap-free numbering (sequential and 6 in parallel), idempotency, encryption on disk, who may download a proof, uniqueness after rejection, RBAC, self-verification, the verify/reject state machine and the audit rows. Gateway: `GatewayRoutingTest` checks the per-route upload limit.
 
 ## Not built yet
 
-Customer account + welcome email + automatic sign-in (S3), portal API (S4), the ERP screens (S5), the landing-page member pages (S6). Voucher redemption tracking, renewals, points and RFID cards are later ERP-05/ERP-06 work.
+Customer account + welcome email + automatic sign-in (S3), portal API (S4), the landing-page member pages (S6); Resend welcome in the queue comes with S3. Voucher redemption tracking, renewals, points and RFID cards are later ERP-05/ERP-06 work.
