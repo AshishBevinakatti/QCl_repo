@@ -1,35 +1,19 @@
-# Docs index — start here
+# Golden Hills Resort ERP — Documentation
 
-Golden Hills Resort ERP (QuantumCLK Technologies). Project root: `ERP_DEV/` (git root is `ERP_Resort/`).
+**Phase 1 (new baseline, 2026-11-15): Guest Acquisition, Identity & Sales Lead Operations.** Milestone 1 is documentation only; no application code exists yet.
 
-| Doc | What |
+Start here:
+1. [00-onboarding/DAY-ONE.md](00-onboarding/DAY-ONE.md): get the repo and know what runs today
+2. [03-phases/phase-1/phase1_plan.md](03-phases/phase-1/phase1_plan.md): what Phase 1 delivers and in which increments
+3. [02-architecture/ARCHITECTURE.md](02-architecture/ARCHITECTURE.md): services, data ownership, layout
+4. [02-architecture/identity/AUTHENTICATION.md](02-architecture/identity/AUTHENTICATION.md): employee onboarding, login, logout, RBAC (Keycloak)
+
+| Folder | Contents |
 |---|---|
-| `00-onboarding/DAY-ONE.md` | zero → cloned repo → first change → first test → first commit |
-| `00-onboarding/ARCHITECTURE_OVERVIEW.md` | one-page picture (stub until Phase 2) |
-| `00-onboarding/GLOSSARY.md` | hotel/ERP terms |
-| `00-onboarding/WORKING-AGREEMENT.md` | phases, gates, git flow, commit approval |
-| `01-requirements/RESOURCE_INDEX.md` | resource-folder inventory + missing items |
-| `01-requirements/source-extracts/` | derived text of SOW, landing checklist, playbook, stack proposal, discovery call |
-| `01-requirements/reports/` | gap-analysis and client-input reports (PDF + editable Markdown) |
-| `01-requirements/REQUIREMENTS.md` | REQ-<module>-<nnn> baseline (Phase 1) |
-| `01-requirements/TRACEABILITY.md` | SOW → REQ → design → code → test → doc |
-| `01-requirements/DECISIONS-FROM-CLIENT.md` | Decision Pack answers (Phase 1) |
-| `01-requirements/CHANGE_REQUESTS.md` | CR-<nnn> register |
-| `02-architecture/adr/` | Architecture Decision Records (from Phase 2) |
-| `02-architecture/` | data-model, api, security, integrations, environments, screens (Phase 2 baseline) |
-| `02-architecture/observability.md` | logs, request IDs, redaction, Actuator, tracing, management-port contract and the standing feature-integration checklist (3.9 Phase 1) |
-| `02-architecture/ui-design-system.md` | tokens, light/dark theme, shell, shared components, icon mapping, responsive rules and 3.12 screen structure |
-| `03-phases/phase-N/` | PLAN + PHASE-REPORT per phase |
-| `03-phases/phase-4/MODULE-2-RESTAURANT-ERP-PLAN.pdf` | Module 2 - Restaurant ERP: reuse assessment and delivery plan (approval draft, 2026-10-20) |
-| `04-modules/` | one doc per module (from Phase 3); `ops-console.md` = internal operations console |
-| `05-operations/` | runbook, backup/restore, deployment, troubleshooting, releases, keycloak SSO, ops-console runbook |
-| `05-operations/local-demo-data.md` | local-only reception demo fixture (load/verify/reset, 3.10) |
-| `06-user-guides/` | user/admin guides, training (client-facing, drafted progressively) |
-| `07-testing/` | test plan, reports, UAT scripts, defect log (from Phase 5) |
-| `logs/STATE.md` | current state (overwritten each session) |
-| `logs/DEVLOG.md` | chronological record (append-only) |
-| `logs/RESOURCES_LOG.md` / `logs/OPEN_QUESTIONS.md` / `logs/RISKS.md` / `logs/DECISIONS.md` / `logs/CHANGELOG.md` | resources, questions, risks, decisions, changes |
-| `templates/` | PR template and record templates |
+| `00-onboarding/` | DAY-ONE guide, GLOSSARY |
+| `01-requirements/` | REQUIREMENTS, TRACEABILITY, CHANGE_REQUESTS, `source-extracts/` (hash-stamped text from the client resource folder; the originals win) |
+| `02-architecture/` | ARCHITECTURE, api.md (contracts), `identity/` (AUTHENTICATION, KEYCLOAK-SETUP), `adr/` |
+| `03-phases/phase-1/` | phase1_plan.md (v2.0) |
+| `logs/` | STATE (current status), DEVLOG, DECISIONS, OPEN_QUESTIONS, RISKS, RESOURCES_LOG: append-only, except STATE |
 
-Rules: append-only logs (correct with new entries); every doc states purpose/audience/date/owner;
-no orphan docs (all linked here); text first, no screenshots as sole source of truth.
+The previous ERP (hotel operations, units 3.0–3.16) and its docs are on branch `archive/hotel-draft` (tag `archive-hotel-draft-2026-11-15`). They are kept for reference and don't apply to this baseline.

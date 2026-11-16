@@ -1,16 +1,18 @@
-# Risk Register (append-only)
+# Risks (append-only)
 
-| ID | Date | Risk | Impact | Mitigation | Status |
-|---|---|---|---|---|---|
-| R-001 | 2026-10-01 | Client answers missing (rates, tax, cancellation, roles) → baseline built on placeholders | Medium — rework in Phase 1/2 if defaults wrong | Placeholder-as-configuration policy (Rule 2); Q-003 | open |
-| R-002 | 2026-10-01 | Workflow conflict skill-vs-playbook (Q-001) left undecided → inconsistent branching/reviews | Medium | Skill default until user decides; asked at Phase 0 review | open |
-| R-003 | 2026-10-01 | Stack assumed from proposal before Phase 2 ADR → premature commitment, hiring/tooling waste | Medium | Proposal ≠ decision (Q-006); ADR in Phase 2 | open |
-| R-004 | 2026-10-01 | Confidentiality: SOW marked confidential; raw client files must never enter the repo | High | Extracts-only policy (Rule 1); pre-commit secret/raw-file check | open |
-| R-005 | 2026-10-01 | OTA/payment/WhatsApp/RFID integrations depend on third-party credentials, APIs, hardware availability | Medium | Sandbox/mock adapters (Phase 4); credentials are client responsibility (SOW §24/§29) | open |
-| R-006 | 2026-10-01 | Double-booking / lost-update on room holds (playbook §15 top risk) | High — financial + reputational | Concurrency tests mandatory for booking/payment write paths; `@Transactional` review discipline | open, enforced from Phase 3 |
-| R-007 | 2026-10-09 | Assumed defaults (rates/tax/tiers/roles) wrong → rework in Phase 2/3 | Medium | Config-over-code + `[ASSUMED]` tags; client answers swap config (D-006) | open |
-| R-008 | 2026-10-09 | Website-ready claim unverified (no code in repo) → booking integration floats | Medium | Q-008; ERP-01 treated as external; adapters pending location | open |
-| R-009 | 2026-10-09 | User asked to code before baseline/design approval → gate skip would break traceability | Medium | Flagged per skill conflict rule; no code until baseline + Phase 2 ADR approved | open |
-| R-010 | 2026-10-20 | Module 2 restaurant scope expands into POS, inventory, HRMS or delivery and pulls effort away from the CORE baseline | Medium — schedule and focus | Plan freezes the MVP and out-of-scope list; any expansion needs a new CR; feature flag defaults to `false` | open |
-| R-011 | 2026-10-20 | Billzova reference assets, fonts or code copied without provenance or licence checks | Medium — legal and IP exposure | Reference-first rebuild; no asset copied until its licence and provenance are checked; user confirmed ownership/permission on 2026-10-20 | open |
-| R-012 | 2026-10-20 | Public QR menu exposes an unauthenticated ordering surface to spam, price tampering or data leakage | High — security and guest trust | Signed table tokens, server-side pricing and totals, rate limits, no PII in public responses, abuse tests before UAT | open |
+| ID | Risk | Likelihood / impact | Mitigation | Owner |
+|---|---|---|---|---|
+| R-001 | Microservices + Kafka + Keycloak add setup work before the first feature | High / Medium | One compose file; DAY-ONE guide checked from a clean clone; increment 1 is foundation only | Dev |
+| R-002 | Spring Boot 3.2.5 / Keycloak 24 get no security fixes | High / High | Q-020 upgrade recommendation | Ashish |
+| R-003 | Guest identity design (Q-003) undecided; landing-page contract forces a compromise | High / Medium | Increment 2 blocked until decided; staff side goes first | Ashish |
+| R-004 | A deactivated employee keeps access for at most 5 min (issued JWT) | Certain / Low | 5-min access tokens; sessions revoked at once | Accepted |
+| R-005 | Keycloak `manage-users` can assign any realm role, including ADMIN | Low / High | Role allow-list + permission check + audit in access-service; FGAP v2 after an upgrade | Dev |
+| R-006 | No SMTP provider yet means no onboarding outside dev | Medium / High | Q-024 early; Mailpit for dev | Ashish |
+| R-007 | Sales role not in SOW (CR-001) may be disputed | Medium / Medium | CR-001 raised; client approval requested | Ashish |
+| R-008 | Fresh start goes against Blueprint §18 "preserve the current ERP" | Certain / Low | ADR-003; full archive branch + tag | Ashish |
+| R-009 | Resource folder moved; rule path stale | Certain / Low | Q-001 | Ashish |
+| R-010 | Landing page build only checked in CI, not locally (node_modules symlink) | Medium / Low | First CI run on the branch confirms it | Dev |
+| R-009 (update) | Closed on 2026-11-15: rule path updated (Q-001) | — | — | — |
+| R-011 | Gateway rate limiter fails open if Redis is unreachable | Low / Medium | Health alert on Redis in the ops increment; services still check tokens | Dev |
+| R-010 (update) | Closed 2026-11-15: landing-page build passes on a clean `npm ci` install (fresh-clone test) | — | — | — |
+| R-002 (update) | Closed 2026-11-15: stack upgraded to supported releases (D-115) | — | — | — |

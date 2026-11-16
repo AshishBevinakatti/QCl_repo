@@ -1,12 +1,109 @@
 name: ci
 
+# Phase 1 layout (docs/02-architecture/ARCHITECTURE.md §7): each service and app builds on its own.
+# A service or app job is a no-op until its pom.xml / package.json exists (Milestone 1 has docs only).
+
 on:
   push:
-    branches: ["develop", "main", "feature/**"]
+    branches: ["main", "feature/**", "docs/**", "fix/**"]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
-  build:
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  landing-page:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: landing-page
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: landing-page/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      # Lint is not run: 4 errors already exist and the landing page is frozen in Phase 1 (OPEN_QUESTIONS Q-004).
+      - run: npm run build
+
+  realm-check:
+    # Guards the security settings of the staff realm (docs/02-architecture/identity/KEYCLOAK-SETUP.md).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate gh-staff realm import
+        run: |
+          python3 - <<'EOF'
+          import json, re
+          r = json.load(open("ERP_DEV/infra/keycloak/gh-staff-realm.json"))
+          c = {x["clientId"]: x for x in r["clients"]}
+          w, s = c["erp-web"], c["access-service"]
+          checks = {
+            "no self-registration": r["registrationAllowed"] is False,
+            "email verification on": r["verifyEmail"] is True,
+            "brute-force protection on": r["bruteForceProtected"] is True,
+            "refresh token rotation": r["revokeRefreshToken"] is True and r["refreshTokenMaxReuse"] == 0,
+            "access token <= 300 s": r["accessTokenLifespan"] <= 300,
+            "erp-web public + PKCE S256": w["publicClient"] and w["attributes"]["pkce.code.challenge.method"] == "S256",
+            "erp-web no password/implicit grant": not w["directAccessGrantsEnabled"] and not w["implicitFlowEnabled"],
+            "erp-web audience erp-api": any(m["config"].get("included.client.audience") == "erp-api" for m in w["protocolMappers"]),
+            "no full-scope clients": not any(x.get("fullScopeAllowed", True) for x in r["clients"]),
+            "access-service secret is a placeholder": re.fullmatch(r"\$\{[A-Z_]+\}", s["secret"]) is not None,
+            "SMTP password is a placeholder": re.fullmatch(r"\$\{[A-Z_]+\}", r["smtpServer"]["password"]) is not None,
+            "service account least privilege": set(r["users"][0]["clientRoles"]["realm-management"]) == {"manage-users", "view-users", "query-users"},
+            "job roles present": {x["name"] for x in r["roles"]["realm"]} >= {"ADMIN", "MANAGER", "SALES_EXECUTIVE"},
+            "MANAGER cannot manage employees (D-113)": "employees.manage" not in next(x for x in r["roles"]["realm"] if x["name"] == "MANAGER")["composites"]["client"]["erp-api"],
+          }
+          bad = [k for k, v in checks.items() if not v]
+          print("\n".join(("FAIL " if k in bad else "ok   ") + k for k in checks))
+          assert not bad, bad
+          EOF
+      - name: Validate gh-guests realm import (members, docs/02-architecture/identity/MEMBER-LOGIN.md)
+        run: |
+          python3 - <<'EOF'
+          import json, re
+          r = json.load(open("ERP_DEV/infra/keycloak/gh-guests-realm.json"))
+          c = {x["clientId"]: x for x in r["clients"]}
+          w, s = c["guest-web"], c["guest-service"]
+          flow = next(f for f in r["authenticationFlows"] if f["alias"] == "gh-member-browser")
+          checks = {
+            "email verification on": r["verifyEmail"] is True,
+            "brute-force protection on": r["bruteForceProtected"] is True,
+            "refresh token rotation": r["revokeRefreshToken"] is True and r["refreshTokenMaxReuse"] == 0,
+            "access token <= 300 s": r["accessTokenLifespan"] <= 300,
+            "guest-web public + PKCE S256": w["publicClient"] and w["attributes"]["pkce.code.challenge.method"] == "S256",
+            "guest-web no password/implicit grant": not w["directAccessGrantsEnabled"] and not w["implicitFlowEnabled"],
+            "guest-web redirects limited to member pages": all(re.search(r"/(login|member/activate|membership|profile|plan-ahead)\*$", u) for u in w["redirectUris"]),
+            "guest-web audience guest-api": any(m["config"].get("included.custom.audience") == "guest-api" for m in w["protocolMappers"]),
+            "guest-web uses the member flow": w["authenticationFlowBindingOverrides"]["browser"] == flow["id"],
+            "activation step first": min(flow["authenticationExecutions"], key=lambda e: e["priority"]).get("authenticator") == "gh-member-activation",
+            "no full-scope clients": not any(x.get("fullScopeAllowed", True) for x in r["clients"]),
+            "guest-service secret is a placeholder": re.fullmatch(r"\$\{[A-Z_]+\}", s["secret"]) is not None,
+            "guest-service has kc-admin-api scope": "kc-admin-api" in s["defaultClientScopes"],
+            "SMTP password is a placeholder": re.fullmatch(r"\$\{[A-Z_]+\}", r["smtpServer"]["password"]) is not None,
+            "guest-service least privilege": set(r["users"][0]["clientRoles"]["realm-management"]) == {"manage-users", "view-users", "query-users"},
+          }
+          bad = [k for k, v in checks.items() if not v]
+          print("\n".join(("FAIL " if k in bad else "ok   ") + k for k in checks))
+          assert not bad, bad
+          EOF
+
+  keycloak-extension:
+    # gh-member-activation (member welcome link, D-122). Its test runs a real Keycloak + Mailpit (Testcontainers).
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,27 +112,59 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
-      - name: Secret scan (gitleaks)
-        uses: gitleaks/gitleaks-action@v2
-      - name: Build + test (ERP_DEV monorepo)
-        run: mvn -B verify
-        working-directory: ERP_DEV
-  realm-contract:
+      - name: Build + test the Keycloak extension
+        working-directory: ERP_DEV/infra/keycloak-extensions/gh-member-activation
+        run: ./mvnw -B verify
+
+  service:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [api-gateway, access-service, guest-service, lead-service]
+    steps:
+      - uses: actions/checkout@v4
+      - id: present
+        run: |
+          if [ -f "ERP_DEV/services/${{ matrix.service }}/pom.xml" ]; then echo "yes=true" >> "$GITHUB_OUTPUT";
+          else echo "::notice::${{ matrix.service }} has no pom.xml yet; skipped"; fi
+      - if: steps.present.outputs.yes == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - if: steps.present.outputs.yes == 'true'
+        name: Build + test ${{ matrix.service }}
+        working-directory: ERP_DEV/services/${{ matrix.service }}
+        run: ./mvnw -B verify   # Maven Wrapper pins Maven 3.10.0 (sha256-checked); Testcontainers uses the runner's Docker
+
+  web:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate Keycloak realm file (structure, roles, client, users)
-        run: >-
-          python3 -c "import json;d=json.load(open('ERP_DEV/infra/keycloak/realm-golden-hills.json'));
-          assert d['realm']=='resort';
-          assert {r['name'] for r in d['roles']['realm']}>={'SUPERADMIN','MANAGER','RECEPTION','MEMBERSHIP','ACCOUNTS','HOUSEKEEPING','OPS'};
-          c=d['clients'][0];assert c['clientId']=='erp-web' and c['publicClient'] and c['standardFlowEnabled'];
-          assert all(u.get('email') and u.get('realmRoles') for u in d['users'] if not u.get('serviceAccountClientId'));
-          print('realm OK:', d['realm'])"
+      - id: present
+        run: |
+          if [ -f ERP_DEV/web/package.json ]; then echo "yes=true" >> "$GITHUB_OUTPUT";
+          else echo "::notice::ERP_DEV/web has no package.json yet; skipped"; fi
+      - if: steps.present.outputs.yes == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ERP_DEV/web/package-lock.json
+      - if: steps.present.outputs.yes == 'true'
+        name: Install, lint, test, build
+        working-directory: ERP_DEV/web
+        run: |
+          npm ci
+          npm run lint
+          npm test
+          npm run build
+
   dependency-review:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/dependency-review-action@v4
-      # Full CVE audit (OWASP) runs as a scheduled weekly job once services grow (Phase 5).

@@ -1,4 +1,6 @@
-// API Client for Golden Hills Resort Public Portal -> Lead Microservice (:8082)
+// API client for the Golden Hills public portal, through the API gateway.
+// Same-origin by default ("/api/v1/portal"): on the shared public URL the proxy sends /api to the gateway, and on
+// http://localhost:3000 next.config.ts rewrites /api to it. NEXT_PUBLIC_LEAD_API_URL can still override it.
 
 export interface GuestUser {
   guestId: string;
@@ -38,7 +40,19 @@ export interface InquiryRecord {
   createdAt: string;
 }
 
-const PORTAL_API_BASE = process.env.NEXT_PUBLIC_LEAD_API_URL || "http://localhost:8082/api/v1/portal";
+export const PORTAL_API_BASE = process.env.NEXT_PUBLIC_LEAD_API_URL || "/api/v1/portal";
+
+/** The signed-in member's own Gold Membership (access-service, api.md §3c). */
+export interface PortalMembership {
+  membershipId: string;
+  firstName: string;
+  lastName: string;
+  tier: string;
+  status: string;
+  validFrom: string | null;
+  validUntil: string | null;
+  enrolledBy: { name: string; username: string; mobile: string | null };
+}
 
 export const portalApi = {
   getStoredUser(): GuestUser | null {
@@ -117,6 +131,14 @@ export const portalApi = {
       throw new Error(err.message || "Failed to submit inquiry. Please try again.");
     }
 
+    return await res.json();
+  },
+
+  /** null = signed in but not a member (404 NO_MEMBERSHIP). */
+  async getMyMembership(token: string): Promise<PortalMembership | null> {
+    const res = await fetch(`${PORTAL_API_BASE}/membership/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error("Failed to load your membership.");
     return await res.json();
   },
 

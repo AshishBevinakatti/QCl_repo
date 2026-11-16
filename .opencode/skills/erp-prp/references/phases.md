@@ -11,7 +11,7 @@ Per-phase folder: `docs/03-phases/phase-N/` containing `PLAN.md` (or `<unit>-PLA
 ## Phase 0 — Project bootstrap *(added; not in the SOW)*
 **Goal:** a repository and documentation skeleton any developer can open, plus a full inventory of the resource folder.
 **Activities**
-- Check `/run/media/ash_63/DATA/ERP_Resouce` is readable; list every file (name, size, type, modified date, sha256) into `docs/logs/RESOURCES_LOG.md` and `docs/01-requirements/RESOURCE_INDEX.md` (what each file is, which phase needs it).
+- Check `/run/media/ash_63/DATA/Intership wrok/ERP_Resouce` is readable; list every file (name, size, type, modified date, sha256) into `docs/logs/RESOURCES_LOG.md` and `docs/01-requirements/RESOURCE_INDEX.md` (what each file is, which phase needs it).
 - Read the SOW, Decision Pack, Landing Page checklist; write extracts into `docs/01-requirements/source-extracts/`.
 - `git init` (or verify), create `main` and `develop`, add `.gitignore`, `.gitattributes`, `.editorconfig`, `LICENSE`/proprietary notice, `README.md`.
 - Create the docs tree and templates from `docs-and-records.md`; create `STATE.md`.

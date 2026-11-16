@@ -1,8 +1,9 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { portalApi, type GuestUser, type InquiryRecord } from "./portal-client";
+import { portalApi, type GuestUser, type InquiryRecord, type PortalMembership } from "./portal-client";
 import { membershipCategories } from "./membership-data";
+import { accessToken, initAuth, profile, signOutKeycloak } from "./guest-auth";
 
 /* Who is signed in on the website, shared by /profile, the membership page
  * and the header (unit 3.30).
@@ -16,19 +17,31 @@ import { membershipCategories } from "./membership-data";
  *   SAMPLE DATA, and every screen that shows it says so.
  *
  * Membership on a guest account is also sample until the ERP links website
- * logins to member records. */
+ * logins to member records.
+ *
+ * Since the Gold Membership increment (D-119…D-123) there is also a REAL
+ * session: signed in with Keycloak (gh-guests, PKCE; guest-auth.ts). If the
+ * account has a verified Gold Membership the kind is "member" and
+ * `membership` is real (number, holder, validity, enrolling executive); usage
+ * is 0 because the ERP does not record redemptions yet. Without a membership
+ * the kind is "guest". The sample session above is unchanged. */
 
 export type SampleMembership = {
   membershipNo: string;
   holder: string;
   validTo: string;
+  /** True for a verified Gold Membership from the ERP (not sample data). */
+  real?: boolean;
+  validFrom?: string;
+  /** The Sales Executive who enrolled the member; mobile only if they share it. */
+  executive?: { name: string; username: string; mobile: string | null };
   /** Per booklet part (membership-data.ts ids): how many vouchers / coupons
    *  are marked used. Sample figures, not ERP data. */
   used: Record<string, { vouchers: number; coupons: number }>;
 };
 
 export type Session = {
-  kind: "guest" | "sample";
+  kind: "guest" | "sample" | "member";
   user: GuestUser;
   membership: SampleMembership | null;
 };
@@ -49,7 +62,7 @@ function sampleUsage(): SampleMembership["used"] {
   return used;
 }
 
-export function makeSampleMembership(holder: string, membershipNo = "GHR-CM-0427"): SampleMembership {
+export function makeSampleMembership(holder: string, membershipNo = "GRH-LM-0000"): SampleMembership {
   const validTo = new Date();
   validTo.setMonth(validTo.getMonth() + 8);
   return { membershipNo, holder, validTo: validTo.toISOString().slice(0, 10), used: sampleUsage() };
@@ -62,7 +75,62 @@ export function makeSampleMembership(holder: string, membershipNo = "GHR-CM-0427
 let cache: Session | null | undefined;
 let cacheKey = "";
 
+/* --- Real (Keycloak) session ------------------------------------------------
+ * Loaded once per page: keycloak-js finishes a sign-in redirect or silently
+ * checks the session, then the membership is fetched with the token. */
+
+let real: Session | null = null;
+let realStarted = false;
+
+/** "2027-11-16T10:00:00Z" -> "2027-11-16" in resort time (IST). */
+function istDate(iso: string | null): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+}
+
+function toMembership(m: PortalMembership): SampleMembership {
+  const used: SampleMembership["used"] = {};
+  membershipCategories.forEach((c) => { used[c.id] = { vouchers: 0, coupons: 0 }; });
+  return {
+    membershipNo: m.membershipId,
+    holder: `${m.firstName} ${m.lastName}`.trim(),
+    validFrom: istDate(m.validFrom),
+    validTo: istDate(m.validUntil),
+    used,
+    real: true,
+    executive: m.enrolledBy,
+  };
+}
+
+async function loadReal() {
+  if (!(await initAuth())) return;
+  const p = profile();
+  const token = await accessToken();
+  if (!p || !token) return;
+  let membership: SampleMembership | null = null;
+  try {
+    const m = await portalApi.getMyMembership(token);
+    membership = m ? toMembership(m) : null;
+  } catch {
+    /* membership service unreachable: signed in, membership unknown */
+  }
+  real = {
+    kind: membership ? "member" : "guest",
+    user: { guestId: p.sub, name: p.name || p.email, email: p.email, phone: "", token },
+    membership,
+  };
+  announce();
+  // Arrived from the welcome email (or a sign-in started on the membership page): show the card.
+  const url = new URL(window.location.href);
+  if (url.searchParams.get("welcome") === "1") {
+    url.searchParams.delete("welcome");
+    window.history.replaceState(null, "", url.pathname + url.search + "#your-card");
+    setTimeout(() => document.getElementById("your-card")?.scrollIntoView({ behavior: "smooth" }), 300);
+  }
+}
+
 function read(): Session | null {
+  if (real) return real;
   const user = portalApi.getStoredUser();
   let kind: Session["kind"] = "guest";
   let membership: SampleMembership | null = null;
@@ -81,6 +149,10 @@ function read(): Session | null {
 }
 
 function subscribe(callback: () => void) {
+  if (!realStarted) {
+    realStarted = true;
+    void loadReal();
+  }
   window.addEventListener("storage", callback);
   window.addEventListener(EVENT, callback);
   return () => {
@@ -128,12 +200,16 @@ export function linkSampleMembership(holder: string, membershipNo: string) {
 }
 
 export function signOut() {
+  const wasReal = real !== null;
+  real = null;
   portalApi.logout();
   try {
     localStorage.removeItem(KIND_KEY);
     localStorage.removeItem(MEMBER_KEY);
   } catch { /* ignore */ }
   announce();
+  // A real session also ends at Keycloak, then comes back to this page.
+  if (wasReal) void signOutKeycloak(window.location.pathname);
 }
 
 /* --- Bookings -------------------------------------------------------------- */

@@ -61,7 +61,7 @@ export default function BookletUsage({ membership }: { membership: SampleMembers
     <div ref={ref} className={`bkl${shown ? " is-shown" : ""}`}>
       <div className="bkl-sum">
         <p className="bkl-sum-big"><strong>{total - used}</strong> privileges left</p>
-        <p className="bkl-sum-sub">{used} used of {total} · <span className="bkl-sample">sample usage, the ERP does not record redemptions yet</span></p>
+        <p className="bkl-sum-sub">{used} used of {total} · <span className="bkl-sample">{membership.real ? "redemptions are recorded at the resort; online tracking comes later" : "sample usage, the ERP does not record redemptions yet"}</span></p>
         <ol className="bkl-strip" aria-label="All privileges by part">
           {parts.map((p, i) => (
             <li key={p.c.id} style={{ flexGrow: p.size, "--i": i } as CSSProperties} title={`${p.c.shortName}: ${p.left} of ${p.size} left`}>

@@ -2,18 +2,19 @@
 
 import { useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { portalApi } from "./portal-client";
-import { linkSampleMembership, startGuestSession, startSampleSession } from "./guest-session";
+import { startSampleSession } from "./guest-session";
+import { signIn } from "./guest-auth";
 
-/* Sign-in for /profile and the membership page (unit 3.30).
- * Step 1: email or membership ID, with password.
- * Step 2: a one-time code.
+/* Sign-in for /profile and the membership page (unit 3.30; D-123).
  *
- * Email + password is checked by the ERP lead service; a wrong password or an
- * unreachable server is an error, never a pretend session. Membership-ID
- * sign-in and the one-time code have no ERP support yet, so they run as a
- * labelled preview: the code is shown on screen and the session is sample
- * data. */
+ * Email: the email only. "Continue" opens the secure Golden Hills sign-in
+ * page (Keycloak, realm gh-guests, PKCE) with the email filled in; the
+ * password is typed there, never here. Back on /membership the member sees
+ * their real card (guest-session.ts).
+ *
+ * Membership ID: unchanged labelled preview: ID + password, then a one-time
+ * code shown on screen, and the session is sample data (the ERP has no
+ * sign-in by membership number yet). */
 
 type Mode = "email" | "member";
 const PREVIEW_CODE = "246810";
@@ -44,34 +45,22 @@ export default function ProfileSignIn({ compact = false }: { compact?: boolean }
     e.preventDefault();
     setError(null);
     if (mode === "email" && !/^\S+@\S+\.\S+$/.test(id)) return setError("Enter the email you registered with.");
-    if (mode === "member" && !/^[A-Za-z0-9-]{4,}$/.test(id.trim())) return setError("Enter your membership ID, for example GHR-CM-0427.");
-    if (password.length < 6) return setError("Your password has at least 6 characters.");
+    if (mode === "member" && !/^[A-Za-z0-9-]{4,}$/.test(id.trim())) return setError("Enter your membership ID, for example GRH-LM-0000.");
 
     if (mode === "member") {
+      if (password.length < 6) return setError("Your password has at least 6 characters.");
       const no = id.trim().toUpperCase();
       pending.current = () => startSampleSession(no);
       setStep("otp");
       return;
     }
 
+    // Email: the password is entered on Keycloak's own page. Members land on their card.
     setBusy(true);
     try {
-      // Checked against the ERP before the code step; nothing is stored yet.
-      const user = await portalApi.login(id.trim(), password);
-      portalApi.setStoredUser(null);
-      pending.current = () => {
-        startGuestSession(user);
-        // Members only in this phase. The ERP does not link logins to
-        // membership numbers yet, so the booklet attached here is sample.
-        linkSampleMembership(user.name, "GHR-CM-SAMPLE");
-      };
-      setStep("otp");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "";
-      setError(/fetch|network/i.test(msg)
-        ? "We could not reach the booking system. Please try again in a moment."
-        : msg || "That email and password do not match an account.");
-    } finally {
+      await signIn(id.trim(), "/membership?welcome=1");
+    } catch {
+      setError("We could not reach the sign-in service. Please try again in a moment.");
       setBusy(false);
     }
   }
@@ -114,19 +103,23 @@ export default function ProfileSignIn({ compact = false }: { compact?: boolean }
               autoCorrect="off"
               value={id}
               onChange={(e) => setId(e.target.value)}
-              placeholder={mode === "email" ? "you@example.com" : "GHR-CM-0427"}
+              placeholder={mode === "email" ? "you@example.com" : "GRH-LM-0000"}
               required
             />
           </label>
-          <label>
-            <span>Password</span>
-            <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          </label>
+          {mode === "member" ? (
+            <label>
+              <span>Password</span>
+              <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            </label>
+          ) : (
+            <p className="psign-note">You will enter your password on the secure Golden Hills sign-in page.</p>
+          )}
           {mode === "member" && (
             <p className="psign-note">Preview: membership sign-in shows sample data until the ERP links membership IDs.</p>
           )}
           {error && <p className="psign-error" role="alert">{error}</p>}
-          <button type="submit" className="psign-btn" disabled={busy}>{busy ? "Checking…" : "Continue"}</button>
+          <button type="submit" className="psign-btn" disabled={busy}>{busy ? "Opening…" : "Continue"}</button>
         </form>
       ) : (
         <form className="psign-form" onSubmit={submitCode} noValidate>

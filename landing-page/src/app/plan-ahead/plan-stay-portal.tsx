@@ -8,8 +8,6 @@ import {
   User,
   Mail,
   Lock,
-  Eye,
-  EyeOff,
   Phone,
   ArrowRight,
   ArrowLeft,
@@ -28,6 +26,8 @@ import {
 } from "lucide-react";
 import { logoLight, getScene, impression } from "../resort-assets";
 import { portalApi, type GuestUser, type InquiryRecord, type InquirySubmission } from "../portal-client";
+import { register as keycloakRegister, signIn } from "../guest-auth";
+import { signOut as endSession, useSession } from "../guest-session";
 import { useMotionPreference } from "../motion-provider";
 
 const ROOM_OPTIONS = [
@@ -79,17 +79,12 @@ export default function PlanStayPortal() {
 
   // Sign In Form
   const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
   // Register Form
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPhone, setRegPhone] = useState("");
-  const [regPassword, setRegPassword] = useState("");
-  const [regConfirmPassword, setRegConfirmPassword] = useState("");
-  const [showRegPassword, setShowRegPassword] = useState(false);
   const [enrollPrivilege, setEnrollPrivilege] = useState(true);
   const [agreeTerms, setAgreeTerms] = useState(true);
 
@@ -121,6 +116,14 @@ export default function PlanStayPortal() {
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotSent, setForgotSent] = useState(false);
 
+  // A real sign-in (Keycloak, gh-guests; D-119) fills the same folio; a Gold Member's card shows their number.
+  const session = useSession();
+  const realMembership = session?.membership?.real ? session.membership : null;
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (session && session.kind !== "sample") setCurrentUser(session.user);
+  }, [session]);
+
   // Check stored user on mount
   useEffect(() => {
     const stored = portalApi.getStoredUser();
@@ -151,34 +154,12 @@ export default function PlanStayPortal() {
       setErrorMsg("Please enter a valid guest email.");
       return;
     }
-    if (!loginPassword || loginPassword.length < 6) {
-      setErrorMsg("Password must be at least 6 characters.");
-      return;
-    }
-
+    // The password is typed on the secure Golden Hills page (Keycloak), never here; no offline stand-in session.
     setIsLoading(true);
     try {
-      const user = await portalApi.login(loginEmail, loginPassword);
-      setCurrentUser(user);
-      setSuccessMsg(`Welcome back, ${user.name}! Accessing your guest folio...`);
-      fetchUserInquiries(user.token);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Sign in failed";
-      if (msg.includes("fetch") || msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
-        const fallbackUser: GuestUser = {
-          guestId: "GHR-" + Math.floor(1000 + Math.random() * 9000),
-          name: loginEmail.split("@")[0].replace(".", " "),
-          email: loginEmail,
-          phone: "+91 98765 43210",
-          token: "demo-jwt-token-" + Date.now(),
-        };
-        portalApi.setStoredUser(fallbackUser);
-        setCurrentUser(fallbackUser);
-        setSuccessMsg(`Welcome back, ${fallbackUser.name} (Local preview session).`);
-      } else {
-        setErrorMsg(msg);
-      }
-    } finally {
+      await signIn(loginEmail.trim(), "/membership?welcome=1");
+    } catch {
+      setErrorMsg("We could not reach the sign-in service. Please try again in a moment.");
       setIsLoading(false);
     }
   };
@@ -201,37 +182,12 @@ export default function PlanStayPortal() {
       setErrorMsg("Please enter a valid 10-digit mobile number.");
       return;
     }
-    if (regPassword.length < 6) {
-      setErrorMsg("Password must be at least 6 characters.");
-      return;
-    }
-    if (regPassword !== regConfirmPassword) {
-      setErrorMsg("Passwords do not match.");
-      return;
-    }
-
+    // The account (with its password) is created on the secure Golden Hills page (Keycloak registration).
     setIsLoading(true);
     try {
-      const user = await portalApi.register(regName.trim(), regEmail.trim(), cleanPhone, regPassword);
-      setCurrentUser(user);
-      setSuccessMsg(`Welcome to Golden Hills Resort, ${user.name}! Your guest folio is ready.`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Registration failed";
-      if (msg.includes("fetch") || msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
-        const fallbackUser: GuestUser = {
-          guestId: "GHR-" + Math.floor(1000 + Math.random() * 9000),
-          name: regName.trim(),
-          email: regEmail.trim(),
-          phone: "+91 " + cleanPhone,
-          token: "demo-jwt-token-" + Date.now(),
-        };
-        portalApi.setStoredUser(fallbackUser);
-        setCurrentUser(fallbackUser);
-        setSuccessMsg(`Account created for ${fallbackUser.name}! (Connected via local preview).`);
-      } else {
-        setErrorMsg(msg);
-      }
-    } finally {
+      await keycloakRegister("/membership?welcome=1");
+    } catch {
+      setErrorMsg("We could not reach the sign-in service. Please try again in a moment.");
       setIsLoading(false);
     }
   };
@@ -301,6 +257,7 @@ export default function PlanStayPortal() {
   };
 
   const handleLogout = () => {
+    endSession();   // also ends a Keycloak session (guest-session.ts)
     portalApi.logout();
     setCurrentUser(null);
     setUserInquiries([]);
@@ -313,10 +270,8 @@ export default function PlanStayPortal() {
     setSuccessMsg("");
     if (type === "guest") {
       setLoginEmail("guest.retreat@goldenhills.in");
-      setLoginPassword("GoldenHills2026!");
     } else {
       setLoginEmail("privilege.vip@goldenhills.in");
-      setLoginPassword("ClubPrivilege2026!");
     }
   };
 
@@ -475,13 +430,15 @@ export default function PlanStayPortal() {
                   <h3>{currentUser.name}</h3>
                   <p>{currentUser.email} · {currentUser.phone}</p>
                 </div>
-                <span className="plan-folio-tier">Privilege Member</span>
+                <span className="plan-folio-tier">{realMembership ? `Gold Member · ${realMembership.membershipNo}` : "Privilege Member"}</span>
               </div>
 
               <div className="plan-folio-stats">
                 <div className="plan-folio-stat">
-                  <span className="plan-stat-num">180</span>
-                  <span className="plan-stat-title">Club Vouchers</span>
+                  <span className="plan-stat-num">{realMembership
+                    ? Object.values(realMembership.used).reduce((left, u) => left - u.vouchers - u.coupons, 180)
+                    : 180}</span>
+                  <span className="plan-stat-title">{realMembership ? "Privileges Left" : "Club Vouchers"}</span>
                 </div>
                 <div className="plan-folio-stat">
                   <span className="plan-stat-num">{userInquiries.length}</span>
@@ -538,23 +495,29 @@ export default function PlanStayPortal() {
                         onClick={() => setAuthTab("password")}
                       >
                         <Lock size={13} />
-                        <span>Password</span>
+                        <span>Email</span>
                       </button>
                       <button
                         type="button"
-                        className={`plan-subtab-btn ${authTab === "otp" ? "is-active" : ""}`}
+                        className={`plan-subtab-btn is-soon ${authTab === "otp" ? "is-active" : ""}`}
                         onClick={() => setAuthTab("otp")}
+                        disabled
+                        aria-disabled="true"
+                        title="Coming soon"
                       >
                         <Phone size={13} />
-                        <span>Mobile OTP</span>
+                        <span>Mobile OTP · Coming soon</span>
                       </button>
                       <button
                         type="button"
-                        className={`plan-subtab-btn ${authTab === "booking" ? "is-active" : ""}`}
+                        className={`plan-subtab-btn is-soon ${authTab === "booking" ? "is-active" : ""}`}
                         onClick={() => setAuthTab("booking")}
+                        disabled
+                        aria-disabled="true"
+                        title="Coming soon"
                       >
                         <KeyRound size={13} />
-                        <span>Booking ID</span>
+                        <span>Booking ID · Coming soon</span>
                       </button>
                     </div>
 
@@ -578,35 +541,18 @@ export default function PlanStayPortal() {
 
                         <div className="plan-field">
                           <div className="plan-field-between">
-                            <label htmlFor="login-password">Password</label>
+                            <span>Password</span>
                             <button
                               type="button"
-                              onClick={() => setForgotOpen(true)}
+                              onClick={() => void signIn(loginEmail.trim(), "/membership?welcome=1")}
                               className="plan-text-link"
                             >
                               Forgot password?
                             </button>
                           </div>
-                          <div className="plan-input-wrap">
-                            <Lock size={16} className="plan-icon" />
-                            <input
-                              id="login-password"
-                              type={showLoginPassword ? "text" : "password"}
-                              required
-                              value={loginPassword}
-                              onChange={(e) => setLoginPassword(e.target.value)}
-                              placeholder="••••••••"
-                              className="plan-input"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowLoginPassword(!showLoginPassword)}
-                              className="plan-eye-btn"
-                              aria-label={showLoginPassword ? "Hide password" : "Show password"}
-                            >
-                              {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                            </button>
-                          </div>
+                          <p className="login-secure-note">
+                            <Lock size={15} /> You will enter your password on the secure Golden Hills sign-in page.
+                          </p>
                         </div>
 
                         <div className="plan-options-row">
@@ -800,39 +746,9 @@ export default function PlanStayPortal() {
                         </div>
                       </div>
 
-                      <div className="plan-field-row">
-                        <div className="plan-field">
-                          <label htmlFor="reg-password">Password</label>
-                          <div className="plan-input-wrap">
-                            <Lock size={16} className="plan-icon" />
-                            <input
-                              id="reg-password"
-                              type={showRegPassword ? "text" : "password"}
-                              required
-                              value={regPassword}
-                              onChange={(e) => setRegPassword(e.target.value)}
-                              placeholder="••••••••"
-                              className="plan-input"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="plan-field">
-                          <label htmlFor="reg-confirm">Confirm Password</label>
-                          <div className="plan-input-wrap">
-                            <Lock size={16} className="plan-icon" />
-                            <input
-                              id="reg-confirm"
-                              type={showRegPassword ? "text" : "password"}
-                              required
-                              value={regConfirmPassword}
-                              onChange={(e) => setRegConfirmPassword(e.target.value)}
-                              placeholder="••••••••"
-                              className="plan-input"
-                            />
-                          </div>
-                        </div>
-                      </div>
+                      <p className="login-secure-note">
+                        <Lock size={15} /> Next you choose your password on the secure Golden Hills page and confirm your email.
+                      </p>
 
                       <div className="plan-options-row">
                         <label className="plan-check-label">

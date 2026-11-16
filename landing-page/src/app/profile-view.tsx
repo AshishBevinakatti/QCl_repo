@@ -6,6 +6,7 @@ import { portalApi } from "./portal-client";
 import { linkSampleMembership, sampleBookings, signOut, splitBookings, useSession, type Booking } from "./guest-session";
 import ProfileSignIn from "./profile-sign-in";
 import BookletUsage from "./booklet-usage";
+import MemberExtras from "./member-extras";
 import { Sketch } from "./pencil";
 import { ArrowRight } from "./icons";
 import { MoreUpcoming, NextStay, PastPostcards } from "./profile-stays";
@@ -103,6 +104,7 @@ export default function ProfileView() {
             <p className="prof-mem-line">
               {membership.membershipNo} · valid until {fmt(membership.validTo)}
             </p>
+            {membership.real && <MemberExtras membership={membership} />}
             <BookletUsage membership={membership} />
             <Link href="/membership#your-card" className="prof-link">See your card <ArrowRight size={15} /></Link>
           </>
@@ -122,14 +124,14 @@ function LinkMembership({ name }: { name: string }) {
       className="prof-link-form"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!/^[A-Za-z0-9-]{4,}$/.test(no.trim())) return setErr("Enter your membership ID, for example GHR-CM-0427.");
+        if (!/^[A-Za-z0-9-]{4,}$/.test(no.trim())) return setErr("Enter your membership ID, for example GRH-LM-0000.");
         linkSampleMembership(name, no.trim().toUpperCase());
       }}
     >
       <p>Not linked to a membership. If you are a member, add your membership ID to see your booklet.</p>
       <label>
         <span>Membership ID</span>
-        <input value={no} onChange={(e) => setNo(e.target.value)} autoCapitalize="characters" autoCorrect="off" placeholder="GHR-CM-0427" />
+        <input value={no} onChange={(e) => setNo(e.target.value)} autoCapitalize="characters" autoCorrect="off" placeholder="GRH-LM-0000" />
       </label>
       <p className="psign-note">Preview: linking shows sample usage until the ERP records redemptions.</p>
       {err && <p className="psign-error" role="alert">{err}</p>}

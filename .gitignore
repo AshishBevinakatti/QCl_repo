@@ -55,3 +55,8 @@ backups/
 # Local work artefacts
 *.patch
 preview-work.patch
+
+# Symlinked node_modules (the trailing-slash rule above misses symlinks)
+node_modules
+# LibreOffice lock files
+.~lock.*#
