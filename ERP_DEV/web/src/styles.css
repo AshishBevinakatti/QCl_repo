@@ -1073,3 +1073,22 @@ textarea[aria-invalid="true"] { border-color: var(--danger-dot); background: var
 .mem-account { display: grid; gap: 0.5rem; }
 .mem-account p { margin: 0; }
 .mem-account button { justify-self: start; min-height: 44px; }
+
+/* Smart fields on "New Gold Member" (D-131…D-134) */
+.mem-subhead { margin: 1rem 0 0.4rem; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.mem-pills.compact { grid-template-columns: repeat(2, minmax(0, 220px)); margin-bottom: 0.6rem; }
+.mem-pills.compact .mem-pill { padding-top: 0.55rem; padding-bottom: 0.55rem; }
+.smart-pill { display: inline-block; margin-top: 0.35rem; padding: 0.2rem 0.65rem; border-radius: var(--radius-full); font-size: 0.82rem; font-weight: 600; }
+.smart-pill.ok { background: var(--success-bg); color: var(--success-text); border: 1px solid var(--success-border); }
+.smart-pill.bad { background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); }
+.smart-note { display: block; margin-top: 0.3rem; font-size: 0.82rem; font-weight: 500; color: var(--muted); }
+.prefixed { position: relative; display: flex; align-items: center; }
+.prefixed .prefix { position: absolute; left: 0.75rem; font-weight: 600; color: var(--muted); pointer-events: none; }
+.prefixed input { padding-left: 3rem; padding-right: 2.2rem; width: 100%; }
+.smart-tick { position: absolute; right: 0.75rem; font-weight: 700; color: var(--success-dot); }
+.fee-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.75rem 0 0.25rem; }
+.fee-chip { min-height: 40px; padding: 0.4rem 0.9rem; border-radius: var(--radius-full); border: 1px solid var(--primary-border); background: var(--surface); color: var(--ink); font-weight: 600; }
+.fee-chip.selected, .fee-chip:hover { border-color: var(--primary); background: var(--primary-light); }
+@media (max-width: 640px) {
+  .mem-pills.compact { grid-template-columns: 1fr 1fr; }
+}

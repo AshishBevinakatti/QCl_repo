@@ -2,6 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { Memberships, type Member } from "./Memberships";
 import { ApiError, type Me } from "./api";
+import { localToday, setPincodeTableForTests, verhoeffCheckDigit } from "./smartFields";
+
+// Quick amount chips are configured for this file (the real default is none until the client confirms the fee, Q-030).
+vi.mock("./config", () => ({ config: { goldFeeChips: "25000,30000,50000", upiQrUrl: "" } }));
 
 afterEach(cleanup);
 
@@ -41,9 +45,21 @@ function fill(label: string | RegExp, value: string) {
   fireEvent.change(screen.getByLabelText(label), { target: { value } });
 }
 
+/** A valid Aadhaar (Verhoeff check digit computed), as typed. */
+const AADHAAR_BODY = "23456789012";
+const AADHAAR = AADHAAR_BODY + verhoeffCheckDigit(AADHAAR_BODY);
+
+function yearsAgo(n: number, plusDays = 0) {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - n);
+  d.setDate(d.getDate() + plusDays);
+  return localToday(d);
+}
+
 function fillCustomer() {
-  fill("First name", "Rohan"); fill("Last name", "Sharma"); fill("Date of birth", "1990-05-17");
-  fill(/Mobile/, "+91 98765 43210"); fill("Email", "rohan@example.test"); fill("Complete address", "12 MG Road, Vijayapura");
+  fill("First name", "rohan"); fill("Last name", "SHARMA"); fill("Date of birth", "1990-05-17");
+  fill(/Mobile/, "+91 98765 43210"); fill("Email", " Rohan@Example.test "); fill("Aadhaar number", AADHAAR);
+  fill("Street address", "12 MG Road, Tilakwadi"); fill("Pincode", "590006"); fill("City", "Belagavi");
   fill("Amount received (₹)", "25000");
 }
 
@@ -79,7 +95,90 @@ describe("Memberships — Sales Executive", () => {
     expect(body.get("paymentType")).toBe("CASH");
     expect(body.get("amount")).toBe("25000");
     expect(body.get("email")).toBe("rohan@example.test");
+    expect(body.get("mobile")).toBe("+919876543210");
+    expect(body.get("idType")).toBe("AADHAAR");
+    expect(body.get("idNumber")).toBe(AADHAAR.replace(/(\d{4})(?=\d)/g, "$1 "));
+    expect(body.get("pincode")).toBe("590006");
+    expect(body.get("state")).toBe("Karnataka");
+    expect(body.get("country")).toBe("India");
     expect(new Headers(sent!.headers).get("Idempotency-Key")).toMatch(/[0-9a-f-]{36}/);
+  });
+
+  it("shows the live age and blocks registration under 18", async () => {
+    render(<Memberships me={seMe} request={fakeRequest({
+      "/api/v1/sales/memberships/next-number": () => ({ membershipId: "GRH-LM-0101", provisional: true }),
+      "/api/v1/sales/memberships": () => page([]),
+    })} />);
+    await screen.findByText("GRH-LM-0101");
+    fillCustomer();
+    const submit = screen.getByRole("button", { name: "Register member" }) as HTMLButtonElement;
+    fill("Date of birth", yearsAgo(16));
+    expect(screen.getByText("Age: 16 years · Must be 18+ ✗")).toBeTruthy();
+    expect(submit.disabled).toBe(true);
+    fill("Date of birth", yearsAgo(27));
+    expect(screen.getByText("Age: 27 years · Eligible ✓")).toBeTruthy();
+    expect(submit.disabled).toBe(false);
+    fill("Date of birth", yearsAgo(18, 1));   // 18 tomorrow
+    expect(screen.getByText("Age: 17 years · Must be 18+ ✗")).toBeTruthy();
+    expect((screen.getByLabelText("Date of birth") as HTMLInputElement).max).toBe(yearsAgo(18));
+  });
+
+  it("formats the Aadhaar, catches a typo with the checksum and shows only the masked form", async () => {
+    render(<Memberships me={seMe} request={fakeRequest({
+      "/api/v1/sales/memberships/next-number": () => ({ membershipId: "GRH-LM-0101", provisional: true }),
+      "/api/v1/sales/memberships": () => page([]),
+    })} />);
+    await screen.findByText("GRH-LM-0101");
+    fillCustomer();
+    const input = screen.getByLabelText("Aadhaar number") as HTMLInputElement;
+    expect(input.value).toBe(AADHAAR.slice(0, 4) + " " + AADHAAR.slice(4, 8) + " " + AADHAAR.slice(8));
+    expect(screen.getByText("Stored only as XXXX-XXXX-" + AADHAAR.slice(8))).toBeTruthy();
+    const typo = AADHAAR.slice(0, 11) + ((Number(AADHAAR[11]) + 1) % 10);
+    fill("Aadhaar number", typo);
+    expect(screen.getByText(/has a typo/)).toBeTruthy();
+    expect((screen.getByRole("button", { name: "Register member" }) as HTMLButtonElement).disabled).toBe(true);
+    fill("Aadhaar number", "1234 5678 9012");
+    expect(screen.getByText(/can't start with 0 or 1/)).toBeTruthy();
+  });
+
+  it("fills city and state from the pincode", async () => {
+    setPincodeTableForTests({ "590001": ["Belagavi", "Karnataka"], "403001": ["North Goa", "Goa"] });
+    render(<Memberships me={seMe} request={fakeRequest({
+      "/api/v1/sales/memberships/next-number": () => ({ membershipId: "GRH-LM-0101", provisional: true }),
+      "/api/v1/sales/memberships": () => page([]),
+    })} />);
+    await screen.findByText("GRH-LM-0101");
+    fill("Pincode", "4030");
+    expect((screen.getByLabelText("City") as HTMLInputElement).value).toBe("");
+    fill("Pincode", "403001");
+    await waitFor(() => expect((screen.getByLabelText("City") as HTMLInputElement).value).toBe("North Goa"));
+    expect((screen.getByLabelText("State") as HTMLSelectElement).value).toBe("Goa");
+    expect(screen.getByText(/filled from India Post data/)).toBeTruthy();
+    setPincodeTableForTests(null);
+  });
+
+  it("cleans a pasted mobile, ticks a valid one and title-cases names on leaving the field", async () => {
+    render(<Memberships me={seMe} request={fakeRequest({
+      "/api/v1/sales/memberships/next-number": () => ({ membershipId: "GRH-LM-0101", provisional: true }),
+      "/api/v1/sales/memberships": () => page([]),
+    })} />);
+    await screen.findByText("GRH-LM-0101");
+    fill(/Mobile/, "09876543210");
+    expect((screen.getByLabelText(/Mobile/) as HTMLInputElement).value).toBe("9876543210");
+    expect(screen.getByLabelText("Valid mobile number")).toBeTruthy();
+    fill("First name", "anoop kumar");
+    fireEvent.blur(screen.getByLabelText("First name"));
+    expect((screen.getByLabelText("First name") as HTMLInputElement).value).toBe("Anoop Kumar");
+  });
+
+  it("quick amount chips fill the amount", async () => {
+    render(<Memberships me={seMe} request={fakeRequest({
+      "/api/v1/sales/memberships/next-number": () => ({ membershipId: "GRH-LM-0101", provisional: true }),
+      "/api/v1/sales/memberships": () => page([]),
+    })} />);
+    await screen.findByText("GRH-LM-0101");
+    fireEvent.click(screen.getByRole("button", { name: "₹30,000" }));
+    expect((screen.getByLabelText("Amount received (₹)") as HTMLInputElement).value).toBe("30000");
   });
 
   it("asks for a transaction ID only for card", async () => {
@@ -155,7 +254,8 @@ describe("Memberships — Sales Executive", () => {
 describe("Memberships — verification queue (Manager)", () => {
   it("shows the pending badge, opens the review and verifies", async () => {
     let verified = false;
-    const other = { ...pending, enrolledBy: { employeeId: "emp-1", name: "Sam One", username: "sam.one" } };
+    const other = { ...pending, enrolledBy: { employeeId: "emp-1", name: "Sam One", username: "sam.one" },
+      idType: "AADHAAR", idNumberMasked: "XXXX-XXXX-0123", pincode: "590006", city: "Belagavi", state: "Karnataka", country: "India" };
     render(<Memberships me={mgrMe} request={fakeRequest({
       "/api/v1/sales/memberships/next-number": () => ({ membershipId: "GRH-LM-0102", provisional: true }),
       "/api/v1/sales/memberships": () => page([]),
@@ -169,6 +269,8 @@ describe("Memberships — verification queue (Manager)", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Review GRH-LM-0101" }));
     const dialog = await screen.findByRole("dialog", { name: /GRH-LM-0101/ });
     expect(within(dialog).getByText("₹25,000.00")).toBeTruthy();
+    expect(within(dialog).getByText("Aadhaar: XXXX-XXXX-0123")).toBeTruthy();
+    expect(within(dialog).getByText("12 MG Road, Belagavi, Karnataka – 590006, India")).toBeTruthy();
     expect(await within(dialog).findByRole("img", { name: "Payment screenshot" })).toBeTruthy();
     fireEvent.click(within(dialog).getByRole("button", { name: "Verify & activate" }));
     await waitFor(() => expect(verified).toBe(true));
@@ -216,6 +318,7 @@ describe("Memberships — verification queue (Manager)", () => {
 
   it("does not offer Verify on a registration the viewer enrolled", async () => {
     const mine = { ...pending, enrolledBy: { employeeId: "emp-9", name: "Mohan Mgr", username: "mohan.mgr" } };
+    // registered before ID proof was required: the drawer says so instead of showing an empty field
     render(<Memberships me={mgrMe} request={fakeRequest({
       "/api/v1/sales/memberships/next-number": () => ({ membershipId: "GRH-LM-0102", provisional: true }),
       "/api/v1/sales/memberships": () => page([]),
@@ -227,5 +330,6 @@ describe("Memberships — verification queue (Manager)", () => {
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).queryByRole("button", { name: "Verify & activate" })).toBeNull();
     expect(within(dialog).getByText(/You enrolled this member/)).toBeTruthy();
+    expect(within(dialog).getByText(/Not recorded/)).toBeTruthy();
   });
 });

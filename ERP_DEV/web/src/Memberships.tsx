@@ -5,12 +5,19 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { ApiError, type Me } from "./api";
 import { config } from "./config";
+import {
+  INDIAN_STATES, aadhaarProblem, calculateAge, cleanMobile, formatAadhaar, isValidMobile, isValidPincode, licenceProblem,
+  localToday, lookupPincode, maskAadhaar, maskLicence, maxDobFor18, parseFeeChips, rupees, toTitleCase,
+} from "./smartFields";
 
 export interface Member {
   id: string; membershipId: string; firstName: string; lastName: string; dob: string; mobile: string; email: string;
   address: string; tier: string; status: string; enrolledBy: { employeeId: string; name: string; username: string };
   decidedBy: string | null; decidedAt: string | null; validFrom: string | null; validUntil: string | null;
   accountStatus: string; createdAt: string;
+  /** ID proof and structured address (D-131, D-133); null for members registered before them. */
+  idType?: string | null; idNumberMasked?: string | null;
+  pincode?: string | null; city?: string | null; state?: string | null; country?: string | null;
   payment: {
     type: string; amount: string; currency: string; transactionId: string | null; status: string;
     rejectionReason: string | null; verifiedBy: string | null; decidedAt: string | null;
@@ -38,14 +45,23 @@ export const ACCOUNT_STATUS: Record<string, string> = {
   ACTIVE: "Customer has signed in",
 };
 const PAYMENT_LABEL: Record<string, string> = { CASH: "Cash", CARD: "Card", SCAN_QR: "Scan QR (UPI)" };
-const EMPTY = { firstName: "", lastName: "", dob: "", mobile: "", email: "", address: "", paymentType: "CASH", amount: "", transactionId: "" };
+const EMPTY = {
+  firstName: "", lastName: "", dob: "", mobile: "", email: "", address: "", paymentType: "CASH", amount: "", transactionId: "",
+  idType: "AADHAAR", idNumber: "", pincode: "", city: "", state: "Karnataka", country: "India",
+};
+const ID_LABEL: Record<string, string> = { AADHAAR: "Aadhaar", DRIVING_LICENCE: "Driving licence" };
+const FEE_CHIPS = parseFeeChips(config.goldFeeChips);
+
+/** "12 MG Road, Belagavi, Karnataka – 590006, India"; older members only have the one address line. */
+export const fullAddress = (m: Member) =>
+  m.city ? `${m.address}, ${m.city}, ${m.state} – ${m.pincode}, ${m.country}` : m.address;
 type Field = keyof typeof EMPTY | "proof";
 
 const inr = (amount: string) =>
   "₹" + Number(amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const day = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—";
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => localToday();
 const objectUrl = (b: Blob) => (typeof URL.createObjectURL === "function" ? URL.createObjectURL(b) : "blob:preview");
 const freeUrl = (u: string | null) => { if (u && u.startsWith("blob:") && typeof URL.revokeObjectURL === "function") URL.revokeObjectURL(u); };
 
@@ -134,6 +150,27 @@ function RegisterMember({ me, request, onRegistered }: { me: Me; request: Reques
 
   const set = (k: keyof typeof EMPTY) => (v: string) => { setForm((f) => ({ ...f, [k]: v })); setKey(crypto.randomUUID()); };
 
+  // Smart fields (D-131…D-134): checked as the executive types; the server checks everything again.
+  const age = calculateAge(form.dob);
+  const mobileOk = isValidMobile(form.mobile);
+  const idProblem = form.idType === "AADHAAR" ? aadhaarProblem(form.idNumber) : licenceProblem(form.idNumber);
+  const idComplete = form.idType === "AADHAAR" ? form.idNumber.replace(/\D/g, "").length === 12 : form.idNumber.trim().length >= 13;
+  const pincodeOk = isValidPincode(form.pincode);
+  const [pinNote, setPinNote] = useState<string | null>(null);
+  const blocked = !age?.isEligible || !mobileOk || idProblem !== null || !pincodeOk;
+
+  async function pincodeTyped(raw: string) {
+    const pin = raw.replace(/\D/g, "").slice(0, 6);
+    set("pincode")(pin);
+    setPinNote(null);
+    if (pin.length !== 6) return;
+    const hit = await lookupPincode(pin);
+    if (hit) {
+      setForm((f) => ({ ...f, city: hit.city, state: hit.state, country: "India" }));
+      setPinNote("City and state filled from India Post data. Change them if needed.");
+    }
+  }
+
   async function pick(files: FileList | null) {
     const f = files?.[0];
     if (!f) return;
@@ -162,13 +199,13 @@ function RegisterMember({ me, request, onRegistered }: { me: Me; request: Reques
     const body = new FormData();
     Object.entries(form).forEach(([k, v]) => {
       if (k === "transactionId" && form.paymentType === "CASH") return;
-      body.append(k, v);
+      body.append(k, k === "mobile" ? "+91" + v : v);
     });
     if (proof && form.paymentType === "SCAN_QR") body.append("proof", proof, proof.name);
     try {
       const m = await request<Member>("/api/v1/sales/memberships", { method: "POST", headers: { "Idempotency-Key": key }, body });
       setMessage({ ok: true, text: `${m.membershipId} is registered for ${m.firstName} ${m.lastName}. It now waits for a manager to verify the payment.` });
-      setForm(EMPTY); removeProof(); setKey(crypto.randomUUID());
+      setForm(EMPTY); removeProof(); setKey(crypto.randomUUID()); setPinNote(null);
       loadNext(); onRegistered();
     } catch (err) {
       if (err instanceof ApiError) setFields((err.body as { fields?: Record<string, string> } | null)?.fields ?? {});
@@ -204,18 +241,107 @@ function RegisterMember({ me, request, onRegistered }: { me: Me; request: Reques
         <fieldset className="mem-section">
           <legend>1 · Customer</legend>
           <div className="form-row two-col">
-            {input("firstName", "First name", "text", { autoComplete: "off" })}
-            {input("lastName", "Last name", "text", { autoComplete: "off" })}
+            <label>First name
+              <input type="text" required autoComplete="off" value={form.firstName} aria-invalid={!!fields.firstName}
+                     onChange={(e) => set("firstName")(e.target.value)} onBlur={(e) => set("firstName")(toTitleCase(e.target.value))} />
+              {fields.firstName && <small role="alert">{fields.firstName}</small>}
+            </label>
+            <label>Last name
+              <input type="text" required autoComplete="off" value={form.lastName} aria-invalid={!!fields.lastName}
+                     onChange={(e) => set("lastName")(e.target.value)} onBlur={(e) => set("lastName")(toTitleCase(e.target.value))} />
+              {fields.lastName && <small role="alert">{fields.lastName}</small>}
+            </label>
           </div>
           <div className="form-row three-col">
-            {input("dob", "Date of birth", "date", { max: today() })}
-            {input("mobile", "Mobile (+91)", "tel", { placeholder: "+91 98765 43210", inputMode: "tel" })}
-            {input("email", "Email", "email", { placeholder: "name@example.com", inputMode: "email" })}
+            <label>Date of birth
+              <input type="date" aria-label="Date of birth" required max={maxDobFor18()} value={form.dob} aria-invalid={!!fields.dob || (age !== null && !age.isEligible)}
+                     onChange={(e) => set("dob")(e.target.value)} />
+              {age && (
+                <span className={`smart-pill ${age.isEligible ? "ok" : "bad"}`} role="status">
+                  {age.isEligible ? `Age: ${age.age} years · Eligible ✓` : `Age: ${age.age} years · Must be 18+ ✗`}
+                </span>
+              )}
+              {fields.dob && <small role="alert">{fields.dob}</small>}
+            </label>
+            <label>Mobile
+              <span className="prefixed">
+                <span className="prefix" aria-hidden="true">+91</span>
+                <input type="tel" aria-label="Mobile (+91)" required inputMode="numeric" autoComplete="off" placeholder="98765 43210" value={form.mobile}
+                       aria-invalid={!!fields.mobile} onChange={(e) => set("mobile")(cleanMobile(e.target.value))} />
+                {mobileOk && <span className="smart-tick" aria-label="Valid mobile number">✓</span>}
+              </span>
+              {!mobileOk && form.mobile.length >= 10 && <small role="alert">10 digits, starting with 6, 7, 8 or 9.</small>}
+              {fields.mobile && <small role="alert">{fields.mobile}</small>}
+            </label>
+            <label>Email
+              <input type="email" required inputMode="email" placeholder="name@example.com" value={form.email} aria-invalid={!!fields.email}
+                     onChange={(e) => set("email")(e.target.value.trim().toLowerCase())} />
+              {fields.email && <small role="alert">{fields.email}</small>}
+            </label>
           </div>
-          <label>Complete address
-            <textarea required rows={3} value={form.address} onChange={(e) => set("address")(e.target.value)} aria-invalid={!!fields.address} maxLength={500} />
+
+          <div className="mem-subhead">ID proof</div>
+          <div className="mem-pills compact" role="radiogroup" aria-label="ID proof type">
+            {Object.entries(ID_LABEL).map(([value, label]) => (
+              <label key={value} className={`mem-pill${form.idType === value ? " selected" : ""}`}>
+                <input type="radio" name="idType" value={value} checked={form.idType === value}
+                       onChange={() => { set("idType")(value); set("idNumber")(""); }} />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+          {form.idType === "AADHAAR" ? (
+            <label>Aadhaar number
+              <input type="text" aria-label="Aadhaar number" required inputMode="numeric" autoComplete="off" placeholder="XXXX XXXX XXXX" value={form.idNumber}
+                     aria-invalid={!!fields.idNumber || (idComplete && idProblem !== null)} maxLength={14}
+                     onChange={(e) => set("idNumber")(formatAadhaar(e.target.value))} />
+              {idComplete && idProblem && <small role="alert">{idProblem}</small>}
+              {!idProblem && <span className="smart-note">Stored only as {maskAadhaar(form.idNumber)}</span>}
+              {fields.idNumber && <small role="alert">{fields.idNumber}</small>}
+            </label>
+          ) : (
+            <label>Driving licence number
+              <input type="text" aria-label="Driving licence number" required autoComplete="off" placeholder="KA01 20190001234" value={form.idNumber}
+                     aria-invalid={!!fields.idNumber || (idComplete && idProblem !== null)} maxLength={24}
+                     onChange={(e) => set("idNumber")(e.target.value.toUpperCase())} />
+              {idComplete && idProblem && <small role="alert">{idProblem}</small>}
+              {!idProblem && <span className="smart-note">Stored only as {maskLicence(form.idNumber)}</span>}
+              {fields.idNumber && <small role="alert">{fields.idNumber}</small>}
+            </label>
+          )}
+          {fields.idType && <small role="alert">{fields.idType}</small>}
+
+          <div className="mem-subhead">Address</div>
+          <label>Street address
+            <textarea required rows={2} value={form.address} onChange={(e) => set("address")(e.target.value)} aria-invalid={!!fields.address}
+                      maxLength={500} placeholder="House / flat, street, area" />
             {fields.address && <small role="alert">{fields.address}</small>}
           </label>
+          <div className="form-row two-col">
+            <label>Pincode
+              <input type="text" aria-label="Pincode" required inputMode="numeric" autoComplete="off" placeholder="590001" value={form.pincode} maxLength={6}
+                     aria-invalid={!!fields.pincode || (form.pincode.length === 6 && !pincodeOk)} onChange={(e) => void pincodeTyped(e.target.value)} />
+              {pinNote && <span className="smart-note">{pinNote}</span>}
+              {form.pincode.length === 6 && !pincodeOk && <small role="alert">A pincode can't start with 0.</small>}
+              {fields.pincode && <small role="alert">{fields.pincode}</small>}
+            </label>
+            <label>City
+              <input type="text" aria-label="City" required autoComplete="off" value={form.city} aria-invalid={!!fields.city} maxLength={100}
+                     onChange={(e) => set("city")(e.target.value)} onBlur={(e) => set("city")(toTitleCase(e.target.value))} />
+              {fields.city && <small role="alert">{fields.city}</small>}
+            </label>
+          </div>
+          <div className="form-row two-col">
+            <label>State
+              <select required value={form.state} onChange={(e) => set("state")(e.target.value)} aria-invalid={!!fields.state}>
+                {INDIAN_STATES.map((st) => <option key={st} value={st}>{st}</option>)}
+              </select>
+              {fields.state && <small role="alert">{fields.state}</small>}
+            </label>
+            <label>Country
+              <input type="text" value="India" readOnly aria-readonly="true" />
+            </label>
+          </div>
         </fieldset>
 
         <fieldset className="mem-section">
@@ -251,6 +377,14 @@ function RegisterMember({ me, request, onRegistered }: { me: Me; request: Reques
             </div>
           )}
 
+          {FEE_CHIPS.length > 0 && (
+            <div className="fee-chips" role="group" aria-label="Quick amounts">
+              {FEE_CHIPS.map((n) => (
+                <button key={n} type="button" className={`fee-chip${form.amount === String(n) ? " selected" : ""}`}
+                        onClick={() => set("amount")(String(n))}>{rupees(n)}</button>
+              ))}
+            </div>
+          )}
           <div className={`form-row ${form.paymentType === "CASH" ? "" : "two-col"}`}>
             {input("amount", "Amount received (₹)", "text", { inputMode: "decimal", placeholder: "e.g. 25000" })}
             {form.paymentType === "CARD" && input("transactionId", "Transaction ID", "text", { autoComplete: "off" })}
@@ -301,8 +435,8 @@ function RegisterMember({ me, request, onRegistered }: { me: Me; request: Reques
 
         {message && <p className={message.ok ? "mem-ok" : "mem-error"} role={message.ok ? "status" : "alert"}>{message.text}</p>}
         <div className="form-footer">
-          <span />
-          <button type="submit" disabled={busy}>{busy ? "Submitting…" : "Register member"}</button>
+          <span className="smart-note">{blocked ? "Complete the checks above (18+, mobile, ID proof, pincode) to register." : ""}</span>
+          <button type="submit" disabled={busy || blocked}>{busy ? "Submitting…" : "Register member"}</button>
         </div>
       </form>
     </div>
@@ -487,7 +621,8 @@ function ReviewDrawer({ member: m, me, request, onClose, onDecided }:
           <div><dt>Date of birth</dt><dd>{day(m.dob)}</dd></div>
           <div><dt>Mobile</dt><dd>{m.mobile}</dd></div>
           <div><dt>Email</dt><dd>{m.email}</dd></div>
-          <div className="wide"><dt>Address</dt><dd>{m.address}</dd></div>
+          <div><dt>ID proof</dt><dd>{m.idType ? `${ID_LABEL[m.idType] ?? m.idType}: ${m.idNumberMasked}` : "Not recorded (registered before ID proof was required)"}</dd></div>
+          <div className="wide"><dt>Address</dt><dd>{fullAddress(m)}</dd></div>
           <div><dt>Payment</dt><dd>{PAYMENT_LABEL[m.payment.type] ?? m.payment.type}</dd></div>
           <div><dt>Amount</dt><dd>{inr(m.payment.amount)}</dd></div>
           <div><dt>{m.payment.type === "CARD" ? "Transaction ID" : "UTR / reference"}</dt><dd>{m.payment.transactionId ?? "—"}</dd></div>
