@@ -1,7 +1,7 @@
 # Module: Gold Membership (SOW ERP-05 Membership & Loyalty)
 
 Status: **S1, S5 built; S3 built and tested** (customer account + welcome email + automatic sign-in: guest-service, Keycloak realm `gh-guests`, extension `gh-member-activation`; see [MEMBER-LOGIN.md](../02-architecture/identity/MEMBER-LOGIN.md)). **S4 built:** `GET /api/v1/portal/membership/me` (api.md §3c). **S6 built:** the landing page signs members in with Keycloak and shows their real card (below).
-Decisions: D-116…D-125 ([DECISIONS.md](../logs/DECISIONS.md)). Open questions: Q-030…Q-037. API: [api.md §3a](../02-architecture/api.md).
+Decisions: D-116…D-125 (DECISIONS.md). Open questions: Q-030…Q-037. API: [api.md §3a](../02-architecture/api.md).
 
 ## What it does
 

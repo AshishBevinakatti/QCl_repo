@@ -419,3 +419,19 @@ History before 2026-11-15 is in `archive/hotel-draft:ERP_DEV/docs/logs/DEVLOG.md
 - Pins: `lucide-react` 1.73.0 (his lock's version), landing `keycloak-js` back to 26.2.5. `skills-lock.json` untracked again (`git rm --cached`; local copy restored).
 - Checks: `git diff --cached backup/phase1-membership-pre-ritvik -- ERP_DEV/services ERP_DEV/infra ERP_DEV/docs/02-architecture ...` empty. Web `npx vitest run` 61/61 (2 new: theme toggle; Manager keeps dashboard, admin doesn't), `npm run build`, `npm run lint` clean. Landing `npm run typecheck`, `npm run build` OK.
 - Not committed yet (ask first, Rule 7).
+
+## 2026-11-17T03:30:00+05:30 — Production release preparation (D-142)
+- Ashish: production repo https://github.com/quantumclktech/Quantumclk_Resort; push only production-ready work; plan first. Plan approved: clean snapshot history, hide fake flows, setup + architecture docs.
+- Read-only review: production repo reachable and empty (`git ls-remote` exit 0, no refs). Tracked files hold no secrets (realm secrets and SMTP are placeholders; only `.env.example` tracked). Dev history does (archived JwtTokenService secret), so production gets no history.
+- Found and removed fake flows: `/login` (OTP, booking ID, Google/Apple, demo fill, forgot-password modal, free Privilege Club box), `/profile` membership-ID "sample" sign-in and sample linking, stored fake sessions in `guest-session.ts`, `/plan-ahead` fake reservation confirmation and made-up phone, booking-card stored user. Unused CSS for the removed UI left in place on purpose (harmless; one selector is shared).
+- lead-service: V1 schema only; sample leads in `db/dev-seed/V1_1__dev_seed_leads.sql`, `spring.flyway.locations: ${LEAD_FLYWAY_LOCATIONS:classpath:db/migration}`. Dev lead_db held only the 5 seed leads (checked), tables dropped and re-migrated (first drop attempt failed on PowerShell quoting; service hit the checksum mismatch as expected; redone from bash).
+- Release tooling: root `.gitattributes` (export-ignore), `release/export.sh`, `RELEASING.md`, root `README.md`; docs index rewritten; 8 links to internal docs turned into plain text; ERP README status updated; DAY-ONE lists `run-lead-service.ps1`.
+- Checks: landing `npm run typecheck`, `npm run build` OK; lead-service `./mvnw -o test` 8/8; dry-run `git archive --worktree-attributes` 519 files, none excluded.
+- Not committed yet (ask first, Rule 7).
+
+## 2026-11-17T04:00:00+05:30 — Production repo: shipped files only, no tooling; hosting stays on ngrok (D-142 revised)
+- Ashish: no Vercel (keeps ngrok); push to the normal repo and to the production repo; the production repo holds only shipped things; no `.sh` or release tooling; undo what was added for that.
+- Q: undo scope -> A: only the release tooling (website fixes and lead dev seed kept). Q: production contents -> A: runtime + tests (no docs).
+- Removed (were untracked): root `.gitattributes`, `release/export.sh`, `RELEASING.md`, root `README.md`.
+- `ERP_DEV/README.md` no longer links to `docs/` (absent in production). `run-lead-service.ps1` adds the dev-seed location only if that folder exists.
+- Production copy is made with plain git commands (orphan `production` branch from `git archive` of the released commit), checked (file list, gitleaks, greps, builds and tests), then pushed.

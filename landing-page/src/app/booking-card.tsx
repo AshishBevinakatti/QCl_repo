@@ -6,7 +6,9 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { portalApi, type GuestUser, type InquiryRecord } from "./portal-client";
+import { portalApi, type InquiryRecord } from "./portal-client";
+import { useSession } from "./guest-session";
+import { RESORT_DESK } from "./member-benefits";
 import { Check, Minus, Plus } from "./icons";
 import { getTodayStr, addDays, getNightsBetween } from "./booking-dates";
 
@@ -54,7 +56,8 @@ export default function BookingCard(props: Props) {
   const [guests, setGuests] = useState(Math.min(2, maxGuests));
   const [bed, setBed] = useState(false);
   const [meal, setMeal] = useState(mealPlans[0] ?? "");
-  const [user, setUser] = useState<GuestUser | null>(null);
+  // A real (Keycloak) session fills in the guest; otherwise the form asks for contact details (D-142).
+  const user = useSession()?.user ?? null;
 
   const [askContact, setAskContact] = useState(false);
   const [name, setName] = useState("");
@@ -85,7 +88,6 @@ export default function BookingCard(props: Props) {
     setToday(t);
     setCheckin(addDays(t, 1));
     setCheckout(addDays(t, 3));
-    setUser(portalApi.getStoredUser());
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
@@ -127,8 +129,9 @@ export default function BookingCard(props: Props) {
         ].join(". "),
       }, user?.token);
       setSent(record);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Could not send the request. Please try again.");
+    } catch {
+      // Online requests reach the sales desk only once the enquiry service is live (increment 2).
+      setError(`We couldn't send this online. Please call our desk on ${RESORT_DESK.display} to book.`);
     } finally {
       setSending(false);
     }

@@ -3,10 +3,10 @@
 - Status: **Proposed. Waiting for Ashish's review** (Milestone 1, 2026-11-15). No code exists yet.
 - Decision record: [ADR-002](../adr/ADR-002-keycloak-employee-identity.md). Keycloak settings: [KEYCLOAK-SETUP.md](KEYCLOAK-SETUP.md).
 - Sources:
-  - Phase 1 Blueprint §2 ADR-006/007, §3, §11, §13, §17, §18 ([extract](../../01-requirements/source-extracts/phase1-blueprint-extract.md));
-  - SOW §22 roles, §25.2 security ([extract](../../01-requirements/source-extracts/sow-extract.md));
+  - Phase 1 Blueprint §2 ADR-006/007, §3, §11, §13, §17, §18 (extract);
+  - SOW §22 roles, §25.2 security (extract);
   - Ashish's instruction of 2026-11-15 (DEVLOG).
-- Scope: **employees (staff) only.** Guest identity is a separate realm and is still open ([Q-003](../../logs/OPEN_QUESTIONS.md)).
+- Scope: **employees (staff) only.** Guest identity is a separate realm and is still open (Q-003).
 
 > **Guests and members** (customers on the landing page) use a separate realm, `gh-guests`, with Authorization Code + PKCE and a one-time welcome link: see [MEMBER-LOGIN.md](MEMBER-LOGIN.md) (D-119…D-122, which supersede D-114). This document covers staff only.
 

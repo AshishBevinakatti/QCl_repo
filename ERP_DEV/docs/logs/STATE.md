@@ -33,6 +33,8 @@ Done:
 
 16. Ritvik's UI merged (D-141) on branch `merge/ritvik-ui` (backup of the pre-merge tip: `backup/phase1-membership-pre-ritvik` = 0f3ab72). Backend/infra/API unchanged versus the backup (checked with git diff). Web 61/61 + build + lint; landing typecheck + `next build` OK.
 
+17. Production readiness (D-142): fake website flows removed, lead seed data dev-only, docs index and READMEs updated. Production repo gets a plain-git copy of shipped files only (orphan `production` branch, tag per release); no release tooling. Hosting stays on ngrok. Landing typecheck + build OK; lead-service 8/8; dev lead_db recreated (V1 + V1.1 dev seed, 5 leads).
+
 Next action:
 1. Present changes to Ashish and request commit approval (Rule 7).
 2. Live check on phone / browser via tunnel.

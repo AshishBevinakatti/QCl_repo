@@ -8,5 +8,11 @@ if (Test-Path $envFile) {
         }
     }
 }
+# Development checkout only: also load the sample leads (db/dev-seed). The production repo has no dev-seed folder,
+# so there only the schema migrations run (D-142).
+$devSeed = "$PSScriptRoot\services\lead-service\src\main\resources\db\dev-seed"
+if (-not $env:LEAD_FLYWAY_LOCATIONS -and (Test-Path $devSeed)) {
+    $env:LEAD_FLYWAY_LOCATIONS = "classpath:db/migration,classpath:db/dev-seed"
+}
 Set-Location "$PSScriptRoot\services\lead-service"
 & .\mvnw.cmd spring-boot:run

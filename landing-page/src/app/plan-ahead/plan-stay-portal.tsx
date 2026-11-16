@@ -13,8 +13,6 @@ import {
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
-  KeyRound,
-  Search,
   ShieldCheck,
   Sparkles,
   UserPlus,
@@ -26,6 +24,7 @@ import {
 } from "lucide-react";
 import { logoLight, getScene, impression } from "../resort-assets";
 import { portalApi, type GuestUser, type InquiryRecord, type InquirySubmission } from "../portal-client";
+import { RESORT_DESK } from "../member-benefits";
 import { register as keycloakRegister, signIn } from "../guest-auth";
 import { signOut as endSession, useSession } from "../guest-session";
 import { getTodayStr, addDays, getNightsBetween, isValidDateStr } from "../booking-dates";
@@ -54,9 +53,6 @@ export default function PlanStayPortal() {
   // Primary mode: "login" | "register" | "reserve"
   const [portalMode, setPortalMode] = useState<"login" | "register" | "reserve">("login");
 
-  // Sign In sub-tabs: "password" | "otp" | "booking"
-  const [authTab, setAuthTab] = useState<"password" | "otp" | "booking">("password");
-
   // Visual Storytelling Scene State with Automatic 4-Second Slideshow
   const [sceneIdx, setSceneIdx] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -80,23 +76,12 @@ export default function PlanStayPortal() {
 
   // Sign In Form
   const [loginEmail, setLoginEmail] = useState("");
-  const [rememberMe, setRememberMe] = useState(true);
 
   // Register Form
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPhone, setRegPhone] = useState("");
-  const [enrollPrivilege, setEnrollPrivilege] = useState(true);
   const [agreeTerms, setAgreeTerms] = useState(true);
-
-  // Mobile OTP Mode
-  const [phone, setPhone] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState(["", "", "", "", "", ""]);
-
-  // Booking Lookup Mode
-  const [bookingId, setBookingId] = useState("");
-  const [guestLastName, setGuestLastName] = useState("");
 
   // Reservation / Inquiry Form
   const [inqName, setInqName] = useState("");
@@ -122,7 +107,7 @@ export default function PlanStayPortal() {
   const realMembership = session?.membership?.real ? session.membership : null;
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (session && session.kind !== "sample") setCurrentUser(session.user);
+    if (session) setCurrentUser(session.user);
   }, [session]);
 
   // Check stored user on mount and initialize booking dates from URL or defaults
@@ -155,11 +140,6 @@ export default function PlanStayPortal() {
     setCheckinDate(initialIn);
     setCheckoutDate(initialOut);
 
-    const stored = portalApi.getStoredUser();
-    if (stored) {
-      setCurrentUser(stored);
-      fetchUserInquiries(stored.token);
-    }
   }, []);
 
   const handleCheckinDateChange = (val: string) => {
@@ -182,15 +162,6 @@ export default function PlanStayPortal() {
     setCheckoutDate(val);
     if (checkinDate && val && val <= checkinDate) {
       setErrorMsg("Check-out date must be after check-in date.");
-    }
-  };
-
-  const fetchUserInquiries = async (token: string) => {
-    try {
-      const list = await portalApi.getMyInquiries(token);
-      setUserInquiries(list);
-    } catch {
-      // Offline fallback: keep empty or local sample
     }
   };
 
@@ -261,6 +232,10 @@ export default function PlanStayPortal() {
       setErrorMsg("Please provide a valid email.");
       return;
     }
+    if (!currentUser && phoneToUse.replace(/\D/g, "").length < 10) {
+      setErrorMsg("Please provide a 10-digit contact number so our desk can call you.");
+      return;
+    }
     if (!checkinDate || !checkoutDate) {
       setErrorMsg("Please select your check-in and check-out dates.");
       return;
@@ -280,7 +255,7 @@ export default function PlanStayPortal() {
       const payload: InquirySubmission = {
         name: nameToUse.trim(),
         email: emailToUse.trim(),
-        phone: phoneToUse.trim() || "+91 98765 43210",
+        phone: phoneToUse.trim(),
         checkinDate,
         checkoutDate,
         roomCategory,
@@ -290,50 +265,23 @@ export default function PlanStayPortal() {
 
       const record = await portalApi.submitInquiry(payload, currentUser?.token);
       setReservationSuccess(record);
-      setSuccessMsg(`Reservation inquiry #${record.publicReference || "GH-77821"} dispatched directly to ERP sales desk.`);
-    } catch (err: unknown) {
-      // Offline fallback
-      const mockRecord: InquiryRecord = {
-        id: "inq-" + Date.now(),
-        publicReference: "GH-" + Math.floor(10000 + Math.random() * 90000),
-        name: nameToUse,
-        email: emailToUse,
-        phone: phoneToUse,
-        checkinDate,
-        checkoutDate,
-        roomCategory,
-        guestCount,
-        notes,
-        status: "NEW",
-        priority: "HIGH",
-        slaDeadline: new Date(Date.now() + 86400000).toISOString(),
-        slaBreached: false,
-        createdAt: new Date().toISOString(),
-      };
-      setReservationSuccess(mockRecord);
-      setSuccessMsg(`Reservation inquiry #${mockRecord.publicReference} confirmed (Offline Preview).`);
+      setSuccessMsg(record.publicReference
+        ? `Reservation inquiry #${record.publicReference} sent to our sales desk.`
+        : "Reservation inquiry sent to our sales desk.");
+    } catch {
+      // Nothing is saved, so nothing is "confirmed": point the guest to the desk (D-142).
+      setErrorMsg(`We couldn't send this online yet. Please call our desk on ${RESORT_DESK.display} and we will book it for you.`);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleLogout = () => {
-    endSession();   // also ends a Keycloak session (guest-session.ts)
-    portalApi.logout();
+    endSession();   // also ends a Keycloak session and clears old browser data (guest-session.ts)
     setCurrentUser(null);
     setUserInquiries([]);
     setSuccessMsg("Signed out safely.");
     setErrorMsg("");
-  };
-
-  const handleQuickDemo = (type: "guest" | "member") => {
-    setErrorMsg("");
-    setSuccessMsg("");
-    if (type === "guest") {
-      setLoginEmail("guest.retreat@goldenhills.in");
-    } else {
-      setLoginEmail("privilege.vip@goldenhills.in");
-    }
   };
 
   const activeSceneData = SCENE_STORY[sceneIdx];
@@ -548,42 +496,7 @@ export default function PlanStayPortal() {
                     exit={reduced ? undefined : { opacity: 0, y: -12 }}
                     transition={{ duration: 0.28, ease: smoothEase }}
                   >
-                    {/* Sub-tabs: Password / OTP / Booking Reference */}
-                    <div className="plan-subtabs">
-                      <button
-                        type="button"
-                        className={`plan-subtab-btn ${authTab === "password" ? "is-active" : ""}`}
-                        onClick={() => setAuthTab("password")}
-                      >
-                        <Lock size={13} />
-                        <span>Email</span>
-                      </button>
-                      <button
-                        type="button"
-                        className={`plan-subtab-btn is-soon ${authTab === "otp" ? "is-active" : ""}`}
-                        onClick={() => setAuthTab("otp")}
-                        disabled
-                        aria-disabled="true"
-                        title="Coming soon"
-                      >
-                        <Phone size={13} />
-                        <span>Mobile OTP · Coming soon</span>
-                      </button>
-                      <button
-                        type="button"
-                        className={`plan-subtab-btn is-soon ${authTab === "booking" ? "is-active" : ""}`}
-                        onClick={() => setAuthTab("booking")}
-                        disabled
-                        aria-disabled="true"
-                        title="Coming soon"
-                      >
-                        <KeyRound size={13} />
-                        <span>Booking ID · Coming soon</span>
-                      </button>
-                    </div>
-
-                    {authTab === "password" && (
-                      <form onSubmit={handleLogin} className="plan-auth-form">
+                    <form onSubmit={handleLogin} className="plan-auth-form">
                         <div className="plan-field">
                           <label htmlFor="login-email">Guest Email Address</label>
                           <div className="plan-input-wrap">
@@ -616,18 +529,6 @@ export default function PlanStayPortal() {
                           </p>
                         </div>
 
-                        <div className="plan-options-row">
-                          <label className="plan-check-label">
-                            <input
-                              type="checkbox"
-                              checked={rememberMe}
-                              onChange={(e) => setRememberMe(e.target.checked)}
-                              className="plan-check-input"
-                            />
-                            <span>Keep me signed in</span>
-                          </label>
-                        </div>
-
                         <button
                           type="submit"
                           disabled={isLoading}
@@ -637,99 +538,7 @@ export default function PlanStayPortal() {
                           <ArrowRight size={15} />
                         </button>
 
-                        {/* Quick Demo Fill Helper */}
-                        <div className="plan-demo-helpers">
-                          <span>Quick Demo:</span>
-                          <button
-                            type="button"
-                            onClick={() => handleQuickDemo("guest")}
-                            className="plan-demo-pill"
-                          >
-                            Retreat Guest
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleQuickDemo("member")}
-                            className="plan-demo-pill"
-                          >
-                            Club Member
-                          </button>
-                        </div>
                       </form>
-                    )}
-
-                    {authTab === "otp" && (
-                      <div className="plan-auth-form">
-                        <div className="plan-field">
-                          <label htmlFor="phone-otp">Registered Mobile Number</label>
-                          <div className="plan-input-wrap">
-                            <Phone size={16} className="plan-icon" />
-                            <input
-                              id="phone-otp"
-                              type="tel"
-                              value={phone}
-                              onChange={(e) => setPhone(e.target.value)}
-                              placeholder="+91 98765 43210"
-                              className="plan-input"
-                            />
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setOtpSent(true);
-                            setSuccessMsg("Verification code dispatched via SMS.");
-                          }}
-                          className="plan-submit-btn"
-                        >
-                          Send 6-Digit OTP
-                          <ArrowRight size={15} />
-                        </button>
-                      </div>
-                    )}
-
-                    {authTab === "booking" && (
-                      <div className="plan-auth-form">
-                        <div className="plan-field">
-                          <label htmlFor="booking-ref">Reservation Reference</label>
-                          <div className="plan-input-wrap">
-                            <KeyRound size={16} className="plan-icon" />
-                            <input
-                              id="booking-ref"
-                              type="text"
-                              value={bookingId}
-                              onChange={(e) => setBookingId(e.target.value)}
-                              placeholder="e.g. GH-84291"
-                              className="plan-input"
-                            />
-                          </div>
-                        </div>
-                        <div className="plan-field">
-                          <label htmlFor="booking-name">Guest Last Name</label>
-                          <div className="plan-input-wrap">
-                            <Search size={16} className="plan-icon" />
-                            <input
-                              id="booking-name"
-                              type="text"
-                              value={guestLastName}
-                              onChange={(e) => setGuestLastName(e.target.value)}
-                              placeholder="e.g. Sharma"
-                              className="plan-input"
-                            />
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSuccessMsg(`Reservation #${bookingId || "GH-84291"} verified for guest.`);
-                          }}
-                          className="plan-submit-btn"
-                        >
-                          Find My Reservation
-                          <ArrowRight size={15} />
-                        </button>
-                      </div>
-                    )}
 
                     {/* New Guest Register Prompt */}
                     <div className="plan-switch-prompt">
@@ -811,18 +620,6 @@ export default function PlanStayPortal() {
                         <Lock size={15} /> Next you choose your password on the secure Golden Hills page and confirm your email.
                       </p>
 
-                      <div className="plan-options-row">
-                        <label className="plan-check-label">
-                          <input
-                            type="checkbox"
-                            checked={enrollPrivilege}
-                            onChange={(e) => setEnrollPrivilege(e.target.checked)}
-                            className="plan-check-input"
-                          />
-                          <span>Enroll me in Golden Hills Privilege Club (180 Vouchers)</span>
-                        </label>
-                      </div>
-
                       <button
                         type="submit"
                         disabled={isLoading}
@@ -861,10 +658,11 @@ export default function PlanStayPortal() {
                       <div className="plan-reserve-confirmed">
                         <CheckCircle2 size={40} className="plan-confirmed-icon" />
                         <h3>Reservation Dispatched</h3>
-                        <p>
-                          Your reservation inquiry reference is{" "}
-                          <strong>#{reservationSuccess.publicReference || "GH-84920"}</strong>.
-                        </p>
+                        {reservationSuccess.publicReference && (
+                          <p>
+                            Your reservation inquiry reference is <strong>#{reservationSuccess.publicReference}</strong>.
+                          </p>
+                        )}
                         <p className="plan-confirmed-sub">
                           The front desk sales team will verify availability for <strong>{reservationSuccess.roomCategory}</strong> and send your confirmed itinerary &amp; invoice.
                         </p>

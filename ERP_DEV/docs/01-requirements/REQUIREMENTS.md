@@ -2,7 +2,7 @@
 
 - Status: **Draft. Waiting for Ashish's review** (2026-11-15). The client hasn't approved these items yet. Anything not taken from a client source is marked `[ASSUMED]` or linked to an open question.
 - Source key: **SOW** = `sow-extract.md`; **BP** = `phase1-blueprint-extract.md`; **DC** = `discovery-call-extract.md`; **LP** = `landing-page-extract.md`; **AB** = Ashish's decision of 2026-11-15 (DEVLOG).
-- Priority: Must / Should. Inc = delivery increment ([phase1_plan.md §6](../03-phases/phase-1/phase1_plan.md)).
+- Priority: Must / Should. Inc = delivery increment (phase1_plan.md §6).
 
 ## Identity & employee accounts (Increment 1)
 

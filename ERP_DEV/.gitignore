@@ -16,6 +16,7 @@ media/
 backups/
 *.sql
 !**/src/main/resources/db/migration/*.sql
+!**/src/main/resources/db/dev-seed/*.sql
 !scripts/dev/*.sql
 *.csv
 *.xlsx

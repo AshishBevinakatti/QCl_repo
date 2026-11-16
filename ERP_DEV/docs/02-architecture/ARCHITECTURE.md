@@ -1,7 +1,7 @@
 # Architecture Overview — Golden Hills Resort ERP (Phase 1)
 
 - Status: **Proposed. Waiting for Ashish's review** (Milestone 1, 2026-11-15).
-- Baseline: Phase 1 Blueprint ([extract](../01-requirements/source-extracts/phase1-blueprint-extract.md)), which Ashish adopted on 2026-11-15. Decisions: [ADR-001](adr/ADR-001-microservices-and-stack.md), [ADR-002](adr/ADR-002-keycloak-employee-identity.md), [ADR-003](adr/ADR-003-fresh-start-archive.md).
+- Baseline: Phase 1 Blueprint (extract), which Ashish adopted on 2026-11-15. Decisions: [ADR-001](adr/ADR-001-microservices-and-stack.md), [ADR-002](adr/ADR-002-keycloak-employee-identity.md), [ADR-003](adr/ADR-003-fresh-start-archive.md).
 - Audience: developers joining the project. Read [DAY-ONE](../00-onboarding/DAY-ONE.md) first.
 
 ## 1. What Phase 1 delivers
@@ -13,7 +13,7 @@ A working path from the public website to the sales team (Blueprint §8, §20):
 3. **Employees** log in to the staff ERP with Keycloak, and an **Admin** onboards and deactivates employees.
 4. A **Sales Executive** sees the lead queue and claims a lead. Only one executive can win a claim.
 
-Not in Phase 1 (Blueprint §8, confirmed by Ashish on 2026-11-15): confirmed bookings, room allocation, payment collection, OTA, folio, POS, housekeeping, membership/RFID and HR. The follow-ups, status machine, SLA escalation, notifications, reassignment, conversion requests and CMS are **Phase 1 features scheduled for a later increment** (see [phase1_plan.md §6](../03-phases/phase-1/phase1_plan.md)).
+Not in Phase 1 (Blueprint §8, confirmed by Ashish on 2026-11-15): confirmed bookings, room allocation, payment collection, OTA, folio, POS, housekeeping, membership/RFID and HR. The follow-ups, status machine, SLA escalation, notifications, reassignment, conversion requests and CMS are **Phase 1 features scheduled for a later increment** (see phase1_plan.md §6).
 
 ## 2. System diagram
 

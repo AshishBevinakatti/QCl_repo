@@ -84,7 +84,7 @@ export function NextStay({ b }: { b: Booking }) {
         </div>
         <p className="nstay-meta">
           <span><Users size={15} /> {b.guestCount} {b.guestCount === 1 ? "guest" : "guests"}</span>
-          <span>{b.sample ? "Sample booking" : `Ref ${b.publicReference}`}</span>
+          <span>{`Ref ${b.publicReference}`}</span>
         </p>
         {room && <Link href={`/stay/${room.slug}`} className="nstay-link">About this room <ArrowRight size={15} /></Link>}
       </div>
@@ -128,7 +128,7 @@ export function PastPostcards({ list }: { list: Booking[] }) {
               <span className="pcard-stamp">{MONTH_YEAR(b.checkinDate)}</span>
             </div>
             <p className="pcard-room">{b.roomCategory}</p>
-            <p className="pcard-meta">{n} {n === 1 ? "night" : "nights"} · {b.guestCount} {b.guestCount === 1 ? "guest" : "guests"}{b.sample ? " · sample" : ""}</p>
+            <p className="pcard-meta">{n} {n === 1 ? "night" : "nights"} · {b.guestCount} {b.guestCount === 1 ? "guest" : "guests"}</p>
           </li>
         );
       })}
