@@ -57,9 +57,9 @@ Gateway routes: `/api/v1/portal/auth/**` → guest-service, `/api/v1/portal/inqu
 | `GET /api/v1/me` | any authenticated employee | Own profile + roles + permissions + permitted modules |
 | `GET /api/v1/admin/employees?status=&role=&q=` | `employees.read` | List with live account status |
 | `GET /api/v1/admin/employees/{id}` | `employees.read` | Detail |
-| `POST /api/v1/admin/employees` ⓘ | `employees.manage` | Create + provision in Keycloak + send invite → `201 {…, status:"INVITED"}` or `202 {…, status:"PENDING_PROVISIONING"}` |
+| `POST /api/v1/admin/employees` ⓘ | `employees.manage` | Create + provision in Keycloak + send invite → `201 {…, status:"INVITED"}` or `202 {…, status:"PENDING_PROVISIONING"}`. `jobRole` is optional and may only be `SALES_EXECUTIVE`; anything else → 400 `fields.jobRole` (D-138). `pan` is required: normalised (upper case, no spaces/hyphens), must be an individual's PAN (`[A-Z]{3}P[A-Z][0-9]{4}[A-Z]`) else 400 `fields.pan`; a PAN already used → 409 "An employee with this PAN already exists.". Responses carry only `panMasked` (`XXXXXX234F`) (D-139) |
 | `PATCH /api/v1/admin/employees/{id}` | `employees.manage` | Edit name, mobile, WhatsApp preference; email change triggers re-verification. Needs the `If-Match: <version>` header |
-| `PUT /api/v1/admin/employees/{id}/role` | `roles.assign` | `{ role, reason }`, where role is one of `ADMIN, MANAGER, SALES_EXECUTIVE` |
+| `PUT /api/v1/admin/employees/{id}/role` | `roles.assign` | `{ role, reason }`; only `SALES_EXECUTIVE` is accepted, `MANAGER`/`ADMIN` → 403 `ROLE_NOT_ALLOWED` (D-138) |
 | `PATCH /api/v1/admin/employees/{id}/status` | `employees.manage` | `{ active: false|true, reason }` → disable/enable in Keycloak, then revoke sessions |
 | `POST /api/v1/admin/employees/{id}/resend-invite` | `employees.manage` | Re-send the Keycloak action email (3 per hour) |
 | `POST /api/v1/admin/employees/{id}/retry-provisioning` | `employees.manage` | Retry failed Keycloak steps |
@@ -137,6 +137,16 @@ Staff tokens on `/api/v1/portal/**` → 401; member tokens on staff paths → 40
 | `GET /api/v1/sales/leads/{id}` | one of the above | 404 if out of scope |
 | `POST /api/v1/sales/leads/{id}/claim` | `leads.claim` | Atomic conditional update; a second claimant gets 409 |
 | `GET /api/v1/sales/dashboard/summary` | `leads.read_queue` | Counts for the caller's scope |
+
+**Built now (D-137), Sales Admin (`ADMIN` realm role) only; any other role → 403:**
+
+| Method & path | Result |
+|---|---|
+| `GET /api/v1/sales/leads/summary?from=&to=` | `{ executives: [{ username, attendedCount, inProgressCount, convertedCount, lostCount, conversionRate (0..1), avgFirstResponseMinutes \| null }], unclaimedCount, from, to }`. Counts leads by `created_at` in `[from, to)` (ISO-8601 with offset; both optional = all time). "Attended" = claimed by that executive; response time = `claimed_at − created_at` |
+| `GET /api/v1/sales/leads?assignedTo=&status=&from=&to=` | Lead list (newest first), claimed by or assigned to `assignedTo` when given |
+| `GET /api/v1/sales/leads/{id}` | One lead, 404 if unknown |
+| access-service `GET /api/v1/admin/memberships/summary?from=&to=` (role `ADMIN` + `memberships.read_all`) | D-140: `{ executives: [{ employeeId, username, name, enrolledCount, activeCount, pendingCount, rejectedCount, verifiedAmount }], enrolledCount, activeCount, pendingCount, verifiedAmount, from, to }` for registrations created in `[from, to)`; amounts are two-decimal strings, verified payments only |
+| access-service `GET /api/v1/admin/memberships?enrolledBy=&from=&to=` (`memberships.read_all`) | Existing list, new optional filters: enrolling executive's username and registration period |
 
 The executive's identity always comes from the token's `sub`, **never from the request body** (Blueprint §12.3). Endpoints for assign/reassign, status, activities, follow-ups and conversion requests come with their later increment, using the Blueprint §12.3 paths.
 

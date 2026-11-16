@@ -33,7 +33,7 @@ Decisions: D-116…D-125 ([DECISIONS.md](../logs/DECISIONS.md)). Open questions:
 | Every change is in `audit_event` (`entity_type = 'MEMBER'`) | Append-only history of who registered, verified or rejected, with the reason | Rules §6 |
 | Members are never deleted | A rejected registration is part of the payment history | — |
 
-## Staff ERP screen (`web/src/Memberships.tsx`, menu **Memberships**)
+## Staff ERP screen (`web/src/Memberships.tsx`, menu **Memberships**; for a Sales Executive it is their only menu item, called **Dashboard**, D-135)
 
 | Tab | Who | What |
 |---|---|---|

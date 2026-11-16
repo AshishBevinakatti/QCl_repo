@@ -300,3 +300,56 @@ History before 2026-11-15 is in `archive/hotel-draft:ERP_DEV/docs/logs/DEVLOG.md
 - **Built:** `V3__member_smart_fields.sql`; `IdentityNumbers` (Verhoeff, normalise, mask, HMAC), `IndianStates`; `MembershipService` validation (18+ IST, ID, pincode/city/state/country, Indian mobile, title case), insert, duplicate check + 409 `ID_ALREADY_REGISTERED`, audit with masked ID only, `Clean.toString` without the full number (idempotency hash); `MemberView` + controller params; config `erp.membership.id-hash-key`. Web: `smartFields.ts`, form (age pill, +91 prefix + tick, ID pills + Aadhaar formatting/checksum/masked preview, street/pincode/city/state/country, chips, Register disabled until valid), drawer (masked ID, full address, "not recorded" for older members), CSS, `config.goldFeeChips`; `scripts/build-pincodes.mjs` (tested on a synthetic CSV only; no data file yet).
 - **Tests:** access-service **70/70** (was 57; +9 MembershipTest, +4 IdentityNumbersTest); web **44/44** (was 33), lint clean, build ok. Fixed on the way: SMALLINT read as Integer in a test; audit column is `after_json`; labels containing live pills needed `aria-label`s.
 - **Pending:** `MEMBERSHIP_ID_HASH_KEY` in the local `.env` (ask) and restart access-service (V3 migration); India Post CSV (Q-040); live phone check; ask before commit.
+
+## 2026-11-16T21:40+05:30 — Sales Executive menu = Memberships as "Dashboard" (D-135)
+- **Commits (approved):** ebf4952 feat(membership) smart fields backend; 059240d feat(web) smart form; d8e04e8 docs. Live: MEMBERSHIP_ID_HASH_KEY added to local .env (approved), access-service restarted, V3 applied (4 existing members = form 1).
+- **Request (screenshot of /erp/#memberships):** remove Dashboard and Leads for the Sales Executive; only Memberships, renamed Dashboard.
+- **Done:** `MeController.modules(roles, permissions)`: SALES_EXECUTIVE-only with `memberships.register` → `["memberships"]`. `App.tsx`: without a `dashboard` module the first module is home, called "Dashboard", and is shown for an empty or unknown hash. Tests: `MeEndpointTest` 10/10 (+1), web 45/45 (+1).
+
+## 2026-11-16T21:55:00+05:30 — Sales Admin Dashboard & Attended Leads Drill-down (D-136)
+- **Request (Ashish):** "in sale admin ,remove the dashboard and lead section and i want to see that data of each sales executive data like how many lead he has attended and data of the lead is should display after click the employee name in the dashboard"
+- **Plan:** written and approved (`sales_admin_lead_dashboard_plan.md`).
+- **Done:**
+  1. **lead-service (:8093) + lead_db:** Spring Boot 4.1.2 microservice with Flyway migration `V1__init_lead_schema.sql` creating `lead` table in `lead_db` and seeding 5 realistic leads attended by executive `rohan`. Implemented `Lead`, `LeadRepository`, `SalesDtos`, `SalesLeadController` (`GET /api/v1/sales/leads`, `GET /api/v1/sales/leads/summary`, `GET /api/v1/sales/leads/{id}`), `SecurityConfig` (Keycloak gh-staff token validation with erp-api audience). Test suite: 2/2 tests pass.
+  2. **API Gateway (:8082):** added route for `lead-service` (`/api/v1/sales/leads/**`, `/api/v1/portal/inquiries/**` -> `:8093`).
+  3. **access-service (:8091):** updated `MeController.modules` so `ADMIN` role excludes `leads` from top nav; updated `MeEndpointTest` (11/11 tests pass).
+  4. **web (:5173):** created `SalesAdminDashboard.tsx` featuring:
+     - Top KPI cards: Total Sales Executives, Total Leads Attended, In Progress, Converted.
+     - Sales Executives Roster Table: lists each executive, avatar, username, email, attended leads count, status breakdown (In Progress, Converted, Lost), and "View Leads →" action.
+     - Attended Leads Drill-Down: clicking any executive name displays their full attended leads list with reference ID, guest details, stay specs, status pills, attended timestamps, and interaction notes.
+     - Filters & Search: search by guest name/phone/reference, status filter pills (All, In Progress, Converted, Lost), and "← Back to All Executives" button.
+     - Updated `App.tsx` navigation and rendered `SalesAdminDashboard` on the home/dashboard view for Sales Admin.
+  5. **Infrastructure & Scripts:** updated `infra/postgres/init/01-service-databases.sh`, added `run-lead-service.ps1`, updated `check-stack.ps1`.
+- **Tests & Verification:**
+  - `web`: 50/50 vitest tests pass (+5 new tests in `SalesAdminDashboard.test.tsx` and `App.test.tsx`); `tsc -b && vite build` clean.
+  - `lead-service`: 2/2 tests pass; service started and healthy on `:8093`.
+  - `access-service`: 11/11 tests pass.
+  - `check-stack.ps1`: all 13 services OK and healthy behind proxy `:8088`.
+
+## 2026-11-16T23:45:00+05:30 — Sales Performance moved into Employees (D-137, D-138)
+- Ashish: remove the Sales Admin Dashboard and Leads completely; track each Sales Executive's attended / converted leads with analysis of who is doing better, reached from Employees. Plan approved. Q: placement → A: "Tab in Employees". Q: Manager too? → A: "yes admin" (Sales Admin only) + new rule: Sales Admin can only create Sales Executives (D-138).
+- Found during planning: lead-service `/api/v1/sales/leads/**` was `authenticated()` only, so a Sales Executive token could read every lead. Now `hasRole('ADMIN')` (filter chain + `@PreAuthorize`); lead-service maps `realm_access.roles` → `ROLE_x` like access-service.
+- Checks: `web` → `npx vitest run` 55/55, `npm run build` OK, `npm run lint` clean. `lead-service` → `./mvnw -o test -Dsurefire.useManifestOnlyJar=false` 8/8. `access-service` → `./mvnw -o test-compile` OK; tests not run (Docker Desktop off).
+- `erp-prp` skill named in AGENTS.md is not installed in this Windows session; told Ashish.
+- Not committed (ask first, Rule 7).
+
+## 2026-11-16T23:56:00+05:30 — Full stack & ngrok tunnel started
+- Ashish requested to run all servers.
+- Bootstrapped Docker Desktop backend, brought up Docker Compose infrastructure (PostgreSQL 18 :5433, Keycloak 26 :8081, Redis 8 :6379, Mailpit :1025/:8025, Caddy :8088).
+- Started Spring Boot microservices: `access-service` (:8091), `api-gateway` (:8082), `guest-service` (:8092), `lead-service` (:8093).
+- Started frontend applications: `landing-page` Next.js (:3000), `web` Staff ERP Vite (:5173 with `--host 0.0.0.0`).
+- Started ngrok tunnel pointing to `127.0.0.1:8088` (`https://weaponless-bertie-hyperorganically.ngrok-free.dev`).
+- Verified all 13 health checks via `check-stack.ps1` (all OK). Verified public ngrok URL endpoint returns HTTP 200.
+
+## 2026-11-17T00:15:00+05:30 — Employee PAN field (D-139)
+- Ashish: "add pan card field in employee create form of the sales admin".
+- Stored the D-131 way (masked + keyed hash, never the full PAN); required for new employees; individual PANs only (4th letter P); unique per employee.
+- First test run failed: Hibernate schema validation expected VARCHAR for `pan_hash` but V4 used CHAR(64). Changed to VARCHAR(64) (the CHECK still forces 64 hex characters).
+- Checks: access-service `./mvnw -o test` 75/75 (Docker up; includes D-137/D-138 tests not run before); web `npx vitest run` 57/57, `npm run build` OK, `npm run lint` clean.
+- Not committed (ask first, Rule 7).
+
+## 2026-11-17T00:45:00+05:30 — Memberships per executive (D-140)
+- Ashish: "and even want to see how many membership executives brought in the admin".
+- Added to Employees → Sales Performance rather than a new screen, same period filter. "Sold" = ACTIVE (verified); revenue = VERIFIED payments only, summed in PostgreSQL, sent as strings.
+- Checks: access-service `./mvnw -o test` (new `adminSeesMembershipsEachExecutiveBroughtIn`); web `npx vitest run` 59/59, `npm run build`, `npm run lint`.
+- Not committed (ask first, Rule 7).
