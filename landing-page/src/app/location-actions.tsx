@@ -22,7 +22,7 @@ export default function LocationActions() {
   return (
     <div className="location-interactive-card">
       <div className="location-geo-info">
-        <span className="location-geo-label">GPS Geolocation</span>
+        <span className="location-geo-label">GPS geolocation</span>
         <code className="location-coords">16.239532° N, 75.625928° E</code>
       </div>
       <div className="location-actions-row">

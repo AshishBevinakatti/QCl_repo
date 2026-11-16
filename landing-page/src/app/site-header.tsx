@@ -86,6 +86,10 @@ export default function SiteHeader({
             {!enhanced && (
               <Link
                 href="/"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+                }}
                 className="site-navbar-logo"
                 aria-label="Golden Hills Resort, return to top"
               >

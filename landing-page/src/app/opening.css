@@ -289,8 +289,8 @@
 .opening .hero-heading { top: 40px; max-width: 900px; }
 
 .opening .hero-status {
-  font-size: var(--type-label);
-  letter-spacing: var(--tracking-label);
+  font-size: 13px;
+  letter-spacing: 0.01em;
   color: var(--color-chalk-82);
 }
 
@@ -322,9 +322,12 @@
     linear-gradient(180deg, var(--color-shade-light) 0%, transparent 32%, transparent 62%, var(--color-shade-dark) 100%);
 }
 
+/* Sits clear above the hero actions. At 88px it shared a line with
+ * .hero-bottom (92px) and the next control landed on "Plan a gathering" —
+ * invisible until the hero carried more than one slide. */
 .slideshow-controls {
   position: absolute;
-  bottom: 88px;
+  bottom: 156px;
   left: var(--gutter);
   right: var(--gutter);
   display: flex;

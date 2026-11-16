@@ -137,7 +137,7 @@ p {
   letter-spacing: 0.015em;
   text-decoration: none !important;
   box-shadow: 0 2px 10px rgba(16, 64, 40, 0.2);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: color 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   width: fit-content;
 }
 
@@ -161,7 +161,6 @@ p {
 }
 
 .showcase-right-card:hover {
-  transform: translateY(-3px);
   box-shadow: 0 8px 32px rgba(24, 36, 29, 0.12);
 }
 
@@ -179,30 +178,8 @@ p {
   transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.showcase-right-card:hover .showcase-media-img {
-  transform: scale(1.04);
-}
 
-.showcase-card-overlay {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  z-index: 2;
-}
 
-.showcase-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: rgba(16, 64, 40, 0.9);
-  color: #ffffff;
-  font-family: var(--font-sans);
-  font-size: 11.5px;
-  font-weight: 600;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-}
 
 .showcase-card-body {
   padding: 20px 24px;
@@ -214,10 +191,9 @@ p {
 
 .showcase-eyebrow {
   font-family: var(--font-sans);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.01em;
   color: var(--color-gold-muted, #94713e);
 }
 
@@ -306,17 +282,24 @@ p {
 
 /* Unified Badges, Categories & Tags */
 .card-media-tag,
-.teaser-pill,
 .voucher-tag,
-.gallery-slide-badge,
-.review-card-tag,
-.story-badge-pill {
+.review-card-tag {
   font-family: var(--font-sans);
   font-size: var(--type-badge);
   font-weight: var(--weight-badge);
   line-height: 1.4;
   letter-spacing: var(--tracking-badge);
   text-transform: uppercase;
+}
+/* Home-page tags read in sentence case. */
+.teaser-pill,
+.gallery-slide-badge,
+.story-badge-pill {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
 }
 
 /* Unified Card Bullet Items */
@@ -340,8 +323,13 @@ p {
 }
 
 /* Unified Section Kickers & Status */
+.hero-status {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
 .section-note,
-.hero-status,
 .plan-kicker {
   font-family: var(--font-sans);
   font-size: var(--type-label);
@@ -1834,7 +1822,6 @@ section:focus, main:focus { outline: none; }
 }
 
 .glass-resort-card:hover {
-  transform: translateY(-3px);
   box-shadow: 0 14px 34px -4px rgba(24, 36, 29, 0.18), 0 0 0 1px rgba(24, 36, 29, 0.06);
 }
 
@@ -1884,14 +1871,20 @@ section:focus, main:focus { outline: none; }
     rgba(12, 26, 17, 0.72) 36%,
     rgba(8, 18, 12, 0.94) 100%
   );
-  backdrop-filter: blur(18px) saturate(180%);
-  -webkit-backdrop-filter: blur(18px) saturate(180%);
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0 0 var(--radius-card, 16px) var(--radius-card, 16px);
   box-sizing: border-box;
 }
 
 /* Title Row with Verified Badge */
+/* Says what the photo is: an artist's impression, or not the resort at all. */
+.glass-card-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.72);
+}
+
 .glass-card-header {
   display: flex;
   align-items: center;
@@ -1909,12 +1902,6 @@ section:focus, main:focus { outline: none; }
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
-.glass-verified-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
 
 /* Lead Description in Clean White */
 .glass-card-desc {
@@ -1959,11 +1946,10 @@ section:focus, main:focus { outline: none; }
 .glass-drawer-label {
   display: block;
   font-family: var(--font-sans);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-champagne);
+  letter-spacing: 0.01em;
+  color: var(--color-forest-soft);
   margin-bottom: 5px;
 }
 
@@ -1989,7 +1975,7 @@ section:focus, main:focus { outline: none; }
   content: "•";
   position: absolute;
   left: 0;
-  color: var(--color-champagne);
+  color: var(--color-brass);
 }
 
 /* Footer: Rating | Stat on left, More details toggle on right */
@@ -2026,11 +2012,6 @@ section:focus, main:focus { outline: none; }
   line-height: 1.2;
 }
 
-.glass-star {
-  color: #facc15;
-  font-size: 12px;
-  line-height: 1;
-}
 
 .glass-stat-label {
   font-family: var(--font-sans);
@@ -2040,11 +2021,6 @@ section:focus, main:focus { outline: none; }
   line-height: 1.2;
 }
 
-.glass-stat-divider {
-  width: 1px;
-  height: 20px;
-  background: rgba(255, 255, 255, 0.2);
-}
 
 /* Drawer Toggle Button (Clean placement on right of footer) */
 .glass-drawer-toggle {
@@ -2124,11 +2100,10 @@ section:focus, main:focus { outline: none; }
 .glass-core-kicker {
   display: block;
   font-family: var(--font-sans);
-  font-size: var(--type-label);
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  color: var(--color-champagne);
+  letter-spacing: 0.01em;
+  color: var(--color-forest-soft);
   margin-bottom: 6px;
 }
 
@@ -2164,7 +2139,7 @@ section:focus, main:focus { outline: none; }
 }
 
 .glass-core-pill .core-bullet {
-  color: var(--color-champagne);
+  color: var(--color-brass);
   font-size: 15px;
 }
 
@@ -2710,10 +2685,9 @@ section:focus, main:focus { outline: none; }
 }
 .location-geo-label {
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.01em;
   color: var(--color-brass);
 }
 .location-coords {
@@ -2744,7 +2718,7 @@ section:focus, main:focus { outline: none; }
   border: 1px solid var(--color-line);
   border-radius: 999px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
 }
 .location-copy-btn:hover {
   background: var(--color-paper);
@@ -2766,7 +2740,7 @@ section:focus, main:focus { outline: none; }
   background: var(--color-forest);
   border-radius: 999px;
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
 }
 .location-maps-link:hover {
   background: color-mix(in srgb, var(--color-forest) 85%, #000000);
@@ -2832,11 +2806,6 @@ section:focus, main:focus { outline: none; }
   border-radius: 50%;
   background: var(--color-brass);
   box-shadow: 0 0 0 2px #ffffff;
-  animation: mapPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-@keyframes mapPulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.35; transform: scale(1.35); }
 }
 .map-card-titles {
   display: flex;
@@ -2882,7 +2851,7 @@ section:focus, main:focus { outline: none; }
   background: transparent;
   color: var(--color-muted);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
 }
 .map-view-btn.active {
   background: var(--color-forest);
@@ -3075,7 +3044,7 @@ section:focus, main:focus { outline: none; }
   font-family: var(--font-sans);
   border-radius: 999px;
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
 }
 .map-card-directions-btn:hover {
   background: color-mix(in srgb, var(--color-forest) 85%, #000000);
@@ -3096,7 +3065,7 @@ section:focus, main:focus { outline: none; }
   font-family: var(--font-sans);
   border-radius: 999px;
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
 }
 .map-card-open-btn:hover {
   background: var(--color-paper);
@@ -3184,10 +3153,9 @@ section:focus, main:focus { outline: none; }
 }
 .form-group label {
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
   color: var(--color-ink);
 }
 .form-group input,
@@ -3818,7 +3786,7 @@ section:focus, main:focus { outline: none; }
   padding: 8px 14px;
   border-radius: var(--radius-control, 8px);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
 }
 .gallery-filter-btn:hover {
   background: var(--color-garden);
@@ -3849,7 +3817,7 @@ section:focus, main:focus { outline: none; }
   color: var(--color-ink);
   cursor: pointer;
   border-radius: var(--radius-control, 8px);
-  transition: all 0.2s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
 }
 .gallery-nav-btn:hover {
   background: var(--color-forest);
@@ -3944,9 +3912,8 @@ section:focus, main:focus { outline: none; }
   z-index: 2;
   background: color-mix(in srgb, var(--color-forest) 85%, transparent);
   color: var(--color-chalk);
-  font-size: 11px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.01em;
   padding: 4px 10px;
   border-radius: var(--radius-pill, 999px);
   backdrop-filter: blur(4px);
@@ -3961,9 +3928,8 @@ section:focus, main:focus { outline: none; }
   margin-bottom: 8px;
 }
 .gallery-slide-category {
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.01em;
   color: var(--color-brass);
   font-weight: 600;
   display: block;
@@ -4273,46 +4239,9 @@ section:focus, main:focus { outline: none; }
   transform: scale(1.03);
 }
 
-.membership-teaser-overlay {
-  position: absolute;
-  top: 18px;
-  left: 18px;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
 
-.membership-teaser-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: rgba(16, 64, 40, 0.92);
-  color: #ffffff;
-  font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 600;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
 
-.membership-teaser-badge svg {
-  color: #d8b87a;
-}
 
-.membership-teaser-pill {
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  font-size: 11.5px;
-  font-weight: 600;
-  backdrop-filter: blur(8px);
-}
 
 .membership-teaser-content {
   padding: clamp(28px, 4vw, 44px);
@@ -4392,7 +4321,7 @@ section:focus, main:focus { outline: none; }
   letter-spacing: 0.015em;
   text-decoration: none !important;
   box-shadow: 0 2px 10px rgba(16, 64, 40, 0.2);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: color 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .membership-teaser-btn:hover {
@@ -4469,8 +4398,7 @@ section:focus, main:focus { outline: none; }
   font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
   color: var(--color-muted);
   margin-top: 4px;
 }
@@ -4995,3 +4923,32 @@ section:focus, main:focus { outline: none; }
   flex-shrink: 0;
 }
 
+/* ==========================================================================
+   Home page labels — sentence case. #main-content exists only on the home
+   page, so the subpages keep their uppercase section labels and pills.
+   ========================================================================== */
+#main-content .section-note {
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+#main-content .status-line { column-gap: 12px; }
+/* The count beside each label is quiet text, not a pill. */
+#main-content .section-status {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  font-size: 13px;
+}
+#main-content .section-status::before {
+  content: "·";
+  margin-right: 12px;
+}
+/* On a phone the pair wraps and the dot would lead the second line, so the
+ * count takes its own line, aligned under the label text past the arch. */
+@media (max-width: 700px) {
+  #main-content .status-line { row-gap: 4px; }
+  #main-content .section-status { flex-basis: 100%; padding-left: 24px; }
+  #main-content .section-status::before { content: none; }
+}

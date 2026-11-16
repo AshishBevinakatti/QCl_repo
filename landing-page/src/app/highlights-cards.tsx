@@ -1,19 +1,31 @@
+/* "Why choose us" as six small icon tiles, one line each (unit 3.18). */
+
+import { AdventureCompass, BedDouble, CoreUtilities, MapPin, Users, Utensils } from "./icons";
+
 export type HighlightItem = {
-  num: string;
+  icon: "dining" | "venues" | "rooms" | "recreation" | "location" | "infrastructure";
   title: string;
   desc: string;
 };
 
+const ICONS = {
+  dining: Utensils, venues: Users, rooms: BedDouble,
+  recreation: AdventureCompass, location: MapPin, infrastructure: CoreUtilities,
+};
+
 export default function HighlightsCards({ items }: { items: HighlightItem[] }) {
   return (
-    <div className="highlights-grid" role="list" aria-label="Why Choose Us Highlights">
-      {items.map(({ num, title, desc }) => (
-        <article className="highlight-card" key={num} role="listitem">
-          <span className="highlight-num" aria-hidden="true">{num}</span>
-          <h3>{title}</h3>
-          <p className="highlight-desc">{desc}</p>
-        </article>
-      ))}
-    </div>
+    <ul className="highlight-tiles" aria-label="Why choose Golden Hills">
+      {items.map(({ icon, title, desc }) => {
+        const Icon = ICONS[icon];
+        return (
+          <li className="highlight-tile" key={title}>
+            <span className="highlight-tile-icon" aria-hidden="true"><Icon size={22} /></span>
+            <span className="highlight-tile-title">{title}</span>
+            <span className="highlight-tile-desc">{desc}</span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

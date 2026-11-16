@@ -23,12 +23,30 @@ import {
 import { logo, logoLight, getScene } from "../resort-assets";
 import { portalApi, type GuestUser } from "../portal-client";
 
+const LOGIN_SCENES = [
+  { id: "dusk-pool-candidate-p38", title: "Golden Hills Resort Dusk Pool & Cottages" },
+  { id: "cottage-pool-terrace-p34", title: "Private Poolside Cottage & Daybed Terrace" },
+  { id: "suite-master-bed-p18", title: "Master Suite Room with Jacuzzi Bath" },
+  { id: "cottage-entry-p32", title: "Standalone Timber Cottage & Wellness Enclave" },
+  { id: "hero-pool-day-desktop-p37", title: "Central Colonnade Infinity Pool & Sun Terrace" },
+];
+
 export default function LoginPortal() {
   // Main view mode: "login" or "register"
   const [viewMode, setViewMode] = useState<"login" | "register">("login");
 
   // Sign In sub-tabs: password | otp | booking
   const [authTab, setAuthTab] = useState<"password" | "otp" | "booking">("password");
+
+  // Automatic 4-second slideshow for the visual image card
+  const [heroSlideIdx, setHeroSlideIdx] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setHeroSlideIdx((prev) => (prev + 1) % LOGIN_SCENES.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [heroSlideIdx]);
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
@@ -301,17 +319,24 @@ export default function LoginPortal() {
   return (
     <div className="login-screen-wrapper">
       {/* =========================================================================
-          LEFT / HERO VISUAL PANEL (Desktop)
+          LEFT / HERO VISUAL PANEL (Desktop) with 4-Second Slideshow
           ========================================================================= */}
       <div className="login-hero-panel">
-        <Image
-          src={heroScene.src}
-          alt="Golden Hills Resort Dusk Pool & Cottages"
-          fill
-          priority
-          sizes="(max-width: 960px) 100vw, 50vw"
-          className="login-hero-image"
-        />
+        {(() => {
+          const currentSlide = LOGIN_SCENES[heroSlideIdx];
+          const scene = getScene(currentSlide.id);
+          return (
+            <Image
+              key={currentSlide.id}
+              src={scene.src}
+              alt={currentSlide.title}
+              fill
+              priority
+              sizes="(max-width: 960px) 100vw, 50vw"
+              className="login-hero-image"
+            />
+          );
+        })()}
         <div className="login-hero-scrim" />
 
         <div className="login-hero-content">
