@@ -551,7 +551,7 @@ export default function PlanStayPortal() {
                             </button>
                           </div>
                           <p className="login-secure-note">
-                            <Lock size={15} /> You will enter your password on the secure Golden Hills sign-in page.
+                            <Lock size={15} /> Next, on the secure Golden Hills page, enter the password you set from your welcome email.
                           </p>
                         </div>
 

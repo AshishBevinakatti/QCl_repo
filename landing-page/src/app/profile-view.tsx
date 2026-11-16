@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { portalApi } from "./portal-client";
-import { linkSampleMembership, sampleBookings, signOut, splitBookings, useSession, type Booking } from "./guest-session";
+import { linkSampleMembership, retryMembership, sampleBookings, signOut, splitBookings, useSession, type Booking } from "./guest-session";
 import ProfileSignIn from "./profile-sign-in";
 import BookletUsage from "./booklet-usage";
 import MemberExtras from "./member-extras";
@@ -107,6 +107,11 @@ export default function ProfileView() {
             {membership.real && <MemberExtras membership={membership} />}
             <BookletUsage membership={membership} />
             <Link href="/membership#your-card" className="prof-link">See your card <ArrowRight size={15} /></Link>
+          </>
+        ) : session.membershipError ? (
+          <>
+            <p>We could not load your membership just now.</p>
+            <button type="button" className="prof-link" onClick={retryMembership}>Try again <ArrowRight size={15} /></button>
           </>
         ) : (
           <LinkMembership name={session.user.name} />

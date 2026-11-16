@@ -249,6 +249,24 @@ class ActivationFlowIT {
         return JSON.readTree(new String(Base64.getUrlDecoder().decode(jwt.split("\\.")[1]), StandardCharsets.UTF_8));
     }
 
+    /**
+     * "Keep me signed in" (D-127): Keycloak's session cookie has a lifetime, so it survives closing the browser.
+     * Without remember-me Keycloak sends KEYCLOAK_IDENTITY as a browser-session cookie (no Max-Age).
+     */
+    static void assertStaysSignedInAfterBrowserCloses(HttpResponse<String> r) {
+        String identity = r.headers().allValues("Set-Cookie").stream().filter(h -> h.startsWith("KEYCLOAK_IDENTITY="))
+                .findFirst().orElseThrow(() -> new AssertionError("no KEYCLOAK_IDENTITY cookie"));
+        Matcher m = Pattern.compile("(?i)Max-Age=(\\d+)").matcher(identity);
+        assertThat(m.find()).as("persistent session cookie: " + identity).isTrue();
+        assertThat(Long.parseLong(m.group(1))).as("lifetime in seconds").isGreaterThan(7L * 24 * 3600);
+    }
+
+    /** Sign-in events Keycloak stored in its database for this user (realm eventsEnabled). */
+    static List<String> storedEvents(String userId) throws Exception {
+        JsonNode events = JSON.readTree(json("GET", kc + "/admin/realms/gh-guests/events?user=" + userId, adminToken(), null).body());
+        return events.valueStream().map(e -> e.get("type").asString()).toList();
+    }
+
     // --- Tests ---------------------------------------------------------------------------------------------------------
 
     @Test
@@ -282,6 +300,8 @@ class ActivationFlowIT {
         assertThat(location).startsWith(LANDING + "/membership");
         String code = query(location).get("code");
         assertThat(code).isNotBlank();
+        // ...and stays signed in after closing the browser (remember-me session from the welcome link, D-127).
+        assertStaysSignedInAfterBrowserCloses(done);
 
         // 3. The landing page exchanges the code with its PKCE verifier: signed in as this member.
         JsonNode tokens = postForm(kc + "/realms/gh-guests/protocol/openid-connect/token", Map.of(
@@ -301,12 +321,25 @@ class ActivationFlowIT {
         // 5. And the password works for a normal sign-in later (proves it was really set).
         HttpClient later = browser();
         HttpResponse<String> login = authorize(later, Pkce.create(), null);
+        // The Golden Hills page has "Keep me signed in", ticked by default by the theme script.
+        assertThat(login.body()).contains("id=\"rememberMe\"").contains("keep-signed-in.js").contains("Keep me signed in");
         String loginAction = formAction(login.body(), "kc-form-login");
         HttpResponse<String> signedIn = send(later, HttpRequest.newBuilder(URI.create(loginAction))
                 .header("Content-Type", "application/x-www-form-urlencoded")
-                .POST(HttpRequest.BodyPublishers.ofString(form(Map.of("username", email, "password", "Golden-Hills-2026!")))).build());
+                .POST(HttpRequest.BodyPublishers.ofString(form(Map.of("username", email, "password", "Golden-Hills-2026!", "rememberMe", "on")))).build());
         assertThat(signedIn.statusCode()).isEqualTo(302);
         assertThat(signedIn.headers().firstValue("Location").orElseThrow()).contains("code=");
+        assertStaysSignedInAfterBrowserCloses(signedIn);
+
+        // 6. A wrong password is refused, and every sign-in and failure is kept in Keycloak's database.
+        HttpClient wrong = browser();
+        HttpResponse<String> retry = authorize(wrong, Pkce.create(), null);
+        HttpResponse<String> refused = send(wrong, HttpRequest.newBuilder(URI.create(formAction(retry.body(), "kc-form-login")))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(form(Map.of("username", email, "password", "not-the-password")))).build());
+        assertThat(refused.statusCode()).isEqualTo(200);
+        assertThat(refused.body()).contains("kc-form-login");
+        assertThat(storedEvents(userId)).contains("LOGIN", "UPDATE_PASSWORD", "LOGIN_ERROR");
     }
 
     @Test
@@ -326,6 +359,36 @@ class ActivationFlowIT {
         assertThat(sendWelcome(svc, userId, LANDING + "/member/activate").statusCode()).isEqualTo(200);
         HttpResponse<String> old = authorize(browser(), Pkce.create(), first);
         assertThat(old.body()).contains("kc-form-login").doesNotContain("password-new");
+    }
+
+    /**
+     * The landing page checks for a Keycloak session on every page load (keycloak-js check-sso in a hidden frame that
+     * returns to /silent-check-sso.html). If Keycloak refuses that address, keycloak-js waits forever: members look
+     * signed out after leaving the site and "Sign in" never opens the password page (found live, D-130).
+     */
+    @Test
+    void theSilentSessionCheckPageIsAllowedAndNothingNextToIt() throws Exception {
+        Map<String, String> q = new LinkedHashMap<>();
+        q.put("client_id", "guest-web");
+        q.put("redirect_uri", LANDING + "/silent-check-sso.html");
+        q.put("response_type", "code");
+        q.put("scope", "openid");
+        q.put("prompt", "none");
+        q.put("state", UUID.randomUUID().toString());
+        Pkce pkce = Pkce.create();
+        q.put("code_challenge", pkce.challenge());
+        q.put("code_challenge_method", "S256");
+        String auth = kc + "/realms/gh-guests/protocol/openid-connect/auth?";
+
+        HttpResponse<String> silent = send(browser(), HttpRequest.newBuilder(URI.create(auth + form(q))).GET().build());
+        assertThat(silent.statusCode()).as(silent.body()).isEqualTo(302);
+        assertThat(silent.headers().firstValue("Location").orElseThrow())
+                .startsWith(LANDING + "/silent-check-sso.html").contains("error=login_required");   // no session yet
+
+        q.put("redirect_uri", LANDING + "/silent-check-sso.htmlx");
+        assertThat(send(browser(), HttpRequest.newBuilder(URI.create(auth + form(q))).GET().build()).statusCode()).isEqualTo(400);
+        q.put("redirect_uri", LANDING + "/anything-else");
+        assertThat(send(browser(), HttpRequest.newBuilder(URI.create(auth + form(q))).GET().build()).statusCode()).isEqualTo(400);
     }
 
     @Test

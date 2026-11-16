@@ -135,6 +135,14 @@ export const portalApi = {
   },
 
   /** null = signed in but not a member (404 NO_MEMBERSHIP). */
+  /** The guest's own account (guest-service). Also records the sign-in in guest_db (D-128). 403 = account disabled. */
+  async getMe(token: string): Promise<{ status: string } | null> {
+    const res = await fetch(`${PORTAL_API_BASE}/me`, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.status === 403) return { status: "DISABLED" };
+    if (!res.ok) return null;
+    return await res.json();
+  },
+
   async getMyMembership(token: string): Promise<PortalMembership | null> {
     const res = await fetch(`${PORTAL_API_BASE}/membership/me`, { headers: { Authorization: `Bearer ${token}` } });
     if (res.status === 404) return null;

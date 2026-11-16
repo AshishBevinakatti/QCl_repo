@@ -44,6 +44,8 @@ export type Session = {
   kind: "guest" | "sample" | "member";
   user: GuestUser;
   membership: SampleMembership | null;
+  /** Signed in, but the membership service could not be reached: show "try again", not the non-member view. */
+  membershipError?: boolean;
 };
 
 const MEMBER_KEY = "ghr_sample_membership";
@@ -108,16 +110,22 @@ async function loadReal() {
   const token = await accessToken();
   if (!p || !token) return;
   let membership: SampleMembership | null = null;
-  try {
-    const m = await portalApi.getMyMembership(token);
-    membership = m ? toMembership(m) : null;
-  } catch {
-    /* membership service unreachable: signed in, membership unknown */
-  }
+  let membershipError = false;
+  // The account record (guest-service, also records this sign-in in guest_db, D-128) and the membership, together.
+  const [account, found] = await Promise.all([
+    portalApi.getMe(token).catch(() => null),
+    portalApi.getMyMembership(token).then(
+      (m) => m,
+      () => { membershipError = true; return null; },   // unreachable: signed in, membership unknown
+    ),
+  ]);
+  if (account?.status === "DISABLED") return;   // refused by the resort: stay signed out
+  membership = found ? toMembership(found) : null;
   real = {
     kind: membership ? "member" : "guest",
     user: { guestId: p.sub, name: p.name || p.email, email: p.email, phone: "", token },
     membership,
+    membershipError,
   };
   announce();
   // Arrived from the welcome email (or a sign-in started on the membership page): show the card.
@@ -127,6 +135,11 @@ async function loadReal() {
     window.history.replaceState(null, "", url.pathname + url.search + "#your-card");
     setTimeout(() => document.getElementById("your-card")?.scrollIntoView({ behavior: "smooth" }), 300);
   }
+}
+
+/** Asks for the membership again after "We couldn't load your membership". */
+export function retryMembership() {
+  void loadReal();
 }
 
 function read(): Session | null {

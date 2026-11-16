@@ -2,6 +2,7 @@ package com.quantumclk.erp.keycloak.activation;
 
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.Authenticator;
+import org.keycloak.events.Details;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
@@ -46,6 +47,9 @@ public class ActivationAuthenticator implements Authenticator {
             user.addRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
         }
         context.getEvent().detail("activation", "welcome_link");
+        // "Keep me signed in": the session from the welcome link survives closing the browser, so the member is still
+        // signed in when they come back (realm remember-me lifetimes apply; D-127).
+        context.getAuthenticationSession().setAuthNote(Details.REMEMBER_ME, "true");
         context.setUser(user);
         context.success();
     }

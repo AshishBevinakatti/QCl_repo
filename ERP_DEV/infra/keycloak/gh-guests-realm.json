@@ -23,7 +23,7 @@
   "accessTokenLifespan": 300,
   "ssoSessionIdleTimeout": 604800,
   "ssoSessionMaxLifespan": 2592000,
-  "ssoSessionIdleTimeoutRememberMe": 604800,
+  "ssoSessionIdleTimeoutRememberMe": 2592000,
   "ssoSessionMaxLifespanRememberMe": 2592000,
   "revokeRefreshToken": true,
   "refreshTokenMaxReuse": 0,
@@ -104,9 +104,9 @@
       "fullScopeAllowed": false,
       "redirectUris": [
         "${LANDING_PUBLIC_URL}/login*", "${LANDING_PUBLIC_URL}/member/activate*", "${LANDING_PUBLIC_URL}/membership*",
-        "${LANDING_PUBLIC_URL}/profile*", "${LANDING_PUBLIC_URL}/plan-ahead*",
+        "${LANDING_PUBLIC_URL}/profile*", "${LANDING_PUBLIC_URL}/plan-ahead*", "${LANDING_PUBLIC_URL}/silent-check-sso.html",
         "http://localhost:3000/login*", "http://localhost:3000/member/activate*", "http://localhost:3000/membership*",
-        "http://localhost:3000/profile*", "http://localhost:3000/plan-ahead*"
+        "http://localhost:3000/profile*", "http://localhost:3000/plan-ahead*", "http://localhost:3000/silent-check-sso.html"
       ],
       "webOrigins": ["${LANDING_PUBLIC_URL}", "http://localhost:3000"],
       "attributes": {

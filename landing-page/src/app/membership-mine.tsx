@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSession, signOut } from "./guest-session";
+import { useSession, signOut, retryMembership } from "./guest-session";
 import BookletUsage from "./booklet-usage";
 import ProfileSignIn from "./profile-sign-in";
 import { ArrowRight } from "./icons";
@@ -30,6 +30,14 @@ export default function MembershipMine() {
           </div>
           <BookletUsage membership={session.membership} />
         </>
+      ) : session?.membershipError ? (
+        <div className="mem-mine-head">
+          <div>
+            <p className="mem-kicker">Signed in</p>
+            <h2 id="mine-title">We could not load your membership just now</h2>
+          </div>
+          <button type="button" className="mem-mine-link" onClick={retryMembership}>Try again <ArrowRight size={15} /></button>
+        </div>
       ) : session ? (
         <div className="mem-mine-head">
           <div>

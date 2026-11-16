@@ -32,18 +32,26 @@ function instance(): Keycloak {
   return kc;
 }
 
-/** Initialises once per page: finishes a sign-in redirect, or silently checks for a Keycloak session. */
+const later = <T,>(ms: number, value: T) => new Promise<T>((resolve) => setTimeout(() => resolve(value), ms));
+
+/**
+ * Initialises once per page: finishes a sign-in redirect, or silently checks for a Keycloak session.
+ * keycloak-js waits for the silent check without a time limit; if the check page can't answer (it was refused
+ * as a redirect before D-130, or a browser blocks the frame) the page would wait forever. So after 8 s we treat
+ * the visitor as signed out; signing in still works (signIn does not depend on this check).
+ */
 export function initAuth(): Promise<boolean> {
   if (typeof window === "undefined") return Promise.resolve(false);
   if (!ready) {
     const k = instance();
     k.onTokenExpired = () => { k.updateToken(30).catch(() => { /* session ended; the next call shows signed out */ }); };
-    ready = k.init({
+    const check = k.init({
       onLoad: "check-sso",
       pkceMethod: "S256",
       checkLoginIframe: false,
       silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
     }).catch(() => false);   // Keycloak unreachable: behave as signed out
+    ready = Promise.race([check, later(8000, false)]);
   }
   return ready;
 }
@@ -70,15 +78,24 @@ export async function accessToken(): Promise<string | null> {
 
 const back = (path: string) => `${window.location.origin}${path}`;
 
+/** Throws when Keycloak can't be reached, so the page shows its own message instead of a browser or tunnel error page. */
+async function ensureReachable() {
+  const res = await fetch(`${keycloakUrl()}/realms/${REALM}/.well-known/openid-configuration`, { cache: "no-store" });
+  if (!res.ok) throw new Error("The sign-in service is unavailable.");
+}
+
 /** Keycloak's sign-in page, with the email already filled in. Returns here (path) signed in. */
 export async function signIn(email: string | undefined, returnPath: string) {
-  await initAuth();
+  await ensureReachable();
+  // Only the start of init is needed (keycloak-js sets up its endpoints at once); never wait for the silent check (D-130).
+  await Promise.race([initAuth(), later(1500, false)]);
   await instance().login({ loginHint: email || undefined, redirectUri: back(returnPath) });
 }
 
 /** Keycloak's registration page (email, name, password; email verification). */
 export async function register(returnPath: string) {
-  await initAuth();
+  await ensureReachable();
+  await Promise.race([initAuth(), later(1500, false)]);
   await instance().register({ redirectUri: back(returnPath) });
 }
 

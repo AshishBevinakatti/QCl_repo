@@ -7,7 +7,7 @@ import { signIn } from "./guest-auth";
 
 /* Sign-in for /profile and the membership page (unit 3.30; D-123).
  *
- * Email: the email only. "Continue" opens the secure Golden Hills sign-in
+ * Email: the email only. "Sign in" opens the secure Golden Hills sign-in
  * page (Keycloak, realm gh-guests, PKCE) with the email filled in; the
  * password is typed there, never here. Back on /membership the member sees
  * their real card (guest-session.ts).
@@ -113,13 +113,13 @@ export default function ProfileSignIn({ compact = false }: { compact?: boolean }
               <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </label>
           ) : (
-            <p className="psign-note">You will enter your password on the secure Golden Hills sign-in page.</p>
+            <p className="psign-note">Next, on the secure Golden Hills page, enter the password you set from your welcome email.</p>
           )}
           {mode === "member" && (
             <p className="psign-note">Preview: membership sign-in shows sample data until the ERP links membership IDs.</p>
           )}
           {error && <p className="psign-error" role="alert">{error}</p>}
-          <button type="submit" className="psign-btn" disabled={busy}>{busy ? "Opening…" : "Continue"}</button>
+          <button type="submit" className="psign-btn" disabled={busy}>{busy ? "Opening…" : mode === "email" ? "Sign in" : "Continue"}</button>
         </form>
       ) : (
         <form className="psign-form" onSubmit={submitCode} noValidate>
