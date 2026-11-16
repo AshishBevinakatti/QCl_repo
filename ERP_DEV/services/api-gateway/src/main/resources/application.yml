@@ -34,6 +34,15 @@ spring:
                 - name: RequestSize
                   args:
                     maxSize: ${MAX_UPLOAD_SIZE:6MB}
+            # Lead service: inquiries, leads, executive claims and attendance
+            - id: lead-service
+              uri: ${LEAD_SERVICE_URL:http://localhost:8093}
+              predicates:
+                - Path=/api/v1/sales/leads/**,/api/v1/portal/inquiries/**
+              filters:
+                - name: RequestSize
+                  args:
+                    maxSize: ${MAX_REQUEST_SIZE:1MB}
             - id: access-service
               uri: ${ACCESS_SERVICE_URL:http://localhost:8091}
               predicates:

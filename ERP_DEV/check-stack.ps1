@@ -31,6 +31,7 @@ Report "Keycloak :8081 (gh-guests)" ((Http "http://127.0.0.1:8081/realms/gh-gues
 Report "access-service :8091" (Port 8091) "ERP_DEV\run-access-service.ps1"
 Report "api-gateway :8082" (Port 8082) "ERP_DEV\run-api-gateway.ps1"
 Report "guest-service :8092" (Port 8092) "ERP_DEV\run-guest-service.ps1"
+Report "lead-service :8093" (Port 8093) "ERP_DEV\run-lead-service.ps1"
 Report "landing page :3000" (Port 3000) "run-landing-page.ps1"
 Report "staff ERP :5173" (Port 5173) "cd ERP_DEV\web; npm run dev"
 
