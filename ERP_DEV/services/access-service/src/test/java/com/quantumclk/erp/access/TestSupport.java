@@ -29,6 +29,25 @@ public class TestSupport {
     public static final String ISSUER = "http://test-keycloak/realms/gh-staff";
     static final RSAKey KEY = generate();
     static final RSAKey OTHER_KEY = generate();
+    /** Realm gh-guests (members on the landing page): its own issuer and key, as in Keycloak. */
+    public static final String GUEST_ISSUER = "http://test-keycloak/realms/gh-guests";
+    static final RSAKey GUEST_KEY = generate();
+
+    @Bean
+    @Primary
+    SecurityConfig.PortalDecoder testPortalDecoder() throws Exception {
+        NimbusJwtDecoder d = NimbusJwtDecoder.withPublicKey(GUEST_KEY.toRSAPublicKey()).build();
+        d.setJwtValidator(SecurityConfig.validator(GUEST_ISSUER, SecurityConfig.GUEST_AUDIENCE));
+        return new SecurityConfig.PortalDecoder(d);
+    }
+
+    /** A signed-in member as the landing page would send it (gh-guests, aud guest-api). */
+    public static String guest(UUID sub) {
+        Instant now = Instant.now();
+        return sign(new JWTClaimsSet.Builder().issuer(GUEST_ISSUER).subject(sub.toString()).audience("guest-api")
+                .claim("azp", "guest-web").claim("email_verified", true)
+                .issueTime(Date.from(now)).expirationTime(Date.from(now.plusSeconds(300))).build(), GUEST_KEY);
+    }
 
     @Bean
     @ServiceConnection

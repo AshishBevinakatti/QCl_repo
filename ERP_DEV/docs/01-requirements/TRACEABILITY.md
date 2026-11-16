@@ -33,4 +33,4 @@ Design and test columns get filled in as increments are built. "TBD" means not b
 | REQ-MEM-006 | Rules §6 | `AuditLog.record(…, "MEMBER", …)` | `MembershipTest` (audit rows checked) ✅ |
 | REQ-MEM-007 | Rules §4 | `idempotency_key` | `MembershipTest` (sameIdempotencyKey…) ✅ |
 | REQ-MEM-008 | SOW ERP-05; D-119…D-122 | MEMBER-LOGIN.md; extension `gh-member-activation`; realm `gh-guests`; guest-service; `MembershipService.welcome` | `ActivationFlowIT` 5/5 (real Keycloak: email → set password once → code → token; single use; forged links) ✅; `GuestProvisioningTest` 9/9 ✅; `MembershipTest` welcome tests (4) ✅; web resend test ✅; live phone test TBD (S7) |
-| REQ-MEM-009 | SOW ERP-05; D-123 | inc-membership-PLAN S4, S6 | TBD |
+| REQ-MEM-009 | SOW ERP-05; D-123 | `PortalMembershipController` (api.md §3c); access-service portal security chain; gateway portal chain (D-126) | `MembershipPortalTest` 6/6 (own data only, no payment fields, WhatsApp opt-in, first sign-in, staff token 401, member token on staff path 401) ✅; `GatewayRoutingTest` portal routing + /internal not exposed ✅; landing page (S6) TBD |

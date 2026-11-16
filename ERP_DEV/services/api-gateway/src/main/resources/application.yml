@@ -37,7 +37,17 @@ spring:
             - id: access-service
               uri: ${ACCESS_SERVICE_URL:http://localhost:8091}
               predicates:
-                - Path=/api/v1/me,/api/v1/admin/**,/api/v1/sales/**
+                - Path=/api/v1/me,/api/v1/admin/**,/api/v1/sales/**,/api/v1/portal/membership/**
+              filters:
+                - name: RequestSize
+                  args:
+                    maxSize: ${MAX_REQUEST_SIZE:1MB}
+            # Signed-in member's profile (gh-guests token, checked by guest-service). guest-service's /internal/**
+            # is deliberately NOT routed: only access-service calls it, directly.
+            - id: guest-service
+              uri: ${GUEST_SERVICE_URL:http://localhost:8092}
+              predicates:
+                - Path=/api/v1/portal/me
               filters:
                 - name: RequestSize
                   args:

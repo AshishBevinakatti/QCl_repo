@@ -109,6 +109,14 @@ Errors: 400 `VALIDATION_FAILED` with `fields`; 403 `NO_EMPLOYEE_RECORD` (signed 
 
 After **verify**, access-service calls guest-service (below) to create the customer's account and send the welcome email. The outcome is in `accountStatus`: `NOT_PROVISIONED` | `INVITE_SENT` | `INVITE_FAILED` | `ACTIVE`. A failure there never undoes the verification ([MEMBER-LOGIN.md](identity/MEMBER-LOGIN.md)).
 
+## 3c. Member portal: own Gold Membership (access-service; S4, REQ-MEM-009)
+
+| Method & path | Token | Purpose |
+|---|---|---|
+| `GET /api/v1/portal/membership/me` | signed-in member (gh-guests, aud `guest-api`) | `{ membershipId, firstName, lastName, tier: "GOLD", status, validFrom, validUntil, enrolledBy: { name, username, mobile } }` for the member whose gh-guests id is the token's `sub`. `mobile` is null unless the executive opted in to WhatsApp (Q-035). No payment, screenshot or internal ids. 404 `NO_MEMBERSHIP` for a signed-in guest without a membership. The first call sets `accountStatus = ACTIVE` (audited once as `MEMBER_PORTAL_FIRST_SIGN_IN`) |
+
+Staff tokens on `/api/v1/portal/**` → 401; member tokens on staff paths → 401. At the gateway, `/api/v1/portal/**` has its own security chain that does **not** read bearer tokens; the owning service validates them (D-126).
+
 ## 3b. guest-service (:8092; D-119…D-122)
 
 | Method & path | Caller / token | Purpose |

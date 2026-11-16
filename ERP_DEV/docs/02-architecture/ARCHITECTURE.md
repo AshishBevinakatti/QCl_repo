@@ -129,3 +129,5 @@ This starts PostgreSQL 18 (host port **5433**, because a system PostgreSQL often
 
 - JSON structured logs with `correlationId`, `actorId` and `service`. Never log tokens, passwords, action links or full guest messages.
 - Spring Boot Actuator `health/readiness/liveness`, plus Micrometer metrics. Prometheus, Grafana and OpenTelemetry tracing are added when staging exists (ops increment; listed in phase1_plan).
+
+**Member tokens at the gateway (D-126, 2026-11-16):** `/api/v1/portal/**` is passed through without reading the bearer token; guest-service and access-service validate gh-guests tokens themselves ([MEMBER-LOGIN.md](identity/MEMBER-LOGIN.md) §5). Staff paths keep the gateway's gh-staff token check.

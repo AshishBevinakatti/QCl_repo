@@ -42,9 +42,43 @@ import java.util.Map;
 public class SecurityConfig {
 
     public static final String AUDIENCE = "erp-api";
+    /** Members and guests (realm gh-guests, landing page): tokens carry aud guest-api (MEMBER-LOGIN.md). */
+    public static final String GUEST_AUDIENCE = "guest-api";
+
+    /** The gh-guests decoder for /api/v1/portal/**, wrapped so it never competes with the staff JwtDecoder bean. */
+    public record PortalDecoder(JwtDecoder decoder) { }
+
+    /**
+     * /api/v1/portal/**: only gh-guests tokens (aud guest-api). A staff token fails the issuer check there (401), and
+     * a member token fails the staff chain below (401). Handled first.
+     */
+    @Bean
+    @org.springframework.core.annotation.Order(1)
+    SecurityFilterChain portal(HttpSecurity http, JsonMapper json, PortalDecoder portal) throws Exception {
+        http.securityMatcher("/api/v1/portal/**")
+            .csrf(c -> c.disable())
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(a -> a.anyRequest().authenticated())
+            .oauth2ResourceServer(o -> o
+                .jwt(j -> j.decoder(portal.decoder()))
+                .authenticationEntryPoint((req, res, e) -> write(res, json, 401, "AUTH_REQUIRED", "Sign in again."))
+                .accessDeniedHandler((req, res, e) -> write(res, json, 403, "FORBIDDEN", "You do not have permission to do this.")))
+            .exceptionHandling(e -> e
+                .authenticationEntryPoint((req, res, ex) -> write(res, json, 401, "AUTH_REQUIRED", "Sign in again.")))
+            .headers(Customizer.withDefaults());
+        return http.build();
+    }
+
+    @Bean
+    PortalDecoder portalDecoder(@Value("${erp.keycloak.guest-issuer}") String issuer) {
+        NimbusJwtDecoder d = NimbusJwtDecoder.withJwkSetUri(issuer + "/protocol/openid-connect/certs").build();
+        d.setJwtValidator(validator(issuer, GUEST_AUDIENCE));
+        return new PortalDecoder(d);
+    }
     static final Duration CLOCK_SKEW = Duration.ofSeconds(60);
 
     @Bean
+    @org.springframework.core.annotation.Order(2)
     SecurityFilterChain api(HttpSecurity http, JsonMapper json) throws Exception {
         http.csrf(c -> c.disable()) // stateless bearer-token API, no cookies
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -72,12 +106,16 @@ public class SecurityConfig {
 
     /** Issuer + expiry/not-before (60 s skew) + audience. Shared with the tests so they check the real rules. */
     public static OAuth2TokenValidator<Jwt> validator(String issuer) {
+        return validator(issuer, AUDIENCE);
+    }
+
+    public static OAuth2TokenValidator<Jwt> validator(String issuer, String audience) {
         return new DelegatingOAuth2TokenValidator<>(
                 new JwtTimestampValidator(CLOCK_SKEW),
                 new JwtIssuerValidator(issuer),
-                jwt -> jwt.getAudience() != null && jwt.getAudience().contains(AUDIENCE)
+                jwt -> jwt.getAudience() != null && jwt.getAudience().contains(audience)
                         ? OAuth2TokenValidatorResult.success()
-                        : OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token", "aud must contain " + AUDIENCE, null)));
+                        : OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token", "aud must contain " + audience, null)));
     }
 
     /** realm_access.roles → ROLE_x (job roles); resource_access.erp-api.roles → PERM_x (permissions). */

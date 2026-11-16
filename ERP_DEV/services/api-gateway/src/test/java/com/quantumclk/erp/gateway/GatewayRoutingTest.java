@@ -26,6 +26,7 @@ class GatewayRoutingTest {
     @DynamicPropertySource
     static void downstream(DynamicPropertyRegistry r) {
         r.add("ACCESS_SERVICE_URL", () -> "http://localhost:" + GatewayTestSupport.DOWNSTREAM.port());
+        r.add("GUEST_SERVICE_URL", () -> "http://localhost:" + GatewayTestSupport.DOWNSTREAM.port());
     }
 
     @Autowired WebTestClient web;
@@ -115,6 +116,26 @@ class GatewayRoutingTest {
         web.post().uri("/api/v1/sales/memberships/123/anything").header(HttpHeaders.AUTHORIZATION, "Bearer " + GatewayTestSupport.token("erp-api"))
                 .header(HttpHeaders.CONTENT_TYPE, "application/json").bodyValue("x".repeat(4096))
                 .exchange().expectStatus().isEqualTo(413);
+    }
+
+    /**
+     * Member pages (S4): the gateway forwards the member's token as is; access-service / guest-service check it
+     * against realm gh-guests (the gateway keeps /api/v1/portal/** open for the anonymous inquiry form).
+     */
+    @Test
+    void portalMembershipAndProfileAreRoutedWithTheMembersToken() {
+        web.get().uri("/api/v1/portal/membership/me").header(HttpHeaders.AUTHORIZATION, "Bearer member-token").exchange()
+                .expectStatus().isOk().expectBody()
+                .jsonPath("$.path").isEqualTo("/api/v1/portal/membership/me").jsonPath("$.auth").isEqualTo(true);
+        web.get().uri("/api/v1/portal/me").header(HttpHeaders.AUTHORIZATION, "Bearer member-token").exchange()
+                .expectStatus().isOk().expectBody().jsonPath("$.path").isEqualTo("/api/v1/portal/me");
+    }
+
+    @Test
+    void guestServiceInternalPathsAreNotExposed() {
+        web.post().uri("/internal/guests/provision").header(HttpHeaders.AUTHORIZATION, "Bearer " + GatewayTestSupport.token("erp-api"))
+                .exchange().expectStatus().isNotFound();
+        assertThat(GatewayTestSupport.DOWNSTREAM_HITS.get()).isZero();
     }
 
     @Test

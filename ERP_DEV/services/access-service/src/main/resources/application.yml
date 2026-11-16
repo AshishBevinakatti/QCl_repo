@@ -32,6 +32,7 @@ erp:
     admin-url: ${KEYCLOAK_ADMIN_URL:${erp.keycloak.url}}
     realm: ${KEYCLOAK_REALM:gh-staff}
     issuer: ${erp.keycloak.url}/realms/${erp.keycloak.realm}
+    guest-issuer: ${erp.keycloak.url}/realms/gh-guests   # members on the landing page (/api/v1/portal/**)
     admin-client-id: access-service
     admin-client-secret: ${KC_ACCESS_SERVICE_CLIENT_SECRET}
   web:

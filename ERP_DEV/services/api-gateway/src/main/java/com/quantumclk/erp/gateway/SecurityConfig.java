@@ -42,7 +42,25 @@ public class SecurityConfig {
 
     static final String AUDIENCE = "erp-api";
 
+    /**
+     * Public website paths (/api/v1/portal/**): the gateway does NOT read bearer tokens here. Guests and members
+     * carry tokens from realm gh-guests, which the staff decoder below would reject; the owning service checks them
+     * (guest-service, access-service portal chain; MEMBER-LOGIN.md §5). Anonymous inquiries stay possible.
+     * Rate limiting falls back to the client IP. Handled before the staff chain.
+     */
     @Bean
+    @org.springframework.core.annotation.Order(1)
+    SecurityWebFilterChain portal(ServerHttpSecurity http) {
+        return http
+                .securityMatcher(new org.springframework.security.web.server.util.matcher.PathPatternParserServerWebExchangeMatcher("/api/v1/portal/**"))
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .cors(Customizer.withDefaults())
+                .authorizeExchange(a -> a.anyExchange().permitAll())
+                .build();
+    }
+
+    @Bean
+    @org.springframework.core.annotation.Order(2)
     SecurityWebFilterChain api(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable) // bearer tokens, no cookies
@@ -50,7 +68,6 @@ public class SecurityConfig {
                 .authorizeExchange(a -> a
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .pathMatchers("/actuator/health/**", "/actuator/health").permitAll()
-                        .pathMatchers("/api/v1/portal/**").permitAll()   // public website (increment 2); rate-limited by IP
                         .anyExchange().authenticated())
                 .oauth2ResourceServer(o -> o
                         .jwt(Customizer.withDefaults())

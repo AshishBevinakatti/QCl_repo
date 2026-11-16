@@ -1,6 +1,6 @@
 # Module: Gold Membership (SOW ERP-05 Membership & Loyalty)
 
-Status: **S1, S5 built; S3 built and tested** (customer account + welcome email + automatic sign-in: guest-service, Keycloak realm `gh-guests`, extension `gh-member-activation`; see [MEMBER-LOGIN.md](../02-architecture/identity/MEMBER-LOGIN.md)). The portal API (S4) and the landing-page member pages (S6) follow.
+Status: **S1, S5 built; S3 built and tested** (customer account + welcome email + automatic sign-in: guest-service, Keycloak realm `gh-guests`, extension `gh-member-activation`; see [MEMBER-LOGIN.md](../02-architecture/identity/MEMBER-LOGIN.md)). **S4 built:** `GET /api/v1/portal/membership/me` (api.md §3c). The landing-page member pages (S6) follow.
 Decisions: D-116…D-125 ([DECISIONS.md](../logs/DECISIONS.md)). Open questions: Q-030…Q-037. API: [api.md §3a](../02-architecture/api.md).
 
 ## What it does
@@ -69,4 +69,4 @@ Web: `Memberships.test.tsx` (10 tests: provisional ID and locked executive card,
 
 ## Not built yet
 
-Portal API (S4), the landing-page member pages (S6). Voucher redemption tracking, renewals, points and RFID cards are later ERP-05/ERP-06 work.
+The landing-page member pages (S6). Voucher redemption tracking, renewals, points and RFID cards are later ERP-05/ERP-06 work.
