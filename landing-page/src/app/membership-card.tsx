@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRef, useState } from "react";
 import { logoLight } from "./resort-assets";
 import { useMotionPreference } from "./motion-provider";
+import { useSession } from "./guest-session";
 
 /* The membership card, built in code rather than photographed (unit 3.19).
  * This is the page's one bright element: brass foil on forest board, a
@@ -24,6 +25,16 @@ export default function MembershipCard({ vouchers, coupons }: { vouchers: number
   }
 
   const pad = (n: number) => String(n).padStart(3, "0");
+  /* Signed in as a member (unit 3.30): the card becomes theirs — name and
+   * number engraved, and the serial shows what is left rather than the
+   * booklet's total. Usage is sample data; the panel below says so. */
+  const member = useSession()?.membership ?? null;
+  const left = member
+    ? Object.values(member.used).reduce(
+        (acc, u) => ({ v: acc.v - u.vouchers, c: acc.c - u.coupons }),
+        { v: vouchers, c: coupons },
+      )
+    : null;
 
   return (
     <div
@@ -46,9 +57,16 @@ export default function MembershipCard({ vouchers, coupons }: { vouchers: number
             <span /><span /><span /><span />
           </div>
 
+          {member && (
+            <div className="mcard-holder" key={member.membershipNo}>
+              <p className="mcard-name">{member.holder}</p>
+              <p className="mcard-no">{member.membershipNo}</p>
+            </div>
+          )}
+
           <div className="mcard-foot">
-            <p className="mcard-serial">{pad(vouchers)} <i>/</i> {pad(coupons)}</p>
-            <p className="mcard-serial-label">Vouchers / coupons</p>
+            <p className="mcard-serial">{pad(left ? left.v : vouchers)} <i>/</i> {pad(left ? left.c : coupons)}</p>
+            <p className="mcard-serial-label">{left ? "Vouchers / coupons left" : "Vouchers / coupons"}</p>
           </div>
         </div>
         <span className="mcard-sheen" aria-hidden="true" />

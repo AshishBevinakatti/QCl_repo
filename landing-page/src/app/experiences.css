@@ -219,3 +219,16 @@
   .xintro-text > * { animation-name: xfade; }
   .xday:not(.is-pinned) .xcard { animation: none; }
 }
+
+/* Phones and tablets, pinned (unit 3.32): cards sized to the screen so one
+   reads at a time with the next peeking in; the bar tightens. */
+@media (max-width: 900px) {
+  .xday.is-pinned .xday-stage { gap: 20px; padding-top: calc(var(--header-height, 84px) + 16px); justify-content: center; }
+  .xday.is-pinned .xcard { width: min(80vw, 460px); padding: 12px; }
+  /* Taller pictures on tall screens, so the card fills the stage. */
+  .xday.is-pinned .xcard-visual { aspect-ratio: auto; height: clamp(200px, 42svh, 520px); max-height: none; }
+  .xday.is-pinned .xcard-name { font-size: 20px; margin-top: 12px; }
+  .xday.is-pinned .xcard-meta { font-size: 13px; gap: 4px 12px; }
+  .xday-track { gap: 14px; }
+  .xday-bar-track { padding: 8px 16px; font-size: 12px; }
+}

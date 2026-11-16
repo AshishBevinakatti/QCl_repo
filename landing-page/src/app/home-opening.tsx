@@ -177,7 +177,7 @@ export default function HomeOpening({ slides, features, intro }: {
               <p className="hop-kicker">Golden Hills Resort · Biligi, Bagalkote</p>
               <h1 className="hop-title">Stay, dine and gather in northern Karnataka</h1>
               <BookingBar />
-              <p className="hop-impression">{slides[0].label} · {impression}</p>
+              <p className="hop-impression">{slide.label} · {impression}</p>
             </div>
           </motion.div>
 

@@ -34,7 +34,9 @@ export default function VenueStack({ venues }: { venues: GatheringVenue[] }) {
   const [wide, setWide] = useState(false);
 
   useEffect(() => {
-    const media = window.matchMedia("(min-width: 901px)");
+    // Stacked on phones and tablets too (unit 3.32); only screens too short
+    // for a panel (phones turned sideways) get the plain list.
+    const media = window.matchMedia("(min-height: 560px)");
     // A browser-only layout fact.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setWide(media.matches);

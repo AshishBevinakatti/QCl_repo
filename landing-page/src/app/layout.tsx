@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./general-sans.css";
 import "@fontsource-variable/inter";
 import "./tokens.css";
@@ -17,6 +17,7 @@ import "./home-opening.css";
 import "./experiences.css";
 import "./gatherings.css";
 import "./stay.css";
+import "./profile.css";
 import { PencilDefs } from "./pencil";
 import SketchObserver from "./sketch-observer";
 
@@ -24,6 +25,12 @@ export const metadata: Metadata = {
   title: "Golden Hills Resort | Stay, dine and gather in Biligi",
   description:
     "Explore rooms, cottages, dining, experiences and gatherings at Golden Hills Resort in Anagawadi, Biligi, Karnataka.",
+};
+
+/* Phones colour their browser bar from this: match the header, so the bar
+   and the page read as one surface. */
+export const viewport: Viewport = {
+  themeColor: "#fcfaf6",
 };
 
 export default function RootLayout({

@@ -5,6 +5,8 @@ import MotionProvider from "../motion-provider";
 import SiteFooter from "../site-footer";
 import MembershipCard from "../membership-card";
 import MembershipLedger from "../membership-ledger";
+import MembershipMine from "../membership-mine";
+import { MemberFigures, MemberHeroCopy } from "../membership-member-hero";
 import { Sketch } from "../pencil";
 import MembershipExtras from "../membership-extras";
 import CountUp from "../count-up";
@@ -29,29 +31,36 @@ export default function MembershipPage() {
         {/* The card is the page's one bright element, so it opens the page. */}
         <section className="mem-hero" aria-labelledby="mem-title">
           <div className="wrap mem-hero-grid">
-            <div className="mem-hero-copy">
-              <p className="mem-kicker is-on-dark">Golden Hills Privilege Club</p>
-              <h1 id="mem-title">One card,<br />a year of the resort</h1>
-              <p className="mem-hero-line">
-                55 vouchers and 125 coupons across stays, dining, outings, celebrations and the spa.
-              </p>
-              <div className="mem-hero-actions">
-                <Link href="#inquire" className="mem-btn">Enquire about membership <ArrowRight size={16} /></Link>
-                <Link href="#explore" className="mem-link">See what is inside <ArrowDown size={15} /></Link>
+            <MemberHeroCopy>
+              <div className="mem-hero-copy">
+                <p className="mem-kicker is-on-dark">Golden Hills Privilege Club</p>
+                <h1 id="mem-title">One card,<br />a year of the resort</h1>
+                <p className="mem-hero-line">
+                  55 vouchers and 125 coupons across stays, dining, outings, celebrations and the spa.
+                </p>
+                <div className="mem-hero-actions">
+                  <Link href="#inquire" className="mem-btn">Enquire about membership <ArrowRight size={16} /></Link>
+                  <Link href="#explore" className="mem-link">See what is inside <ArrowDown size={15} /></Link>
+                </div>
               </div>
-            </div>
+            </MemberHeroCopy>
 
             <MembershipCard vouchers={55} coupons={125} />
           </div>
 
-          <dl className="wrap mem-figures">
-            <div><dt>Privileges</dt><dd><CountUp to={180} /></dd></div>
-            <div><dt>Vouchers</dt><dd><CountUp to={55} /></dd></div>
-            <div><dt>Coupons</dt><dd><CountUp to={125} /></dd></div>
-            <div><dt>Months valid</dt><dd><CountUp to={12} /></dd></div>
-            <div><dt>Transferable</dt><dd><CountUp to={100} suffix="%" /></dd></div>
-          </dl>
+          <MemberFigures>
+            <dl className="wrap mem-figures">
+              <div><dt>Privileges</dt><dd><CountUp to={180} /></dd></div>
+              <div><dt>Vouchers</dt><dd><CountUp to={55} /></dd></div>
+              <div><dt>Coupons</dt><dd><CountUp to={125} /></dd></div>
+              <div><dt>Months valid</dt><dd><CountUp to={12} /></dd></div>
+              <div><dt>Transferable</dt><dd><CountUp to={100} suffix="%" /></dd></div>
+            </dl>
+          </MemberFigures>
         </section>
+
+        {/* Members: what is used and what is left (sign-in here if not). */}
+        <MembershipMine />
 
         {/* The seven parts, as an account that adds up to 180. */}
         <section id="explore" className="mem-ledger-section" aria-labelledby="ledger-title">

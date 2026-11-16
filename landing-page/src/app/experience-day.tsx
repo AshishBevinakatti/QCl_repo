@@ -44,7 +44,10 @@ export default function ExperienceDay({ experiences }: { experiences: Experience
   const pinned = wide && !reduced;
 
   useEffect(() => {
-    const media = window.matchMedia("(min-width: 901px)");
+    // Pinned on phones and tablets too (unit 3.32): vertical touch scroll
+    // drives the sideways track exactly as a wheel does. Only screens too
+    // short to hold a card (phones turned sideways) get the plain list.
+    const media = window.matchMedia("(min-height: 560px)");
     // Layout facts that exist only in the browser.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setWide(media.matches);

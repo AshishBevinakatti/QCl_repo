@@ -209,9 +209,22 @@
 .vstack.is-stacked .vpanel-more[open] ul { max-height: 22svh; overflow-y: auto; }
 
 @media (max-width: 900px) {
-  .vpanel { grid-template-columns: 1fr; box-shadow: none; }
+  .vpanel { grid-template-columns: 1fr; }
   .vpanel-shot { min-height: 0; aspect-ratio: 4 / 3; }
   .vpanel-name { margin-top: 0; }
+  /* Stacked on a phone or tablet: the photo takes the top of the panel, the
+     facts the rest; long "what is included" lists scroll inside. */
+  .vstack.is-stacked .vslot { height: calc(100svh - var(--header-height, 84px) - 24px); top: calc(var(--header-height, 84px) + 8px); margin-bottom: 12svh; }
+  /* The facts take the room they need; the photo fills the rest. */
+  .vstack.is-stacked .vpanel { grid-template-rows: minmax(0, 1fr) auto; gap: 12px; padding: 10px; }
+  .vstack.is-stacked .vpanel-text { max-height: 52svh; }
+  .vstack.is-stacked .vpanel-shot { aspect-ratio: auto; height: 100%; }
+  .vstack.is-stacked .vpanel-text { overflow-y: auto; overscroll-behavior: contain; padding: 4px 6px 8px; }
+  .vstack.is-stacked .vpanel-cap { margin-top: 8px; }
+  .vstack.is-stacked .vpanel-cap strong { font-size: 56px; }
+  .vstack.is-stacked .vmeter { grid-template-columns: repeat(10, 8px); gap: 5px; margin-top: 12px; }
+  .vstack.is-stacked .vmeter li { width: 8px; height: 8px; }
+  .vstack.is-stacked .vpanel-name { padding-top: 12px; font-size: 22px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

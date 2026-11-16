@@ -6,6 +6,21 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { logo, logoLight } from "./resort-assets";
 import { ArrowRight } from "./icons";
+import { useSession } from "./guest-session";
+
+/* Signed in: the guest's initial, linking to their profile. Signed out: a
+ * quiet "Sign in" text link (unit 3.30). */
+function ProfileLink() {
+  const session = useSession();
+  if (!session) {
+    return <Link href="/profile" className="site-navbar-profile">Sign in</Link>;
+  }
+  return (
+    <Link href="/profile" className="site-navbar-profile is-in" aria-label={`Your profile, ${session.user.name}`}>
+      <span aria-hidden="true">{session.user.name.trim().charAt(0).toUpperCase() || "G"}</span>
+    </Link>
+  );
+}
 
 const navLinks = [
   { href: "/stay", label: "Stay" },
@@ -123,6 +138,7 @@ export default function SubpageHeader({ overlay = false }: { overlay?: boolean }
 
         {/* Right: Primary Call to Action & Mobile Menu */}
         <div className="site-navbar-actions">
+          <ProfileLink />
           <Link href="/plan-ahead#bookings" className="site-navbar-cta">
             Plan your stay
           </Link>
@@ -148,6 +164,10 @@ export default function SubpageHeader({ overlay = false }: { overlay?: boolean }
                 </div>
                 <div className="opening-mobile-group opening-mobile-actions">
                   <p>Reservations &amp; Access</p>
+                  <Link href="/profile" onClick={close}>
+                    Your profile
+                    <ArrowRight />
+                  </Link>
                   <Link href="/plan-ahead#bookings" onClick={close}>
                     Plan your stay
                     <ArrowRight />
