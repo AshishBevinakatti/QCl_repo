@@ -36,7 +36,7 @@ public class KeycloakAdminClient implements KeycloakAdmin {
     private final String tokenUrl;
     private final String clientId;
     private final String clientSecret;
-    private final String webOrigin;
+    private final String webUrl;
     private String token;
     private Instant tokenExpires = Instant.EPOCH;
 
@@ -44,7 +44,7 @@ public class KeycloakAdminClient implements KeycloakAdmin {
                                @Value("${erp.keycloak.realm}") String realm,
                                @Value("${erp.keycloak.admin-client-id}") String clientId,
                                @Value("${erp.keycloak.admin-client-secret}") String clientSecret,
-                               @Value("${erp.web.origin}") String webOrigin) {
+                               @Value("${erp.web.url}") String webUrl) {
         SimpleClientHttpRequestFactory f = new SimpleClientHttpRequestFactory();
         f.setConnectTimeout(Duration.ofSeconds(3));
         f.setReadTimeout(Duration.ofSeconds(15));
@@ -53,7 +53,7 @@ public class KeycloakAdminClient implements KeycloakAdmin {
         this.tokenUrl = url + "/realms/" + realm + "/protocol/openid-connect/token";
         this.clientId = clientId;
         this.clientSecret = clientSecret;
-        this.webOrigin = webOrigin;
+        this.webUrl = webUrl;
     }
 
     @Override
@@ -115,7 +115,8 @@ public class KeycloakAdminClient implements KeycloakAdmin {
         try {
             // redirect_uri is where the employee lands after setting the password. Without it Keycloak has
             // no return address and the last page offers no way back into the app (KEYCLOAK-SETUP §1.1).
-            String redirect = webOrigin.endsWith("/") ? webOrigin : webOrigin + "/";
+            // It is the ERP's full URL (origin + /erp/), not the bare origin: the origin root is the landing page (D-124).
+            String redirect = webUrl.endsWith("/") ? webUrl : webUrl + "/";
             call(() -> http.put()
                     .uri(admin + "/users/{id}/execute-actions-email?client_id=erp-web&lifespan=86400&redirect_uri={redirect}",
                             userId, redirect)

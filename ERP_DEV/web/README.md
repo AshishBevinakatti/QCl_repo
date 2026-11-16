@@ -19,7 +19,7 @@ npm ci
 npm run lint     # ✅ 0 problems
 npm test         # ✅ 18 tests
 npm run build    # ✅ tsc -b + vite build
-npm run dev      # http://localhost:5173 (needs the infra stack, access-service and api-gateway running)
+npm run dev      # http://localhost:5173/erp/ (needs the infra stack, access-service and api-gateway running)
 ```
 Settings (not secrets; copy `.env.example` to `.env.local` only to change them): `VITE_API_URL` (gateway, default `http://localhost:8082`), `VITE_KEYCLOAK_URL`, `VITE_KEYCLOAK_REALM`, `VITE_KEYCLOAK_CLIENT_ID`.
 

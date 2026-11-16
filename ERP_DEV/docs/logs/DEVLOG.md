@@ -189,3 +189,19 @@ History before 2026-11-15 is in `archive/hotel-draft:ERP_DEV/docs/logs/DEVLOG.md
 - **Hard delete reverted (D-125):** removed `DELETE /api/v1/admin/employees/{id}`, `AccountService.deleteEmployee`, `KeycloakAdmin(.Client).deleteUser`, the FakeKeycloak stub and the Employees "Delete" button. Those four backend files now equal `HEAD`.
 - **Verified:** web `npm test` 20/20, `npm run lint` clean, `npm run build` ok; access-service `mvn test` 26/26 (AccountManagement 4, AuditAppendOnly 2, EmployeeOnboarding 3, MeEndpoint 9, ProvisioningFailure 8), run without a sourced `.env`; landing-page `npm run typecheck` ok, `npm run build` ok.
 - **Next:** four commits proposed and approved by Ashish (mobile/HTTPS access; role cards + Employees UI; landing sync; logs), then branch `feature/phase1-membership` and slice S0b (one domain by path).
+
+## 2026-11-16T15:09:38+05:30 — Commits (approved by Ashish: "Yes, 4 commits as listed")
+- An unfinished `git merge origin/Ritvik-Frontend` (MERGE_HEAD b7aada9, started 2026-11-16 00:04) blocked path commits. Asked Ashish; answer: "i want the change of ritvik but he has updated the landing page". Re-fetched: newest is still 2c164d9 and landing-page/ equals it except view-on-map.tsx. Ran `git merge --quit` (index and files unchanged), then committed by explicit paths:
+  - `9a58edb` feat(auth,infra): mobile access over one HTTPS origin
+  - `4dee064` feat(web): role-card start screen and refreshed Employees screen
+  - `4772b89` chore(landing-page): sync Ritvik's landing page up to 2c164d9
+  - `f22f828` docs(logs): decisions D-116..D-125, Q-030..Q-037
+- Not pushed (push still needs the token `workflow` scope). `skills-lock.json` left untracked.
+- Branch `feature/phase1-membership` created from `feature/phase1-fresh-start` (f22f828).
+
+## 2026-11-16T15:16:43+05:30 — S0b: one public origin split by path (D-124) — built, verified locally, awaiting tunnel switch
+- **Plan copy:** `docs/03-phases/phase-1/inc-membership-PLAN.md` (approved plan + S6 amendment).
+- **Live realm read-only check** (`kcadm get clients -r gh-staff -q clientId=erp-web`): redirectUris `https://weaponless-…ngrok-free.dev/*`, webOrigins the same origin, public client, standard flow. `/*` already covers `/erp/*` → **no Keycloak change made.** Realms present: master, gh-staff.
+- **Changes:** `infra/proxy/Caddyfile` + compose service `proxy` (`caddy:2.11.7`, newest release ≥ 2 weeks old; 2.11.8/2.11.9 too new), `127.0.0.1:8088`; routes `/realms`,`/resources` → keycloak:8081, `/api` → host :8082, `/erp/` → host :5173, rest → host :3000. `web/vite.config.ts` `base: "/erp/"`; `web/src/auth.ts` silent-SSO and logout use `BASE_URL`. access-service `erp.web.url` (`ERP_WEB_URL`, default `http://localhost:5173/erp/`) is the staff setup-email `redirect_uri`. `landing-page/next.config.ts` `allowedDevOrigins: ["*.ngrok-free.dev", …DEV_PUBLIC_HOSTS]` (read Next 16 doc `allowedDevOrigins.md` first). `.env.example` documents `ERP_WEB_URL`; local `.env` got `ERP_WEB_URL=<public origin>/erp/` (one appended line). Docs: KEYCLOAK-SETUP §1.1 + env table, DAY-ONE, web/infra READMEs.
+- **Verified:** `caddy validate` → Valid configuration. web `npm test` 20/20, lint clean, build (assets under `/erp/assets/`). access-service `mvn test` 26/26. Proxy probes on `http://localhost:8088` with the public Host header: `/` 200, `/login` 200, `/membership` 200, `/erp` 308 → `/erp/`, `/erp/` 200 (`/erp/@vite/client`, `/erp/src/main.tsx`), `/erp/silent-check-sso.html` 200, `/realms/gh-staff` 200, issuer `https://weaponless-…/realms/gh-staff`, `/api/v1/me` 401 (gateway reached).
+- **Not done (blocked):** stopping the running access-service (PID tree 12880) to load `ERP_WEB_URL` and switching the running ngrok agent from :5173 to :8088 were refused by the tool's safety check; a second access-service start failed on the busy port, as expected. Ashish to restart both. Phone test pending.

@@ -29,7 +29,8 @@ erp:
     admin-client-id: access-service
     admin-client-secret: ${KC_ACCESS_SERVICE_CLIENT_SECRET}
   web:
-    origin: ${ERP_WEB_ORIGIN:http://localhost:5173}   # where the setup email's link returns to
+    origin: ${ERP_WEB_ORIGIN:http://localhost:5173}   # the ERP's origin (scheme + host), no path
+    url: ${ERP_WEB_URL:http://localhost:5173/erp/}    # where the setup email's link returns to: origin + /erp/ (D-124)
   sync:
     interval: ${ACCOUNT_SYNC_INTERVAL:PT5M}
   bootstrap-admin:   # used only while no ADMIN exists (KEYCLOAK-SETUP §10)

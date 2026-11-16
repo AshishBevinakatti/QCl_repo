@@ -17,7 +17,8 @@ const keycloak = new Keycloak({ url: config.keycloakUrl, realm: config.realm, cl
 export async function initAuth(): Promise<boolean> {
   return keycloak.init({
     onLoad: "check-sso",
-    silentCheckSsoRedirectUri: window.location.origin + "/silent-check-sso.html",
+    // BASE_URL is "/erp/": the ERP lives under /erp/ on the shared public origin (D-124).
+    silentCheckSsoRedirectUri: window.location.origin + import.meta.env.BASE_URL + "silent-check-sso.html",
     pkceMethod: "S256",
     checkLoginIframe: false,
   });
@@ -34,5 +35,5 @@ export const session: Session = {
   },
   login: () => keycloak.login(),
   // Ends the Keycloak SSO session (end-session endpoint with id_token_hint), then comes back to the sign-in page.
-  logout: () => keycloak.logout({ redirectUri: window.location.origin + "/" }),
+  logout: () => keycloak.logout({ redirectUri: window.location.origin + import.meta.env.BASE_URL }),
 };

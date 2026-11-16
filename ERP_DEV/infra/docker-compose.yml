@@ -83,5 +83,22 @@ services:
       - "127.0.0.1:1025:1025"   # SMTP (Keycloak sends here in dev)
       - "127.0.0.1:8025:8025"   # web UI: http://localhost:8025
 
+  # One public origin for all apps, split by path (D-124): point the tunnel at http://localhost:8088.
+  proxy:
+    image: caddy:2.11.7
+    ports:
+      - "127.0.0.1:8088:8088"
+    volumes:
+      - ./proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # the ERP apps run on the host in development
+    environment:
+      KEYCLOAK_UPSTREAM: ${PROXY_KEYCLOAK_UPSTREAM:-keycloak:8081}
+      GATEWAY_UPSTREAM: ${PROXY_GATEWAY_UPSTREAM:-host.docker.internal:8082}
+      ERP_WEB_UPSTREAM: ${PROXY_ERP_WEB_UPSTREAM:-host.docker.internal:5173}
+      LANDING_UPSTREAM: ${PROXY_LANDING_UPSTREAM:-host.docker.internal:3000}
+    depends_on:
+      - keycloak
+
 volumes:
   pgdata:

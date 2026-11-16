@@ -53,9 +53,9 @@ In three terminals, with `set -a; . ERP_DEV/.env; set +a` first in each backend 
 ```bash
 (cd ERP_DEV/services/access-service && ./mvnw spring-boot:run)   # :8091
 (cd ERP_DEV/services/api-gateway   && ./mvnw spring-boot:run)    # :8082
-(cd ERP_DEV/web && npm ci && npm run dev)                        # http://localhost:5173
+(cd ERP_DEV/web && npm ci && npm run dev)                        # http://localhost:5173/erp/
 ```
-**First admin (once per fresh database):** set `BOOTSTRAP_ADMIN_EMAIL`, `_USERNAME`, `_FIRST_NAME`, `_LAST_NAME` and `_MOBILE` in `ERP_DEV/.env` before starting access-service. On start it logs `Bootstrap ADMIN <username> is INVITED`. ✅ Open Mailpit (http://localhost:8025), click the "Update Your Account" email's link, and set a password (12+ characters). Then open http://localhost:5173 → **Sign in** → you're the ADMIN. Under **Employees** you can add people; each one gets the same email.
+**First admin (once per fresh database):** set `BOOTSTRAP_ADMIN_EMAIL`, `_USERNAME`, `_FIRST_NAME`, `_LAST_NAME` and `_MOBILE` in `ERP_DEV/.env` before starting access-service. On start it logs `Bootstrap ADMIN <username> is INVITED`. ✅ Open Mailpit (http://localhost:8025), click the "Update Your Account" email's link, and set a password (12+ characters). Then open http://localhost:5173/erp/ → **Sign in** → you're the ADMIN. Under **Employees** you can add people; each one gets the same email.
 
 ## 6. Your first change
 1. Create a branch: `git switch -c docs/<short-slug>`.

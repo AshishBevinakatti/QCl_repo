@@ -9,6 +9,9 @@ const keycloak = { target: "http://localhost:8081", changeOrigin: true, xfwd: tr
 const api = { target: "http://localhost:8082", changeOrigin: true, xfwd: true };
 
 export default defineConfig({
+  // The ERP is served under /erp/: one public origin is shared with the landing page (at /), Keycloak
+  // (/realms, /resources) and the API (/api), split by path in infra/proxy/Caddyfile (D-124).
+  base: "/erp/",
   plugins: [react()],
   server: {
     port: 5173,

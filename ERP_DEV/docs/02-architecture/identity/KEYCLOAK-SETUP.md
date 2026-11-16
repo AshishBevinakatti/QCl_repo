@@ -35,16 +35,23 @@ A public tunnel (for example `trycloudflare.com`) is not a substitute for this: 
 
 The browser app needs **HTTPS on any host other than `localhost`**. `keycloak-js` uses PKCE (`S256`), which calls `crypto.subtle`; browsers expose `crypto.subtle` only in a **secure context** (`https://`, or `http://localhost`). Opened at `http://192.168.x.x:5173` the app loads but "Sign in" does nothing and the console says *"Web Crypto API is not available"* (`window.isSecureContext === false`). Tested on 2026-11-15. Do not "fix" this by disabling PKCE — it is required by AUTHENTICATION §5.
 
-Use **one public HTTPS origin for all three services**, so there is no CORS and no cross-site cookie:
+Use **one public HTTPS origin for every app**, so there is no CORS and no cross-site cookie. Since 2026-11-16 (D-124) the landing page shares that origin, so a small path proxy (Caddy, compose service `proxy`, `infra/proxy/Caddyfile`) sits between the tunnel and the apps:
 
 ```
-phone ──HTTPS──> tunnel (stable hostname) ──> Vite dev server :5173
-                                               ├─ /            the SPA
+phone ──HTTPS──> tunnel (stable hostname) ──> proxy :8088 (Caddy)
                                                ├─ /realms, /resources ──> Keycloak :8081
-                                               └─ /api         ────────> api-gateway :8082
+                                               ├─ /api         ────────> api-gateway :8082
+                                               ├─ /erp/        ────────> staff ERP, Vite :5173 (base "/erp/")
+                                               └─ everything else ─────> landing page, Next :3000
 ```
 
-- `web/vite.config.ts` holds the proxy and `allowedHosts` (Vite answers `403 Blocked request` for an unknown `Host`).
+Start it: `docker compose --env-file ERP_DEV/.env -f ERP_DEV/infra/docker-compose.yml up -d proxy`, then `ngrok http 8088 --url=<host>`. Locally the same layout is at `http://localhost:8088`.
+
+- Keycloak keeps its root paths (`/realms`, `/resources`), so the issuer, cookies and existing email links do not change. The `erp-web` client's `https://<host>/*` redirect URI already covers `/erp/*` (live realm checked read-only on 2026-11-16; no Keycloak change was needed).
+- `ERP_WEB_URL` = `https://<host>/erp/`: the staff setup email returns there (the origin root is now the landing page). `ERP_WEB_ORIGIN` stays the bare origin.
+- `landing-page/next.config.ts` lists `*.ngrok-free.dev` in `allowedDevOrigins` (Next dev blocks dev assets from other hostnames). Extra hosts: `DEV_PUBLIC_HOSTS`.
+- Without the proxy the ERP still runs on its own at `http://localhost:5173/erp/`: Vite keeps its `/realms`, `/resources` and `/api` proxies.
+- `web/vite.config.ts` holds `base`, the dev proxy and `allowedHosts` (Vite answers `403 Blocked request` for an unknown `Host`).
 - `KC_PUBLIC_URL` / `KEYCLOAK_URL` = the public origin; `KEYCLOAK_ADMIN_URL` stays `http://localhost:8081` so provisioning does not depend on the tunnel.
 - `web/.env`: `VITE_API_URL` and `VITE_KEYCLOAK_URL` = the public origin.
 - The `erp-web` client needs `https://<host>/*` in redirect URIs, web origins and post-logout URIs.
@@ -54,7 +61,8 @@ Check the public side end to end:
 
 ```bash
 curl -s -H "User-Agent: check/1.0" https://<host>/realms/gh-staff/.well-known/openid-configuration | grep issuer   # issuer must equal the public URL
-curl -s -o /dev/null -w '%{http_code}\n' -H "User-Agent: check/1.0" https://<host>/                                        # 200 = SPA through the proxy
+curl -s -o /dev/null -w '%{http_code}\n' -H "User-Agent: check/1.0" https://<host>/                                        # 200 = landing page
+curl -s -o /dev/null -w '%{http_code}\n' -H "User-Agent: check/1.0" https://<host>/erp/                                       # 200 = staff ERP
 curl -s -o /dev/null -w '%{http_code}\n' -H "User-Agent: check/1.0" https://<host>/api/v1/me                                # 401 = gateway reached
 ```
 
@@ -174,7 +182,8 @@ Keycloak sends every employee email: invite / set password, verify email, reset 
 | `KC_BOOTSTRAP_ADMIN_USERNAME`, `KC_BOOTSTRAP_ADMIN_PASSWORD` | Keycloak container (break-glass master admin) |
 | `KC_DB_PASSWORD`, `ACCESS_DB_PASSWORD`, `POSTGRES_PASSWORD`, `POSTGRES_HOST_PORT` (default 5433) | PostgreSQL container and its init script |
 | `REDIS_PASSWORD` | Redis container, api-gateway |
-| `ERP_WEB_ORIGIN` | realm import: erp-web redirect/origin, **and** where the setup email returns after the password is set (default `http://localhost:5173`; use the public HTTPS origin for phones) |
+| `ERP_WEB_ORIGIN` | realm import: erp-web redirect/origin (scheme + host only; default `http://localhost:5173`; use the public HTTPS origin for phones) |
+| `ERP_WEB_URL` | where the staff setup email returns after the password is set: the ERP's full URL (default `http://localhost:5173/erp/`; public: `https://<host>/erp/`) |
 | `KC_PUBLIC_URL` | Keycloak `KC_HOSTNAME`: the base URL it writes into invite/reset emails and tokens. Must be what the **browser** uses |
 | `KEYCLOAK_BIND` | host interface Keycloak's :8081 is published on (default `127.0.0.1`; `0.0.0.0` for a LAN) |
 | `KEYCLOAK_URL` | gateway, services, web (`VITE_KEYCLOAK_URL`); must equal the token `iss` |
