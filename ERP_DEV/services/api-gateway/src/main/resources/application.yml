@@ -14,10 +14,8 @@ spring:
     gateway:
       server:
         webflux:
+          # Body size is limited per route (not as a default filter: a default and a route limit would both apply).
           default-filters:
-            - name: RequestSize
-              args:
-                maxSize: ${MAX_REQUEST_SIZE:1MB}
             - name: RequestRateLimiter
               args:
                 key-resolver: "#{@callerKeyResolver}"
@@ -25,10 +23,25 @@ spring:
                 redis-rate-limiter.burstCapacity: ${RATE_LIMIT_BURST:40}
                 redis-rate-limiter.requestedTokens: 1
           routes:
+            # Gold Membership registration (ERP-05): multipart with one payment screenshot of at most 5 MB, so this
+            # route alone allows 6 MB. Listed first so it wins over the general access-service route.
+            - id: membership-registration
+              uri: ${ACCESS_SERVICE_URL:http://localhost:8091}
+              predicates:
+                - Path=/api/v1/sales/memberships
+                - Method=POST
+              filters:
+                - name: RequestSize
+                  args:
+                    maxSize: ${MAX_UPLOAD_SIZE:6MB}
             - id: access-service
               uri: ${ACCESS_SERVICE_URL:http://localhost:8091}
               predicates:
-                - Path=/api/v1/me,/api/v1/admin/**
+                - Path=/api/v1/me,/api/v1/admin/**,/api/v1/sales/**
+              filters:
+                - name: RequestSize
+                  args:
+                    maxSize: ${MAX_REQUEST_SIZE:1MB}
 
 erp:
   keycloak:

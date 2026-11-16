@@ -130,6 +130,29 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "User-Agent: check/1.0" https://<hos
 - **Looking up a role to assign:** use `GET /users/{id}/role-mappings/realm/available` and pick the role by name. `GET /roles/{name}` needs `view-realm`, which we deliberately don't grant (S1 check 5x: 403).
 - Rotate the secret every 90 days, or at once if it might have leaked (F13).
 
+### 5.4 Adding permissions to an existing realm (Gold Membership, 2026-11-16)
+
+`--import-realm` only creates a realm that does not exist yet, so new permissions in `gh-staff-realm.json` do not reach a running database. Add them once with `kcadm` (this was run on the dev realm on 2026-11-16; it only adds, it removes nothing):
+
+```bash
+docker exec golden-hills-erp-keycloak-1 sh -c '
+K=/opt/keycloak/bin/kcadm.sh
+$K config credentials --server http://localhost:8081 --realm master --user "$KC_BOOTSTRAP_ADMIN_USERNAME" --password "$KC_BOOTSTRAP_ADMIN_PASSWORD"
+API=$($K get clients -r gh-staff -q clientId=erp-api --fields id --format csv --noquotes)
+WEB=$($K get clients -r gh-staff -q clientId=erp-web --fields id --format csv --noquotes)
+for r in memberships.register memberships.read_own memberships.read_all memberships.verify; do
+  $K create clients/$API/roles -r gh-staff -s name=$r
+  { printf "["; $K get clients/$API/roles/$r -r gh-staff --fields id,name; printf "]"; } > /tmp/role.json
+  $K create clients/$WEB/scope-mappings/clients/$API -r gh-staff -f /tmp/role.json   # erp-web has fullScopeAllowed=false
+done
+ALL="--rolename memberships.register --rolename memberships.read_own --rolename memberships.read_all --rolename memberships.verify"
+$K add-roles -r gh-staff --rname ADMIN   --cclientid erp-api $ALL
+$K add-roles -r gh-staff --rname MANAGER --cclientid erp-api $ALL
+$K add-roles -r gh-staff --rname SALES_EXECUTIVE --cclientid erp-api --rolename memberships.register --rolename memberships.read_own'
+```
+
+Check: `kcadm.sh get clients/$WEB/scope-mappings/clients/$API -r gh-staff --fields name` lists the four `memberships.*` roles. Staff must **sign in again** to get them in their token. The scope-mapping step matters: without it the roles are assigned but never appear in `erp-web` tokens.
+
 ## 6. Roles
 
 - **Realm roles** (job roles): `ADMIN`, `MANAGER`, `SALES_EXECUTIVE`. Each is a **composite** of `erp-api` client roles, using the default grants in AUTHENTICATION §3.

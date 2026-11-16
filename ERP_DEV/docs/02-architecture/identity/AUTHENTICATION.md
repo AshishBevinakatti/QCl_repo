@@ -53,6 +53,10 @@ Phase 1 permissions and their default holders:
 | `leads.claim` | | ✓ | ✓ |
 | `leads.assign`, `leads.reassign` | ✓ | ✓ | |
 | `audit.read` | ✓ | | |
+| `memberships.register` (register a Gold Member, D-116) | ✓ | ✓ | ✓ |
+| `memberships.read_own` (own registrations and their screenshots) | ✓ | ✓ | ✓ |
+| `memberships.read_all` (verification queue) | ✓ | ✓ | |
+| `memberships.verify` (verify or reject; never one's own registration, D-118) | ✓ | ✓ | |
 
 The other Blueprint permissions (`leads.update_status`, `leads.add_activity`, `leads.schedule_followup`, `leads.request_conversion`, `leads.export`) are created when those features are built. Ashish deferred them on 2026-11-15.
 

@@ -74,7 +74,11 @@
               "leads.read_team",
               "leads.assign",
               "leads.reassign",
-              "audit.read"
+              "audit.read",
+              "memberships.register",
+              "memberships.read_own",
+              "memberships.read_all",
+              "memberships.verify"
             ]
           }
         }
@@ -92,7 +96,11 @@
               "leads.read_team",
               "leads.claim",
               "leads.assign",
-              "leads.reassign"
+              "leads.reassign",
+              "memberships.register",
+              "memberships.read_own",
+              "memberships.read_all",
+              "memberships.verify"
             ]
           }
         }
@@ -106,7 +114,9 @@
             "erp-api": [
               "leads.read_queue",
               "leads.read_assigned",
-              "leads.claim"
+              "leads.claim",
+              "memberships.register",
+              "memberships.read_own"
             ]
           }
         }
@@ -152,6 +162,22 @@
         },
         {
           "name": "audit.read",
+          "clientRole": true
+        },
+        {
+          "name": "memberships.register",
+          "clientRole": true
+        },
+        {
+          "name": "memberships.read_own",
+          "clientRole": true
+        },
+        {
+          "name": "memberships.read_all",
+          "clientRole": true
+        },
+        {
+          "name": "memberships.verify",
           "clientRole": true
         }
       ]
@@ -271,7 +297,11 @@
           "leads.claim",
           "leads.assign",
           "leads.reassign",
-          "audit.read"
+          "audit.read",
+          "memberships.register",
+          "memberships.read_own",
+          "memberships.read_all",
+          "memberships.verify"
         ]
       }
     ],

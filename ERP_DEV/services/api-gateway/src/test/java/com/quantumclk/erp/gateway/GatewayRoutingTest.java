@@ -17,7 +17,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "erp.keycloak.issuer=" + GatewayTestSupport.ISSUER,
         "spring.data.redis.password=",
-        "MAX_REQUEST_SIZE=1KB"})
+        "MAX_REQUEST_SIZE=1KB",
+        "MAX_UPLOAD_SIZE=8KB"})
 @AutoConfigureWebTestClient
 @Import(GatewayTestSupport.class)
 class GatewayRoutingTest {
@@ -88,6 +89,32 @@ class GatewayRoutingTest {
                 .header(HttpHeaders.CONTENT_TYPE, "application/json").bodyValue("x".repeat(4096))
                 .exchange().expectStatus().isEqualTo(413);
         assertThat(GatewayTestSupport.DOWNSTREAM_HITS.get()).isZero();
+    }
+
+    @Test
+    void salesMembershipPathsAreRouted() {
+        web.get().uri("/api/v1/sales/memberships").header(HttpHeaders.AUTHORIZATION, "Bearer " + GatewayTestSupport.token("erp-api"))
+                .exchange().expectStatus().isOk().expectBody().jsonPath("$.path").isEqualTo("/api/v1/sales/memberships");
+    }
+
+    /** Gold Membership registration carries a payment screenshot: it alone gets the larger upload limit (S2). */
+    @Test
+    void membershipRegistrationAllowsTheUploadLimitButNotMore() {
+        web.post().uri("/api/v1/sales/memberships").header(HttpHeaders.AUTHORIZATION, "Bearer " + GatewayTestSupport.token("erp-api"))
+                .header(HttpHeaders.CONTENT_TYPE, "multipart/form-data; boundary=x").bodyValue("x".repeat(4096))
+                .exchange().expectStatus().isOk();
+        assertThat(GatewayTestSupport.DOWNSTREAM_HITS.get()).isEqualTo(1);
+        web.post().uri("/api/v1/sales/memberships").header(HttpHeaders.AUTHORIZATION, "Bearer " + GatewayTestSupport.token("erp-api"))
+                .header(HttpHeaders.CONTENT_TYPE, "multipart/form-data; boundary=x").bodyValue("x".repeat(9000))
+                .exchange().expectStatus().isEqualTo(413);
+        assertThat(GatewayTestSupport.DOWNSTREAM_HITS.get()).isEqualTo(1);
+    }
+
+    @Test
+    void otherSalesPathsKeepTheSmallLimit() {
+        web.post().uri("/api/v1/sales/memberships/123/anything").header(HttpHeaders.AUTHORIZATION, "Bearer " + GatewayTestSupport.token("erp-api"))
+                .header(HttpHeaders.CONTENT_TYPE, "application/json").bodyValue("x".repeat(4096))
+                .exchange().expectStatus().isEqualTo(413);
     }
 
     @Test

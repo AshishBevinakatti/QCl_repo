@@ -25,3 +25,12 @@ Design and test columns get filled in as increments are built. "TBD" means not b
 | REQ-LEAD-005 | BP §10.1 | api.md §4 | TBD |
 | REQ-LEAD-006 | BP §10.4 | api.md §4 | TBD |
 | REQ-LEAD-007 | BP §9 | api.md §2 | TBD |
+| REQ-MEM-001 | SOW ERP-05; OD | `V2__gold_membership.sql`; `MembershipService.validate`; api.md §3a | `MembershipTest` (cardNeedsTransactionId, scanQrNeedsAProofImage, amountMustBePositive…, missingCustomerFields…) ✅ |
+| REQ-MEM-002 | SOW ERP-05; CS; D-117 | `membership_number_counter` (UPDATE … RETURNING in the registration transaction) | `MembershipTest` (numbersAreConsecutive…, parallelRegistrations…, nextNumberPreview…) ✅ |
+| REQ-MEM-003 | Rules §11 | `ProofStorage` (magic bytes, 5 MB, AES-256-GCM, SHA-256); gateway route limit 6 MB | `MembershipTest` (proofIsStoredEncrypted…, proofMustReallyBeAnImage, proofOver5MbIsRejected) ✅; `GatewayRoutingTest` (membershipRegistrationAllowsTheUploadLimitButNotMore) ✅ |
+| REQ-MEM-004 | SOW ERP-05; D-118 | `MembershipService.verify/reject`; realm roles `memberships.*` | `MembershipTest` (queueShowsPending…, nobodyVerifiesTheirOwnRegistration, rejectNeedsAReason…, unknownMemberIs404) ✅ |
+| REQ-MEM-005 | OD | partial unique indexes `resort_member_*_live` | `MembershipTest` (aRejectedPersonCanRegisterAgain…) ✅ |
+| REQ-MEM-006 | Rules §6 | `AuditLog.record(…, "MEMBER", …)` | `MembershipTest` (audit rows checked) ✅ |
+| REQ-MEM-007 | Rules §4 | `idempotency_key` | `MembershipTest` (sameIdempotencyKey…) ✅ |
+| REQ-MEM-008 | SOW ERP-05; D-119…D-122 | inc-membership-PLAN S3, S6 | TBD |
+| REQ-MEM-009 | SOW ERP-05; D-123 | inc-membership-PLAN S4, S6 | TBD |

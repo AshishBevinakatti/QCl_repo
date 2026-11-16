@@ -35,8 +35,23 @@
 | REQ-LEAD-006 | Claiming is atomic: with concurrent claims, exactly one succeeds | BP §10.4 | Must | 2 | Parallel-claim test |
 | REQ-LEAD-007 | Guests never see staff-only data (notes, SLA, assignee details beyond the frozen contract) | BP §9 Journey C | Must | 2 | Guest A cannot read guest B's inquiry; response fields checked |
 
+## Gold Membership (SOW ERP-05; increment "Gold Membership", D-116…D-125, plan `inc-membership-PLAN.md`)
+Source key addition: **OD** = Ashish's decisions of 2026-11-16 (DEVLOG, D-116…D-125); **CS** = client spreadsheets `LM Mem ID.xlsx` / `Golden_Hills_Resort_Loyalty_Voucher_Numbers_5000.xlsx`.
+
+| ID | Requirement | Source | Pri | Inc | Acceptance criteria |
+|---|---|---|---|---|---|
+| REQ-MEM-001 | A Sales Executive registers a Gold Member on site: first/last name, date of birth, mobile, email, address, and the payment (Cash; Card + transaction ID; Scan QR + screenshot) | SOW ERP-05 "member registration and enrollment"; OD | Must | M | Missing/invalid fields → 400 per field; Card without transaction ID and Scan QR without screenshot → 400 |
+| REQ-MEM-002 | The membership ID is the next unused number of the client series GRH-LM-0101 … GRH-LM-5100, gap-free, assigned when the registration is saved | SOW ERP-05 "membership ID generation"; CS; D-117 | Must | M | Consecutive numbers under parallel registrations; a failed registration uses no number; exhausted series → 409 |
+| REQ-MEM-003 | Payment screenshots are JPEG/PNG/WebP up to 5 MB, stored encrypted with a SHA-256, and shown only to the enrolling executive and to verifiers | Rules §11; OD | Must | M | Fake image / > 5 MB refused; file on disk is ciphertext; another executive → 404, executive on admin path → 403 |
+| REQ-MEM-004 | ADMIN or MANAGER verifies (ACTIVE, valid 12 months) or rejects with a reason; nobody verifies a member they enrolled; only pending registrations can be decided | SOW ERP-05 "validity", "status management"; D-118 | Must | M | Self-verify → 403; second decision → 409; reject without reason → 400; dates checked |
+| REQ-MEM-005 | One live membership per email and per mobile; a rejected registration does not block a new one | OD | Must | M | Duplicate while pending/active → 409; after reject → 201 |
+| REQ-MEM-006 | Every registration, verification and rejection is in the append-only audit log | Rules §6; SOW §25 | Must | M | Audit rows `MEMBER_REGISTERED/VERIFIED/REJECTED` with actor and reason |
+| REQ-MEM-007 | A double-tapped submit creates one member (Idempotency-Key) | Rules §4 | Must | M | Same key twice → same member; same key with other data → 409 |
+| REQ-MEM-008 | After verification the customer gets one email (member ID + secure set-password link), sets the password once and is signed in automatically on the landing page (Keycloak `gh-guests`, PKCE) | SOW ERP-05 "membership portal", "member dashboard"; D-119…D-122 | Must | M | S3/S6 tests and live phone test |
+| REQ-MEM-009 | A signed-in member sees only their own membership (card, validity, booklet, enrolling executive) | SOW ERP-05 "member dashboard"; D-123 | Must | M | Guest A cannot read guest B; staff token on portal path → 401 |
+
 ## Deferred within Phase 1 (AB 2026-11-15: "we will add new features later")
 Follow-ups and activity notes (BP §10.5), the status machine (BP §10.3), SLA escalation + notification-service (BP §10.6, §12.4), assign/reassign (BP §10.4), conversion request (BP §7), CMS (BP §12.5, Q-015).
 
 ## Out of Phase 1
-Booking, room allocation, payment collection (SOW ERP-02/03/07; BP §8). See phase1_plan.md §7.
+Booking, room allocation, payment collection (SOW ERP-02/03/07; BP §8). See phase1_plan.md §7. Exception (D-116, 2026-11-16): the Gold Membership fee payment record and screenshot above.

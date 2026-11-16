@@ -29,7 +29,16 @@ public class ErrorHandler {
 
     @ExceptionHandler(ApiException.class)
     ResponseEntity<ApiError> api(ApiException e) {
+        if (e instanceof FieldErrorsException f) {
+            return ResponseEntity.badRequest().body(new ApiError(f.code, f.getMessage(), 400, CorrelationIdFilter.current(),
+                    Instant.now(), f.fields));
+        }
         return body(e.status, e.code, e.getMessage());
+    }
+
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    ResponseEntity<ApiError> tooLarge(org.springframework.web.multipart.MaxUploadSizeExceededException e) {
+        return body(HttpStatus.PAYLOAD_TOO_LARGE, "PAYLOAD_TOO_LARGE", "The upload is too large (at most 5 MB).");
     }
 
     @ExceptionHandler(org.springframework.security.authorization.AuthorizationDeniedException.class)

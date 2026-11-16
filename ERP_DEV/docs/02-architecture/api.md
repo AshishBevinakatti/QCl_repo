@@ -81,6 +81,31 @@ Account changes return the updated `EmployeeView`. Errors: 400 without a reason;
 
 Audit response: page of `{ id, occurredAt, actorId, actor, actorIp, action, entityType, entityId, before, after, reason, correlationId, outcome }`, newest first; `size` at most 200.
 
+## 3a. Staff — Gold Membership in access-service (SOW ERP-05; D-116…D-118)
+
+Module guide: [04-modules/membership.md](../04-modules/membership.md).
+
+| Method & path | Permission | Purpose |
+|---|---|---|
+| `GET /api/v1/sales/memberships/next-number` | `memberships.register` | `{ membershipId: "GRH-LM-0101", provisional: true }`: preview only; the real number is given on save |
+| `POST /api/v1/sales/memberships` ⓘ | `memberships.register` | `multipart/form-data` registration → `201 MemberView` (`status: PENDING_VERIFICATION`). Needs `Idempotency-Key` |
+| `GET /api/v1/sales/memberships?page=&size=` | `memberships.read_own` | The caller's own registrations, newest first |
+| `GET /api/v1/sales/memberships/{id}` | `memberships.read_own` | Own registration; anyone else's → 404 |
+| `GET /api/v1/sales/memberships/{id}/proof` | `memberships.read_own` | Own payment screenshot (image bytes) |
+| `GET /api/v1/admin/memberships?status=&q=&page=&size=` | `memberships.read_all` | All registrations; `status` one of `PENDING_VERIFICATION, ACTIVE, REJECTED`; `q` matches ID, name, email or mobile; response adds `pendingCount` |
+| `GET /api/v1/admin/memberships/{id}` | `memberships.read_all` | Detail |
+| `GET /api/v1/admin/memberships/{id}/proof` | `memberships.read_all` | Payment screenshot |
+| `POST /api/v1/admin/memberships/{id}/verify` | `memberships.verify` | → `ACTIVE`, `validFrom` = now, `validUntil` = now + 12 months; payment `VERIFIED` |
+| `POST /api/v1/admin/memberships/{id}/reject` | `memberships.verify` | `{ reason }` (required) → `REJECTED`; payment `REJECTED` with the reason |
+
+Permissions per role (Keycloak `erp-api` client roles): SALES_EXECUTIVE `register`, `read_own`; MANAGER and ADMIN all four. `/api/v1/me` lists the `memberships` module when the caller has `register` or `read_all`.
+
+Registration form fields: `firstName`, `lastName`, `dob` (YYYY-MM-DD, in the past), `mobile` (`+91 98765 43210`; a bare 10-digit Indian mobile gets +91), `email`, `address` (≤ 500), `paymentType` (`CASH` | `CARD` | `SCAN_QR`), `amount` (rupees, > 0, at most 2 decimals, e.g. `25000` or `25000.50`), `transactionId` (required for `CARD`; the UPI UTR for `SCAN_QR` is optional), and the file part `proof` (JPEG/PNG/WebP, ≤ 5 MB; required for `SCAN_QR`). Example values are illustrative.
+
+`MemberView`: `{ id, membershipId, firstName, lastName, dob, mobile, email, address, tier: "GOLD", status, enrolledBy: { employeeId, name, username }, decidedBy, decidedAt, validFrom, validUntil, accountStatus, createdAt, payment: { type, amount: "25000.00", currency: "INR", transactionId, proof: { fileName, contentType, sizeBytes, sha256 } | null, status, rejectionReason, verifiedBy, decidedAt } }`. Money is a string with two decimals, never a float.
+
+Errors: 400 `VALIDATION_FAILED` with `fields`; 403 `NO_EMPLOYEE_RECORD` (signed in but no ERP employee row), 403 `SELF_VERIFICATION`; 404 `NOT_FOUND`; 409 `MEMBER_EXISTS` (live membership with that email or mobile), `NOT_PENDING`, `IDEMPOTENCY_KEY_REUSED`, `SERIES_EXHAUSTED`; 413 `PAYLOAD_TOO_LARGE` (screenshot > 5 MB; the gateway allows 6 MB on this route only); 503 `PROOF_STORAGE_NOT_CONFIGURED` (`MEMBERSHIP_PROOF_KEY` missing). Proof downloads are `inline`, `Cache-Control: no-store, private`, `X-Content-Type-Options: nosniff`.
+
 ## 4. Staff — lead-service (increment 2)
 
 | Method & path | Permission | Scope rule |

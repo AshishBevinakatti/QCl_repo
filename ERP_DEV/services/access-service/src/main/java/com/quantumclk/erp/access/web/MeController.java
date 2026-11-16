@@ -44,6 +44,7 @@ public class MeController {
         List<String> m = new ArrayList<>(List.of("dashboard"));
         if (permissions.contains("employees.read")) m.add("employees");
         if (permissions.contains("leads.read_queue") || permissions.contains("leads.read_team")) m.add("leads");
+        if (permissions.contains("memberships.register") || permissions.contains("memberships.read_all")) m.add("memberships");
         if (permissions.contains("audit.read")) m.add("audit");
         return m;
     }
