@@ -40,3 +40,15 @@ Earlier questions: `archive/hotel-draft:ERP_DEV/docs/logs/OPEN_QUESTIONS.md`.
 **Answer Q-029 (2026-11-15T11:27:15+05:30, Ashish):** only ADMIN may onboard, activate and deactivate employees. `employees.manage` can be granted to one person later.
 **Answer Q-003 (2026-11-15T11:27:15+05:30, Ashish):** option A. guest-service passes `/api/v1/portal/auth/register|login` through to the Keycloak realm `gh-guests` (Admin API to create the user; password grant to log in, on a dedicated guest client only). The landing page stays unchanged; moving it to a Keycloak redirect is a later improvement. The ERP stores no guest passwords.
 **Answer Q-023 (2026-11-15T11:30:28+05:30, Ashish):** approved Testcontainers (PostgreSQL), `com.github.dasniko:testcontainers-keycloak`, the Mailpit Docker image and `keycloak-js`. ShedLock and keycloak-admin-client aren't used.
+
+### Added 2026-11-16 (Gold Membership increment, D-116…D-124)
+| ID | Question | Affects | Default until answered |
+|---|---|---|---|
+| Q-030 | Gold membership fee (amount, GST treatment) | Registration form | Sales Executive enters the amount received; no expected-fee check |
+| Q-031 | Official resort UPI QR image and UPI ID for the "Scan QR" option | Registration form | "QR not configured" placeholder |
+| Q-032 | Member amenity benefits (pools, gym, games lounge, bonfire) and the 20% spa / 15% dining discounts from the draft plan: not in any client document | Member profile | Shown from config, labelled "to be confirmed" |
+| Q-033 | Retention period for payment screenshots and member personal data (DPDP; extends Q-022) | access_db, proof files | Kept; no automatic deletion |
+| Q-034 | Guest (customer) session lengths in `gh-guests` | Keycloak | Idle 7 days, max 30 days, remember-me on |
+| Q-035 | May an enrolling executive's WhatsApp/mobile number be shown to the member? | Member profile | Only when the employee has WhatsApp opt-in; otherwise the resort desk number |
+| Q-036 | /plan-ahead shows a hard-coded "Privilege Member" label to every signed-in guest; show "Guest" for non-members? | Landing page | Unchanged |
+| Q-037 | Confirm that numbers are issued upward from GRH-LM-0101 and whether any numbers in the series are already used on paper | Membership IDs | Start at 0101 |
