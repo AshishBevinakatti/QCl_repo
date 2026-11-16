@@ -18,7 +18,12 @@ spring:
 
 erp:
   keycloak:
-    url: ${KEYCLOAK_URL:http://localhost:8081}
+    url: ${KEYCLOAK_URL:http://localhost:8081}          # public base: must match the token `iss` exactly
+    # Where the Admin API is actually called. Defaults to `url`; set it to the internal address when `url`
+    # is a public hostname, so provisioning does not depend on the tunnel being up (KEYCLOAK-SETUP §9).
+    # NOTE: the fallback references `erp.keycloak.url`, not `KEYCLOAK_URL`, so tests that override the URL
+    # dynamically (Testcontainers) also move the admin calls with it.
+    admin-url: ${KEYCLOAK_ADMIN_URL:${erp.keycloak.url}}
     realm: ${KEYCLOAK_REALM:gh-staff}
     issuer: ${erp.keycloak.url}/realms/${erp.keycloak.realm}
     admin-client-id: access-service

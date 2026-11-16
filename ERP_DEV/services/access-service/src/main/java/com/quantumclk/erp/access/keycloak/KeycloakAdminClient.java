@@ -40,7 +40,7 @@ public class KeycloakAdminClient implements KeycloakAdmin {
     private String token;
     private Instant tokenExpires = Instant.EPOCH;
 
-    public KeycloakAdminClient(@Value("${erp.keycloak.url}") String url,
+    public KeycloakAdminClient(@Value("${erp.keycloak.admin-url:${erp.keycloak.url}}") String url,
                                @Value("${erp.keycloak.realm}") String realm,
                                @Value("${erp.keycloak.admin-client-id}") String clientId,
                                @Value("${erp.keycloak.admin-client-secret}") String clientSecret,
@@ -113,8 +113,12 @@ public class KeycloakAdminClient implements KeycloakAdmin {
     @Override
     public void sendSetupEmail(UUID userId) {
         try {
+            // redirect_uri is where the employee lands after setting the password. Without it Keycloak has
+            // no return address and the last page offers no way back into the app (KEYCLOAK-SETUP §1.1).
+            String redirect = webOrigin.endsWith("/") ? webOrigin : webOrigin + "/";
             call(() -> http.put()
-                    .uri(admin + "/users/{id}/execute-actions-email?client_id=erp-web&lifespan=86400&redirect_uri={r}", userId, webOrigin + "/")
+                    .uri(admin + "/users/{id}/execute-actions-email?client_id=erp-web&lifespan=86400&redirect_uri={redirect}",
+                            userId, redirect)
                     .headers(h -> h.setBearerAuth(token())).contentType(MediaType.APPLICATION_JSON)
                     .body(List.of("VERIFY_EMAIL", "UPDATE_PASSWORD")).retrieve().toBodilessEntity());
         } catch (Unavailable e) {

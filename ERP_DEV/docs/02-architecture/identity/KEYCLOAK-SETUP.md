@@ -11,11 +11,52 @@
 | Image | `quay.io/keycloak/keycloak:26.8.2` | same tag, pinned by digest |
 | Command | `start-dev --import-realm` | `start --optimized --import-realm` (on first deploy only; later changes go through the Admin API/runbook) |
 | Database | `KC_DB=postgres`, own database `keycloak`, own DB user | same, on the managed cluster, backed up |
-| Hostname | `http://localhost:8081` | `KC_HOSTNAME=https://id.<client-domain>` (Q-025), `KC_PROXY_HEADERS=xforwarded`, TLS at the load balancer |
+| Hostname | `http://localhost:8081`, or a public HTTPS hostname for phones (`KC_PUBLIC_URL`) | `KC_HOSTNAME=https://id.<client-domain>` (Q-025), `KC_PROXY_HEADERS=xforwarded`, TLS at the load balancer |
 | Master admin | `KC_BOOTSTRAP_ADMIN_USERNAME` / `KC_BOOTSTRAP_ADMIN_PASSWORD` from `ERP_DEV/.env` | from the secrets manager; used only for break-glass, never by applications |
 | Health | `KC_HEALTH_ENABLED=true` → `/health/ready` | same |
 
 The master realm is only for administering Keycloak. All employees live in realm **`gh-staff`**. Guests will get a separate realm, `gh-guests` (Q-003).
+
+**Local: the realm attribute `frontendUrl` must stay unset.** It is *not* in `gh-staff-realm.json`, but it can be set at runtime in the Admin console (Realm settings → General → Frontend URL) and then lives in the Keycloak database. It overrides the request's own host for **every generated URL**, including the login form's `action`. If it points somewhere else, the browser loads the login page from one origin and submits the credentials to another; the `KC_RESTART` cookie set by the first origin is not sent, and every attempt ends in **"Restart login cookie not found"** (observed on 2026-11-15, DEVLOG). Check it with:
+
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8081/admin/realms/gh-staff | grep frontendUrl   # must print nothing
+```
+
+The login form's action must use the same origin the page was opened on:
+
+```bash
+curl -s "http://localhost:8081/realms/gh-staff/protocol/openid-connect/auth?client_id=erp-web&redirect_uri=http%3A%2F%2Flocalhost%3A5173%2F&response_type=code&scope=openid&code_challenge=8Q0mJ3d1kX7v2rN5sT9wY4pL6bC1fH0gZ3aE7uI2oK8&code_challenge_method=S256" | grep -o 'action="[^"]*'
+```
+
+A public tunnel (for example `trycloudflare.com`) is not a substitute for this: its hostname changes on every restart, and mixing it with the `http://localhost:5173` redirect URI and the local API breaks the cookie and issuer checks.
+
+### 1.1 Phones, and why plain HTTP on a LAN IP cannot work
+
+The browser app needs **HTTPS on any host other than `localhost`**. `keycloak-js` uses PKCE (`S256`), which calls `crypto.subtle`; browsers expose `crypto.subtle` only in a **secure context** (`https://`, or `http://localhost`). Opened at `http://192.168.x.x:5173` the app loads but "Sign in" does nothing and the console says *"Web Crypto API is not available"* (`window.isSecureContext === false`). Tested on 2026-11-15. Do not "fix" this by disabling PKCE — it is required by AUTHENTICATION §5.
+
+Use **one public HTTPS origin for all three services**, so there is no CORS and no cross-site cookie:
+
+```
+phone ──HTTPS──> tunnel (stable hostname) ──> Vite dev server :5173
+                                               ├─ /            the SPA
+                                               ├─ /realms, /resources ──> Keycloak :8081
+                                               └─ /api         ────────> api-gateway :8082
+```
+
+- `web/vite.config.ts` holds the proxy and `allowedHosts` (Vite answers `403 Blocked request` for an unknown `Host`).
+- `KC_PUBLIC_URL` / `KEYCLOAK_URL` = the public origin; `KEYCLOAK_ADMIN_URL` stays `http://localhost:8081` so provisioning does not depend on the tunnel.
+- `web/.env`: `VITE_API_URL` and `VITE_KEYCLOAK_URL` = the public origin.
+- The `erp-web` client needs `https://<host>/*` in redirect URIs, web origins and post-logout URIs.
+- The ngrok free plan puts one **interstitial page** in front of the first browser visit per domain per 7 days ("Visit Site" sets a cookie, then reloads the same URL, so invite links keep their query string). Programmatic calls are unaffected.
+
+Check the public side end to end:
+
+```bash
+curl -s -H "User-Agent: check/1.0" https://<host>/realms/gh-staff/.well-known/openid-configuration | grep issuer   # issuer must equal the public URL
+curl -s -o /dev/null -w '%{http_code}\n' -H "User-Agent: check/1.0" https://<host>/                                        # 200 = SPA through the proxy
+curl -s -o /dev/null -w '%{http_code}\n' -H "User-Agent: check/1.0" https://<host>/api/v1/me                                # 401 = gateway reached
+```
 
 ## 2. Realm `gh-staff` — login settings
 
@@ -133,8 +174,12 @@ Keycloak sends every employee email: invite / set password, verify email, reset 
 | `KC_BOOTSTRAP_ADMIN_USERNAME`, `KC_BOOTSTRAP_ADMIN_PASSWORD` | Keycloak container (break-glass master admin) |
 | `KC_DB_PASSWORD`, `ACCESS_DB_PASSWORD`, `POSTGRES_PASSWORD`, `POSTGRES_HOST_PORT` (default 5433) | PostgreSQL container and its init script |
 | `REDIS_PASSWORD` | Redis container, api-gateway |
-| `ERP_WEB_ORIGIN` | realm import: erp-web redirect/origin (default `http://localhost:5173`) |
-| `KEYCLOAK_URL` | gateway, services, web (`VITE_KEYCLOAK_URL`) |
+| `ERP_WEB_ORIGIN` | realm import: erp-web redirect/origin, **and** where the setup email returns after the password is set (default `http://localhost:5173`; use the public HTTPS origin for phones) |
+| `KC_PUBLIC_URL` | Keycloak `KC_HOSTNAME`: the base URL it writes into invite/reset emails and tokens. Must be what the **browser** uses |
+| `KEYCLOAK_BIND` | host interface Keycloak's :8081 is published on (default `127.0.0.1`; `0.0.0.0` for a LAN) |
+| `KEYCLOAK_URL` | gateway, services, web (`VITE_KEYCLOAK_URL`); must equal the token `iss` |
+| `KEYCLOAK_ADMIN_URL` | access-service only: internal address for Admin API calls when `KEYCLOAK_URL` is public (default: `KEYCLOAK_URL`) |
+| `CORS_ALLOWED_ORIGINS` | api-gateway: browser origins allowed to call it (comma-separated). Not needed when web and API share one origin |
 | `KEYCLOAK_REALM=gh-staff` | gateway, services, web (`VITE_KEYCLOAK_REALM`) |
 | `KC_ACCESS_SERVICE_CLIENT_SECRET` | access-service and the realm import (client id is fixed: `access-service`) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`, `SMTP_REPLY_TO`, `SMTP_AUTH`, `SMTP_STARTTLS`, `SMTP_USER`, `SMTP_PASSWORD` | Keycloak realm import placeholders (defaults point at Mailpit) |

@@ -13,9 +13,14 @@ export interface Session {
 
 const keycloak = new Keycloak({ url: config.keycloakUrl, realm: config.realm, clientId: config.clientId });
 
-/** Completes a login redirect if there is one; does not force a login, so the ERP can show its own sign-in page. */
+/** Completes a login redirect or checks active SSO session silently on page refresh. */
 export async function initAuth(): Promise<boolean> {
-  return keycloak.init({ pkceMethod: "S256", checkLoginIframe: false });
+  return keycloak.init({
+    onLoad: "check-sso",
+    silentCheckSsoRedirectUri: window.location.origin + "/silent-check-sso.html",
+    pkceMethod: "S256",
+    checkLoginIframe: false,
+  });
 }
 
 export const session: Session = {
