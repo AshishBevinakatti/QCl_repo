@@ -50,8 +50,33 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest(properties = {"erp.keycloak.issuer=" + TestSupport.ISSUER})
 @AutoConfigureMockMvc
-@Import(TestSupport.class)
+@Import({TestSupport.class, MembershipTest.Guests.class})
 class MembershipTest {
+
+    /** guest-service stand-in: records provision/resend calls; can fail like the real one. */
+    @org.springframework.boot.test.context.TestConfiguration(proxyBeanMethods = false)
+    static class Guests {
+        static final FakeGuests FAKE = new FakeGuests();
+        @org.springframework.context.annotation.Bean @org.springframework.context.annotation.Primary
+        com.quantumclk.erp.access.membership.GuestAccounts fakeGuests() { return FAKE; }
+    }
+
+    static class FakeGuests implements com.quantumclk.erp.access.membership.GuestAccounts {
+        final List<Welcome> provisioned = new java.util.concurrent.CopyOnWriteArrayList<>();
+        final List<UUID> resent = new java.util.concurrent.CopyOnWriteArrayList<>();
+        volatile boolean down;
+        volatile boolean emailBroken;
+        @Override public Result provision(Welcome w) {
+            if (down) throw new Unavailable("guest-service down", null);
+            provisioned.add(w);
+            return new Result(UUID.nameUUIDFromBytes(w.email().getBytes()), !emailBroken);
+        }
+        @Override public Result resend(UUID guestUserId, String validUntil, String requestedBy) {
+            if (down) throw new Unavailable("guest-service down", null);
+            resent.add(guestUserId);
+            return new Result(guestUserId, !emailBroken);
+        }
+    }
 
     static final UUID SE1 = UUID.randomUUID(), SE2 = UUID.randomUUID(), MGR = UUID.randomUUID(), ADMIN = UUID.randomUUID();
     static final AtomicInteger SEQ = new AtomicInteger();
@@ -389,6 +414,69 @@ class MembershipTest {
     @Test
     void unknownMemberIs404() throws Exception {
         verify(mgr(), UUID.randomUUID().toString()).andExpect(status().isNotFound());
+    }
+
+    // --- Welcome email / customer account (S3; D-120…D-122) -----------------------------------------------------------
+
+    @Test
+    void verifyingCreatesTheCustomerAccountAndSendsTheWelcomeEmail() throws Exception {
+        Guests.FAKE.down = false; Guests.FAKE.emailBroken = false;
+        JsonNode m = registerOk(se1(), customer(), null);
+        JsonNode v = json.readTree(verify(mgr(), m.get("id").asString()).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertThat(v.get("accountStatus").asString()).isEqualTo("INVITE_SENT");
+        var call = Guests.FAKE.provisioned.stream().filter(w -> w.email().equals(m.get("email").asString())).findFirst().orElseThrow();
+        assertThat(call.membershipId()).isEqualTo(m.get("membershipId").asString());
+        assertThat(call.firstName()).isEqualTo("Rohan");
+        assertThat(call.requestedBy()).isEqualTo("mohan.mgr");
+        // "16 Nov 2027": the validity end in IST, as the customer reads it
+        assertThat(call.validUntil()).matches("[0-9]{1,2} [A-Z][a-z]{2} [0-9]{4}");
+        assertThat(jdbc.queryForObject("SELECT guest_user_id FROM resort_member WHERE id = ?", UUID.class, UUID.fromString(m.get("id").asString())))
+                .isEqualTo(UUID.nameUUIDFromBytes(call.email().getBytes()));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM audit_event WHERE entity_type = 'MEMBER' AND entity_id = ? AND action = 'MEMBER_WELCOME_SENT'",
+                Integer.class, UUID.fromString(m.get("id").asString()))).isEqualTo(1);
+    }
+
+    @Test
+    void ifTheWelcomeFailsTheMembershipStaysActiveAndCanBeResent() throws Exception {
+        Guests.FAKE.down = true;
+        JsonNode m = registerOk(se1(), customer(), null);
+        String id = m.get("id").asString();
+        JsonNode v = json.readTree(verify(mgr(), id).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertThat(v.get("status").asString()).isEqualTo("ACTIVE");
+        assertThat(v.get("accountStatus").asString()).isEqualTo("INVITE_FAILED");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM audit_event WHERE entity_type = 'MEMBER' AND entity_id = ? AND action = 'MEMBER_WELCOME_FAILED'",
+                Integer.class, UUID.fromString(id))).isEqualTo(1);
+
+        Guests.FAKE.down = false;   // never provisioned -> resend provisions now
+        mvc.perform(post("/api/v1/admin/memberships/" + id + "/resend-welcome").header("Authorization", "Bearer " + admin()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.accountStatus").value("INVITE_SENT"));
+
+        int before = Guests.FAKE.resent.size();   // provisioned now -> resend just sends a fresh link
+        mvc.perform(post("/api/v1/admin/memberships/" + id + "/resend-welcome").header("Authorization", "Bearer " + admin()))
+                .andExpect(status().isOk());
+        assertThat(Guests.FAKE.resent).hasSize(before + 1);
+    }
+
+    @Test
+    void anEmailThatCouldNotBeSentIsShownAsFailed() throws Exception {
+        Guests.FAKE.down = false; Guests.FAKE.emailBroken = true;
+        try {
+            JsonNode m = registerOk(se1(), customer(), null);
+            JsonNode v = json.readTree(verify(mgr(), m.get("id").asString()).andReturn().getResponse().getContentAsString());
+            assertThat(v.get("accountStatus").asString()).isEqualTo("INVITE_FAILED");
+            assertThat(jdbc.queryForObject("SELECT guest_user_id FROM resort_member WHERE id = ?", UUID.class, UUID.fromString(m.get("id").asString()))).isNotNull();
+        } finally {
+            Guests.FAKE.emailBroken = false;
+        }
+    }
+
+    @Test
+    void resendWelcomeOnlyForActiveMembersAndOnlyByVerifiers() throws Exception {
+        JsonNode m = registerOk(se1(), customer(), null);
+        mvc.perform(post("/api/v1/admin/memberships/" + m.get("id").asString() + "/resend-welcome").header("Authorization", "Bearer " + mgr()))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("NOT_ACTIVE"));
+        mvc.perform(post("/api/v1/admin/memberships/" + m.get("id").asString() + "/resend-welcome").header("Authorization", "Bearer " + se1()))
+                .andExpect(status().isForbidden());
     }
 
     @Test

@@ -60,6 +60,13 @@ public class MembershipAdminController {
         return service.verify(id, MembershipController.staff(employees, auth, http));
     }
 
+    /** Customer account + welcome email again (new one-time link); creates the account if that failed at verification. */
+    @PostMapping("/{id}/resend-welcome")
+    @PreAuthorize("hasAuthority('PERM_memberships.verify')")
+    MemberView resendWelcome(@PathVariable UUID id, JwtAuthenticationToken auth, HttpServletRequest http) {
+        return service.resendWelcome(id, MembershipController.staff(employees, auth, http));
+    }
+
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasAuthority('PERM_memberships.verify')")
     MemberView reject(@PathVariable UUID id, @RequestBody RejectRequest r, JwtAuthenticationToken auth, HttpServletRequest http) {

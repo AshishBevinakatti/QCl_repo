@@ -1,6 +1,6 @@
 # Module: Gold Membership (SOW ERP-05 Membership & Loyalty)
 
-Status: **slices S1 + S5 built** (backend: registration, verification, encrypted payment proofs; staff ERP screen **Memberships**). Customer account, welcome email and the member pages on the landing page follow in slices S3, S4 and S6 of [inc-membership-PLAN.md](../03-phases/phase-1/inc-membership-PLAN.md).
+Status: **S1, S5 built; S3 built and tested** (customer account + welcome email + automatic sign-in: guest-service, Keycloak realm `gh-guests`, extension `gh-member-activation`; see [MEMBER-LOGIN.md](../02-architecture/identity/MEMBER-LOGIN.md)). The portal API (S4) and the landing-page member pages (S6) follow.
 Decisions: D-116…D-125 ([DECISIONS.md](../logs/DECISIONS.md)). Open questions: Q-030…Q-037. API: [api.md §3a](../02-architecture/api.md).
 
 ## What it does
@@ -8,7 +8,7 @@ Decisions: D-116…D-125 ([DECISIONS.md](../logs/DECISIONS.md)). Open questions:
 1. A **Sales Executive** pitches Gold Membership on site and fills in the customer's details and the payment in the staff ERP: Cash, Card (with the transaction ID), or Scan QR (with a screenshot of the payment, from the gallery or the phone camera).
 2. The registration is saved at once as **PENDING_VERIFICATION** and gets the next number of the client's series, e.g. `GRH-LM-0101`.
 3. An **Admin or Manager** opens the verification queue, looks at the details and the screenshot, and either **verifies** it (the membership becomes **ACTIVE** for 12 months) or **rejects** it with a reason.
-4. *(S3–S6)* On verification the customer gets one welcome email, sets a password once and is signed in to the landing page, where they see their card and booklet.
+4. On verification access-service asks guest-service for the customer's account (Keycloak `gh-guests`). Keycloak sends **one welcome email** with the Member ID and a one-time *Set your password* link. The customer sets the password once and arrives signed in on the landing page (S6 shows their card and booklet). If anything in that step fails, the membership stays ACTIVE and the queue shows **Resend welcome email**.
 
 ## Rules and why they exist
 
@@ -69,4 +69,4 @@ Web: `Memberships.test.tsx` (10 tests: provisional ID and locked executive card,
 
 ## Not built yet
 
-Customer account + welcome email + automatic sign-in (S3), portal API (S4), the landing-page member pages (S6); Resend welcome in the queue comes with S3. Voucher redemption tracking, renewals, points and RFID cards are later ERP-05/ERP-06 work.
+Portal API (S4), the landing-page member pages (S6). Voucher redemption tracking, renewals, points and RFID cards are later ERP-05/ERP-06 work.

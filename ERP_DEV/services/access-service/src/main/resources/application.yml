@@ -44,6 +44,8 @@ erp:
     # Losing it makes the stored proofs unreadable.
     proof-key: ${MEMBERSHIP_PROOF_KEY:}
     validity: ${MEMBERSHIP_VALIDITY:P12M}   # Gold validity from verification (membership-data.ts: 12 months)
+  guest-service:   # customer accounts + welcome email (D-120); internal API, not via the gateway
+    url: ${GUEST_SERVICE_URL:http://localhost:8092}
   sync:
     interval: ${ACCOUNT_SYNC_INTERVAL:PT5M}
   bootstrap-admin:   # used only while no ADMIN exists (KEYCLOAK-SETUP §10)

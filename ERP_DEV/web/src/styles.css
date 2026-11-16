@@ -1069,3 +1069,7 @@ textarea[aria-invalid="true"] { border-color: var(--danger-dot); background: var
   .mem-tag { width: 100%; }
   .mem-drawer { padding: 1rem 1rem 2rem; }
 }
+
+.mem-account { display: grid; gap: 0.5rem; }
+.mem-account p { margin: 0; }
+.mem-account button { justify-self: start; min-height: 44px; }

@@ -97,6 +97,7 @@ Module guide: [04-modules/membership.md](../04-modules/membership.md).
 | `GET /api/v1/admin/memberships/{id}/proof` | `memberships.read_all` | Payment screenshot |
 | `POST /api/v1/admin/memberships/{id}/verify` | `memberships.verify` | → `ACTIVE`, `validFrom` = now, `validUntil` = now + 12 months; payment `VERIFIED` |
 | `POST /api/v1/admin/memberships/{id}/reject` | `memberships.verify` | `{ reason }` (required) → `REJECTED`; payment `REJECTED` with the reason |
+| `POST /api/v1/admin/memberships/{id}/resend-welcome` | `memberships.verify` | Active members only (else 409 `NOT_ACTIVE`): a new welcome email and one-time link; creates the customer account first if that failed at verification. Returns `MemberView` with the new `accountStatus` |
 
 Permissions per role (Keycloak `erp-api` client roles): SALES_EXECUTIVE `register`, `read_own`; MANAGER and ADMIN all four. `/api/v1/me` lists the `memberships` module when the caller has `register` or `read_all`.
 
@@ -105,6 +106,18 @@ Registration form fields: `firstName`, `lastName`, `dob` (YYYY-MM-DD, in the pas
 `MemberView`: `{ id, membershipId, firstName, lastName, dob, mobile, email, address, tier: "GOLD", status, enrolledBy: { employeeId, name, username }, decidedBy, decidedAt, validFrom, validUntil, accountStatus, createdAt, payment: { type, amount: "25000.00", currency: "INR", transactionId, proof: { fileName, contentType, sizeBytes, sha256 } | null, status, rejectionReason, verifiedBy, decidedAt } }`. Money is a string with two decimals, never a float.
 
 Errors: 400 `VALIDATION_FAILED` with `fields`; 403 `NO_EMPLOYEE_RECORD` (signed in but no ERP employee row), 403 `SELF_VERIFICATION`; 404 `NOT_FOUND`; 409 `MEMBER_EXISTS` (live membership with that email or mobile), `NOT_PENDING`, `IDEMPOTENCY_KEY_REUSED`, `SERIES_EXHAUSTED`; 413 `PAYLOAD_TOO_LARGE` (screenshot > 5 MB; the gateway allows 6 MB on this route only); 503 `PROOF_STORAGE_NOT_CONFIGURED` (`MEMBERSHIP_PROOF_KEY` missing). Proof downloads are `inline`, `Cache-Control: no-store, private`, `X-Content-Type-Options: nosniff`.
+
+After **verify**, access-service calls guest-service (below) to create the customer's account and send the welcome email. The outcome is in `accountStatus`: `NOT_PROVISIONED` | `INVITE_SENT` | `INVITE_FAILED` | `ACTIVE`. A failure there never undoes the verification ([MEMBER-LOGIN.md](identity/MEMBER-LOGIN.md)).
+
+## 3b. guest-service (:8092; D-119…D-122)
+
+| Method & path | Caller / token | Purpose |
+|---|---|---|
+| `POST /internal/guests/provision` | access-service service account (gh-staff, aud `erp-api`, permission `guests.provision`) | `{ email, firstName, lastName, mobile?, membershipId: "GRH-LM-0101", validUntil?: "16 Nov 2027", requestedBy? }` → find or create the gh-guests account (no password), set `membershipId`, send the welcome email → `{ guestUserId, welcomeSent, message }`. Repeatable for the same email. 503 `IDENTITY_UNAVAILABLE` when Keycloak can't be reached (nothing stored) |
+| `POST /internal/guests/{guestUserId}/resend` | same | `{ validUntil?, requestedBy? }` → new one-time link and email → same result shape; 404 for an unknown account |
+| `GET /api/v1/portal/me` | signed-in guest (gh-guests, aud `guest-api`) | `{ guestId, email, firstName, lastName, emailVerified, mobile, source: "MEMBERSHIP" or "SELF_REGISTERED" }`; own profile only |
+
+`/internal/**` is not routed by the gateway. A token from the wrong realm gets 401; a staff token without `guests.provision` gets 403. Keycloak extension endpoint used by guest-service: `POST /realms/gh-guests/gh-activation/users/{id}/send` ([MEMBER-LOGIN §5](identity/MEMBER-LOGIN.md)).
 
 ## 4. Staff — lead-service (increment 2)
 

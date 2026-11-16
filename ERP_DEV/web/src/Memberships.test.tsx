@@ -194,6 +194,26 @@ describe("Memberships — verification queue (Manager)", () => {
     await waitFor(() => expect(JSON.parse(body!)).toEqual({ reason: "UTR not found in bank statement" }));
   });
 
+  it("shows the customer account status of an active member and can resend the welcome email", async () => {
+    let resent = false;
+    const active = { ...pending, status: "ACTIVE", accountStatus: "INVITE_FAILED", validFrom: "2026-11-16T10:00:00Z", validUntil: "2027-11-16T10:00:00Z" };
+    render(<Memberships me={mgrMe} request={fakeRequest({
+      "/api/v1/sales/memberships/next-number": () => ({ membershipId: "GRH-LM-0102", provisional: true }),
+      "/api/v1/sales/memberships": () => page([]),
+      "/api/v1/admin/memberships/m1/proof": () => new Blob([new Uint8Array([1])], { type: "image/png" }),
+      "/api/v1/admin/memberships/m1/resend-welcome": () => { resent = true; return { ...active, accountStatus: "INVITE_SENT" }; },
+      "/api/v1/admin/memberships": () => page([active], 0),
+    })} />);
+    fireEvent.click(await screen.findByRole("tab", { name: /Verification queue/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Review GRH-LM-0101" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/Welcome email failed/)).toBeTruthy();
+    expect(within(dialog).queryByRole("button", { name: "Verify & activate" })).toBeNull();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Resend welcome email" }));
+    await waitFor(() => expect(resent).toBe(true));
+    expect(await within(dialog).findByText(/Welcome email sent/)).toBeTruthy();
+  });
+
   it("does not offer Verify on a registration the viewer enrolled", async () => {
     const mine = { ...pending, enrolledBy: { employeeId: "emp-9", name: "Mohan Mgr", username: "mohan.mgr" } };
     render(<Memberships me={mgrMe} request={fakeRequest({

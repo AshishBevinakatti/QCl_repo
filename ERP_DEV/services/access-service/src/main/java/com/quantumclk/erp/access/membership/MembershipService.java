@@ -73,9 +73,11 @@ public class MembershipService {
     private final AuditLog audit;
     private final JsonMapper json;
     private final Period validity;
+    private final GuestAccounts guests;
 
     MembershipService(JdbcTemplate jdbc, TransactionTemplate tx, ProofStorage proofs, AuditLog audit, JsonMapper json,
-                      @Value("${erp.membership.validity:P12M}") String validity) {
+                      @Value("${erp.membership.validity:P12M}") String validity, GuestAccounts guests) {
+        this.guests = guests;
         this.jdbc = jdbc;
         this.tx = tx;
         this.proofs = proofs;
@@ -264,7 +266,50 @@ public class MembershipService {
             audit.record(by.actor(), "MEMBER_VERIFIED", ENTITY, id, Map.of("status", "PENDING_VERIFICATION"),
                     Map.of("status", "ACTIVE", "validFrom", now.toString(), "validUntil", until.toString()), null, true);
         });
+        // After the commit, never inside it: a mail or identity problem must not undo a verified payment.
+        welcome(get(id), by);
         return get(id);
+    }
+
+    /** Sends the welcome email again (a new one-time link); creates the customer account first if that failed before. */
+    public MemberView resendWelcome(UUID id, Staff by) {
+        MemberView m = get(id);
+        if (!"ACTIVE".equals(m.status())) {
+            throw new ApiException(HttpStatus.CONFLICT, "NOT_ACTIVE", "Only an active membership has a customer account to welcome.");
+        }
+        welcome(m, by);
+        return get(id);
+    }
+
+    /**
+     * Customer account in gh-guests + welcome email, through guest-service (D-120…D-122). Records the outcome on the
+     * member (guest_user_id, account_status) and in the audit log; never throws, so verification always succeeds.
+     */
+    private void welcome(MemberView m, Staff by) {
+        UUID existing = jdbc.queryForObject("SELECT guest_user_id FROM resort_member WHERE id = ?", UUID.class, m.id());
+        String validUntil = displayDate(m.validUntil());
+        GuestAccounts.Result r;
+        try {
+            r = existing == null
+                    ? guests.provision(new GuestAccounts.Welcome(m.email(), m.firstName(), m.lastName(), m.mobile(),
+                            m.membershipId(), validUntil, by.username()))
+                    : guests.resend(existing, validUntil, by.username());
+        } catch (GuestAccounts.Unavailable e) {
+            jdbc.update("UPDATE resort_member SET account_status = 'INVITE_FAILED', updated_at = ? WHERE id = ?", now(), m.id());
+            audit.record(by.actor(), "MEMBER_WELCOME_FAILED", ENTITY, m.id(), null, null, "customer account service unavailable", false);
+            return;
+        }
+        String status = r.welcomeSent() ? "INVITE_SENT" : "INVITE_FAILED";
+        jdbc.update("UPDATE resort_member SET guest_user_id = ?, account_status = CASE WHEN account_status = 'ACTIVE' THEN 'ACTIVE' ELSE ? END, updated_at = ? WHERE id = ?",
+                r.guestUserId(), status, now(), m.id());
+        audit.record(by.actor(), r.welcomeSent() ? "MEMBER_WELCOME_SENT" : "MEMBER_WELCOME_FAILED", ENTITY, m.id(), null,
+                Map.of("guestUserId", r.guestUserId().toString()), r.welcomeSent() ? null : "email not sent", r.welcomeSent());
+    }
+
+    /** "16 Nov 2027": the validity end as the customer reads it (resort time, IST). */
+    static String displayDate(OffsetDateTime t) {
+        return t == null ? "" : t.atZoneSameInstant(java.time.ZoneId.of("Asia/Kolkata"))
+                .format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH));
     }
 
     public MemberView reject(UUID id, String reason, Staff by) {

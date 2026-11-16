@@ -30,6 +30,13 @@ const PAYMENT_TYPES = [
   { value: "CARD", label: "Card", hint: "Swipe / tap at the terminal" },
   { value: "SCAN_QR", label: "Scan QR", hint: "Customer pays the resort UPI QR" },
 ];
+/** The customer's website account (Keycloak gh-guests) after verification (D-120…D-122). */
+export const ACCOUNT_STATUS: Record<string, string> = {
+  NOT_PROVISIONED: "Not created yet",
+  INVITE_SENT: "Welcome email sent — waiting for the customer to set a password",
+  INVITE_FAILED: "Welcome email failed — resend it",
+  ACTIVE: "Customer has signed in",
+};
 const PAYMENT_LABEL: Record<string, string> = { CASH: "Cash", CARD: "Card", SCAN_QR: "Scan QR (UPI)" };
 const EMPTY = { firstName: "", lastName: "", dob: "", mobile: "", email: "", address: "", paymentType: "CASH", amount: "", transactionId: "" };
 type Field = keyof typeof EMPTY | "proof";
@@ -418,6 +425,7 @@ function ReviewDrawer({ member: m, me, request, onClose, onDecided }:
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mine = me.employee?.id === m.enrolledBy.employeeId;
+  const [account, setAccount] = useState(m.accountStatus);
   const pending = m.status === "PENDING_VERIFICATION";
   const canDecide = me.permissions.includes("memberships.verify");
 
@@ -438,6 +446,18 @@ function ReviewDrawer({ member: m, me, request, onClose, onDecided }:
     window.addEventListener("keydown", esc);
     return () => window.removeEventListener("keydown", esc);
   }, [zoom, onClose]);
+
+  async function resendWelcome() {
+    setBusy(true); setError(null);
+    try {
+      const updated = await request<Member>(`/api/v1/admin/memberships/${m.id}/resend-welcome`, { method: "POST" });
+      setAccount(updated.accountStatus);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function decide(path: string, body?: object) {
     setBusy(true); setError(null);
@@ -492,6 +512,18 @@ function ReviewDrawer({ member: m, me, request, onClose, onDecided }:
         )}
 
         {error && <p className="mem-error" role="alert">{error}</p>}
+
+        {m.status === "ACTIVE" && (
+          <div className="mem-account">
+            <span className="mem-proof-title">Customer website account</span>
+            <p className={account === "INVITE_FAILED" ? "mem-error" : "mem-note"}>{ACCOUNT_STATUS[account] ?? account}</p>
+            {canDecide && account !== "ACTIVE" && (
+              <button type="button" className="btn-secondary" disabled={busy} onClick={() => void resendWelcome()}>
+                Resend welcome email
+              </button>
+            )}
+          </div>
+        )}
 
         {pending && canDecide && (
           mine ? (

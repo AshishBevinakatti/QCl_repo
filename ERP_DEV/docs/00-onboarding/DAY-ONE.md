@@ -41,17 +41,19 @@ npm run dev           # http://localhost:3000
    ```bash
    docker compose --env-file ERP_DEV/.env -f ERP_DEV/infra/docker-compose.yml up -d --wait
    ```
-   ✅ Expected: four containers, `postgres`, `keycloak`, `redis` and `mailpit`, all `Healthy`. Keycloak takes about a minute on first start. A missing secret stops compose with `required variable … is missing a value`.
+   Before the first start, build the Keycloak extension (it is mounted into Keycloak): `(cd ERP_DEV/infra/keycloak-extensions/gh-member-activation && ./mvnw -q package -DskipTests)`.
+   ✅ Expected: `postgres`, `keycloak`, `redis` and `mailpit` `Healthy`, plus `proxy` (Caddy, one public origin split by path) running. Keycloak takes about a minute on first start. A missing secret stops compose with `required variable … is missing a value`.
 3. Look around:
-   - Keycloak admin console: http://localhost:8081/admin, log in with `KC_BOOTSTRAP_ADMIN_USERNAME`/`PASSWORD`, then switch to realm **gh-staff**.
+   - Keycloak admin console: http://localhost:8081/admin, log in with `KC_BOOTSTRAP_ADMIN_USERNAME`/`PASSWORD`, then switch to realm **gh-staff** (staff) or **gh-guests** (members and guests).
    - Mailpit (all dev emails land here): http://localhost:8025
-   - PostgreSQL: `localhost:5433` (not 5432); database `access_db`, user `access_svc`.
+   - PostgreSQL: `localhost:5433` (not 5432); databases `access_db` (user `access_svc`) and `guest_db` (user `guest_svc`). A volume created before 2026-11-16 has no `guest_db`; create it once: `docker exec golden-hills-erp-postgres-1 psql -U postgres -c "CREATE ROLE guest_svc LOGIN PASSWORD '<GUEST_DB_PASSWORD>'" -c "CREATE DATABASE guest_db OWNER guest_svc"`.
 4. Stop: `docker compose --env-file ERP_DEV/.env -f ERP_DEV/infra/docker-compose.yml down`. Add `-v` to also delete the dev data, which you need after editing the realm file.
 
 ## 5b. Run the ERP locally (after §5)
-In three terminals, with `set -a; . ERP_DEV/.env; set +a` first in each backend terminal:
+In four terminals, with `set -a; . ERP_DEV/.env; set +a` first in each backend terminal:
 ```bash
 (cd ERP_DEV/services/access-service && ./mvnw spring-boot:run)   # :8091
+(cd ERP_DEV/services/guest-service  && ./mvnw spring-boot:run)   # :8092 (member accounts + welcome email)
 (cd ERP_DEV/services/api-gateway   && ./mvnw spring-boot:run)    # :8082
 (cd ERP_DEV/web && npm ci && npm run dev)                        # http://localhost:5173/erp/
 ```

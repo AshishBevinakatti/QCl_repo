@@ -27,7 +27,7 @@ flowchart LR
   GW["api-gateway (Spring Cloud Gateway) :8082\nJWT check · rate limit · correlation id · CORS"]
   subgraph Services["Spring Boot services (each own DB + Flyway)"]
     ACC["access-service :8091\nemployees · Keycloak Admin API · /me"]
-    GST["guest-service :8092\nguest profile (increment 2)"]
+    GST["guest-service :8092\nmember accounts (gh-guests)"]
     LEAD["lead-service :8093\ninquiries · lead queue · claim · outbox"]
     NOTI["notification-service :8094\n(later increment)"]
   end
@@ -56,7 +56,7 @@ flowchart LR
 |---|---|---|---|
 | `api-gateway` | Routing, JWT validation, rate limits (Redis), request-size limits, correlation IDs, CORS. **No business logic, no DB** | 1 | 8082 |
 | `access-service` | Employee profiles, Keycloak account provisioning and sync, `/me`, account audit. Blueprint "Access Control" service. Long-term ownership of employee records versus the future HR & Workforce service: Q-028 | 1 | 8091 |
-| `guest-service` | Guest profile linked to the identity subject (Blueprint §6 Guest & CRM) | 2 (guest login via Keycloak `gh-guests`, D-114) | 8092 |
+| `guest-service` | Guest and member accounts in Keycloak `gh-guests`, welcome email via the extension `gh-member-activation`, guest profile (Blueprint §6 Guest & CRM) | Gold Membership increment (D-119…D-122; supersedes D-114). See [MEMBER-LOGIN.md](identity/MEMBER-LOGIN.md) | 8092 |
 | `lead-service` | Inquiries/leads, public reference, activity history, atomic claim, transactional outbox | 2 | 8093 |
 | `notification-service` | Email adapter, delivery attempts, retries, dead-letter queue | Later increment (with SLA) | 8094 |
 | CMS | Public content | Not scaffolded. The landing page is static today; Blueprint Q-015 (CMS in Phase 1?) is open | — |
@@ -69,7 +69,7 @@ Each service is its own Maven project (its own `pom.xml`, Dockerfile, tests and 
 |---|---|---|---|
 | `keycloak` | Keycloak | `keycloak` | Credentials, sessions, identity: only Keycloak touches it |
 | `access_db` | access-service | `access_svc` | `employee`, `audit_event`, `idempotency_key` ([AUTHENTICATION §9](identity/AUTHENTICATION.md)) |
-| `guest_db` | guest-service | `guest_svc` | Guest profile with `keycloak_sub`, consent. **No passwords** |
+| `guest_db` | guest-service | `guest_svc` | `guest_account` (Keycloak user id, email, names, mobile, source, welcome sent) + append-only `audit_event`. **No passwords, no membership data** (D-120); consent later |
 | `lead_db` | lead-service | `lead_svc` | `lead`, `lead_activity`, `outbox_event`, `idempotency_key` |
 | `notification_db` | notification-service | `notification_svc` | Delivery attempts (later) |
 
@@ -99,7 +99,7 @@ ERP_Resort/
 │   ├── services/
 │   │   ├── api-gateway/               README now; code in increment 1
 │   │   ├── access-service/            README now; code in increment 1
-│   │   ├── guest-service/             README now; code in increment 2
+│   │   ├── guest-service/             member accounts + welcome email (Gold Membership)
 │   │   └── lead-service/              README now; code in increment 2
 │   ├── web/                           staff ERP (React) — README now; code in increment 1
 │   ├── infra/                         README now; docker-compose + Keycloak realm in increment 1

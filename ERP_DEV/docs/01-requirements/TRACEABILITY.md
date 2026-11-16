@@ -32,5 +32,5 @@ Design and test columns get filled in as increments are built. "TBD" means not b
 | REQ-MEM-005 | OD | partial unique indexes `resort_member_*_live` | `MembershipTest` (aRejectedPersonCanRegisterAgain…) ✅ |
 | REQ-MEM-006 | Rules §6 | `AuditLog.record(…, "MEMBER", …)` | `MembershipTest` (audit rows checked) ✅ |
 | REQ-MEM-007 | Rules §4 | `idempotency_key` | `MembershipTest` (sameIdempotencyKey…) ✅ |
-| REQ-MEM-008 | SOW ERP-05; D-119…D-122 | inc-membership-PLAN S3, S6 | TBD |
+| REQ-MEM-008 | SOW ERP-05; D-119…D-122 | MEMBER-LOGIN.md; extension `gh-member-activation`; realm `gh-guests`; guest-service; `MembershipService.welcome` | `ActivationFlowIT` 5/5 (real Keycloak: email → set password once → code → token; single use; forged links) ✅; `GuestProvisioningTest` 9/9 ✅; `MembershipTest` welcome tests (4) ✅; web resend test ✅; live phone test TBD (S7) |
 | REQ-MEM-009 | SOW ERP-05; D-123 | inc-membership-PLAN S4, S6 | TBD |
