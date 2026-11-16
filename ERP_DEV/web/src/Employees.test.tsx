@@ -54,6 +54,23 @@ describe("Employees", () => {
     expect(JSON.parse(sent!.body as string)).toMatchObject({ email: "ravi@example.test", jobRole: "SALES_EXECUTIVE", whatsappOptIn: false });
   });
 
+  it("picks the job role from role cards", async () => {
+    let sent: RequestInit | undefined;
+    const request = fakeRequest({
+      "/api/v1/admin/employees?": () => ({ items: [], page: 0, size: 100, total: 0 }),
+      "/api/v1/admin/employees": (init) => { sent = init; return { ...ravi, jobRole: "MANAGER" }; },
+    });
+    render(<Employees request={request} canManage />);
+    expect((screen.getByRole("radio", { name: /Sales executive/ }) as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(screen.getByRole("radio", { name: /Manager/ }));
+    expect((screen.getByRole("radio", { name: /Manager/ }) as HTMLInputElement).checked).toBe(true);
+    fill("First name", "Ravi"); fill("Last name", "Kumar"); fill("Email", "ravi@example.test");
+    fill("Username", "ravi.kumar"); fill("Mobile (e.g. +91 98765 43210)", "+91 98765 43210");
+    fireEvent.click(screen.getByRole("button", { name: "Add employee" }));
+    await screen.findByRole("status");
+    expect(JSON.parse(sent!.body as string)).toMatchObject({ jobRole: "MANAGER" });
+  });
+
   it("shows the server's field errors next to the inputs", async () => {
     const request = fakeRequest({
       "/api/v1/admin/employees?": () => ({ items: [], page: 0, size: 100, total: 0 }),

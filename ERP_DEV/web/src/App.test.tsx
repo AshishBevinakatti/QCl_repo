@@ -11,12 +11,18 @@ const admin: Me = {
 };
 
 describe("SignIn", () => {
-  it("only offers a redirect to Keycloak, never a password field", () => {
-    const onSignIn = vi.fn();
-    const { container } = render(<SignIn onSignIn={onSignIn} />);
+  it("offers only the two role cards, never a password field", () => {
+    const { container } = render(<SignIn onSignIn={() => {}} />);
     expect(container.querySelector("input[type=password]")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
-    expect(onSignIn).toHaveBeenCalled();
+    const titles = screen.getAllByRole("button").map((b) => b.querySelector("strong")?.textContent);
+    expect(titles).toEqual(["Sales Admin", "Sales Executive"]);
+  });
+
+  it("starts the same Keycloak sign-in from every card", () => {
+    const onSignIn = vi.fn();
+    render(<SignIn onSignIn={onSignIn} />);
+    fireEvent.click(screen.getByRole("button", { name: /Sales Executive/ }));
+    expect(onSignIn).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -24,6 +30,7 @@ describe("Dashboard", () => {
   it("shows the employee and only the modules /me allows", async () => {
     render(<Dashboard loadMe={() => Promise.resolve(admin)} onSignOut={() => {}} />);
     expect(await screen.findByText("Welcome, Asha Rao")).toBeTruthy();
+    expect(screen.getByText(/Sales Admin/)).toBeTruthy(); // the token role, in friendly words
     const links = screen.getAllByRole("link").map((a) => a.textContent);
     expect(links).toEqual(["Dashboard", "Employees", "Audit log"]);
   });

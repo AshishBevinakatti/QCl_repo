@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createApi, ForbiddenError, SessionEndedError } from "./api";
+import { config } from "./config";
 import type { Session } from "./auth";
 
 function fakeSession(overrides: Partial<Session> = {}): Session {
@@ -18,7 +19,7 @@ describe("api request", () => {
     const fetchFn = vi.fn().mockResolvedValue(json(200, { ok: true }));
     await createApi(fakeSession(), fetchFn)("/api/v1/me");
     const [url, init] = fetchFn.mock.calls[0];
-    expect(url).toBe("http://localhost:8082/api/v1/me");
+    expect(url).toBe(`${config.apiUrl}/api/v1/me`); // configured base + path, not a hard-coded host
     expect(new Headers(init.headers).get("Authorization")).toBe("Bearer t1");
   });
 
