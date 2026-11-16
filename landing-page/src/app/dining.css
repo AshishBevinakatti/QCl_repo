@@ -94,7 +94,7 @@
 }
 .dindex-row {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) 208px 168px;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px 24px;
   padding-block: 20px;
@@ -118,8 +118,9 @@
   font-size: 15px;
   font-variant-numeric: tabular-nums;
   color: color-mix(in srgb, var(--color-chalk) 86%, transparent);
+  text-align: right;
 }
-.dindex-status { justify-self: start; }
+/* .dindex-status removed */
 
 .dindex-row:focus-visible { outline: 2px solid var(--color-brass); outline-offset: 4px; }
 
@@ -449,7 +450,7 @@
   .dthali { width: min(200px, 56vw); justify-self: start; }
   .dindex-item { gap: 12px; }
   .dindex-row { grid-template-columns: 28px minmax(0, 1fr); gap: 6px 12px; padding-block: 16px; }
-  .dindex-hours, .dindex-status { grid-column: 2; }
+  .dindex-hours { grid-column: 2; text-align: left; }
   .dindex-status:empty { display: none; }
 
   .dfeat-inner { grid-template-columns: 1fr; }
