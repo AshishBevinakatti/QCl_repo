@@ -5,7 +5,6 @@ import { ArrowRight } from "./icons";
 
 interface LocationMapCardProps {
   coordinates?: string;
-  displayCoords?: string;
   locationName?: string;
   surveyNo?: string;
   className?: string;
@@ -13,7 +12,6 @@ interface LocationMapCardProps {
 
 export default function LocationMapCard({
   coordinates = "16.239532, 75.625928",
-  displayCoords = "16.239532° N, 75.625928° E",
   locationName = "Golden Hills Resort & Spa",
   surveyNo = "Survey No. 162/2A, Anagawadi Village",
   className = "",
@@ -21,24 +19,12 @@ export default function LocationMapCard({
   const [mapType, setMapType] = useState<"m" | "k">("m"); // 'm' = Roadmap, 'k' = Satellite
   const [zoomLevel, setZoomLevel] = useState<number>(14);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
-  const [copied, setCopied] = useState<boolean>(false);
 
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(coordinates)}`;
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(coordinates)}`;
   
   // Public Google Maps embed URL
   const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(coordinates)}&t=${mapType}&z=${zoomLevel}&hl=en&ie=UTF8&iwloc=&output=embed`;
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(coordinates);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2400);
-    } catch {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2400);
-    }
-  };
 
   const handleZoomIn = () => {
     setZoomLevel((prev) => Math.min(prev + 1, 18));
@@ -125,21 +111,6 @@ export default function LocationMapCard({
             <span>Loading map</span>
           </div>
         )}
-
-        {/* Floating Top GPS Badge */}
-        <div className="map-floating-coords">
-          <span className="map-coords-dot" />
-          <code>{displayCoords}</code>
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="map-coords-copy-btn"
-            title="Copy coordinates"
-            aria-label="Copy coordinates"
-          >
-            {copied ? "✓ Copied" : "Copy"}
-          </button>
-        </div>
 
         {/* Zoom Controls Overlay */}
         <div className="map-card-zoom-controls" role="group" aria-label="Map zoom controls">
