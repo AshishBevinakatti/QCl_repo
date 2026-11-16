@@ -1,6 +1,6 @@
 # Module: Gold Membership (SOW ERP-05 Membership & Loyalty)
 
-Status: **S1, S5 built; S3 built and tested** (customer account + welcome email + automatic sign-in: guest-service, Keycloak realm `gh-guests`, extension `gh-member-activation`; see [MEMBER-LOGIN.md](../02-architecture/identity/MEMBER-LOGIN.md)). **S4 built:** `GET /api/v1/portal/membership/me` (api.md §3c). The landing-page member pages (S6) follow.
+Status: **S1, S5 built; S3 built and tested** (customer account + welcome email + automatic sign-in: guest-service, Keycloak realm `gh-guests`, extension `gh-member-activation`; see [MEMBER-LOGIN.md](../02-architecture/identity/MEMBER-LOGIN.md)). **S4 built:** `GET /api/v1/portal/membership/me` (api.md §3c). **S6 built:** the landing page signs members in with Keycloak and shows their real card (below).
 Decisions: D-116…D-125 ([DECISIONS.md](../logs/DECISIONS.md)). Open questions: Q-030…Q-037. API: [api.md §3a](../02-architecture/api.md).
 
 ## What it does
@@ -36,6 +36,20 @@ Decisions: D-116…D-125 ([DECISIONS.md](../logs/DECISIONS.md)). Open questions:
 
 The screen only hides what the person can't use; every rule is enforced by the server. The CSP allows `blob:` images for the preview and the screenshot viewer. Phone layout: tabs, menu and payment pills stack below 640 px.
 
+## Landing page (S6; D-123)
+
+| Where | What changed (nothing removed) |
+|---|---|
+| `guest-auth.ts` (new) | keycloak-js 26.2.5: realm `gh-guests`, client `guest-web`, PKCE S256, tokens in memory, silent session check (`public/silent-check-sso.html`). Keycloak address: `NEXT_PUBLIC_KEYCLOAK_URL`, else the site's own origin (shared tunnel), else `http://localhost:8081` when the site runs on `localhost:3000` |
+| `/member/activate` (new) | The welcome-email link. Reads `t`, starts a PKCE sign-in with `activation_token`, returns to `/membership?welcome=1` |
+| `guest-session.ts` | A real session next to Ritvik's sample one: kind `member` (verified Gold Membership from `GET /api/v1/portal/membership/me`) or `guest` (signed in, no membership). Real usage is 0 (redemptions are recorded at the resort). `?welcome=1` scrolls to the card |
+| `/membership`, `/profile` | The card, hero and booklet show the real number, holder and validity. `/profile` adds status, amenities (`member-benefits.ts`, each "to be confirmed", Q-032) and the concierge (executive; WhatsApp/call only if they share a number, else the resort desk) |
+| `profile-sign-in.tsx` | Email tab: email only, then Keycloak. Membership-ID tab: unchanged labelled sample preview. Sample IDs use `GRH-LM-0000` |
+| `/login`, `/plan-ahead` | Email tab: email only, then Keycloak ("Forgot password?" opens Keycloak's page, which has the reset link). Register: name/email/phone, then Keycloak registration. OTP and Booking-ID tabs visible but disabled, "Coming soon". Fake offline sign-ins removed. Quick-demo buttons fill the email only. A real Gold Member's folio card on `/plan-ahead` shows "Gold Member · GRH-LM-####" and privileges left; non-members unchanged (Q-036) |
+| `portal-client.ts`, `next.config.ts` | API calls are same-origin (`/api/v1/portal`); on `localhost:3000` Next rewrites `/api` to the gateway (`GATEWAY_URL`, default `http://localhost:8082`) |
+
+Not changed (increment 2): the reservation-request form still shows an "Offline Preview" reference when the enquiry service is unreachable (lead-service doesn't exist yet).
+
 ## Data (access_db, migration `V2__gold_membership.sql`)
 
 - `membership_number_counter`: one row per series (`GRH-LM`, next 101, last 5100).
@@ -69,4 +83,4 @@ Web: `Memberships.test.tsx` (10 tests: provisional ID and locked executive card,
 
 ## Not built yet
 
-The landing-page member pages (S6). Voucher redemption tracking, renewals, points and RFID cards are later ERP-05/ERP-06 work.
+Live end-to-end test on a phone (S7). Voucher redemption tracking, renewals, points and RFID cards are later ERP-05/ERP-06 work.

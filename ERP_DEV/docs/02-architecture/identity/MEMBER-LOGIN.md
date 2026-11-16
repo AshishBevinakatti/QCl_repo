@@ -43,6 +43,7 @@ Keycloak's built-in "execute actions" email lets someone set a password, but it 
 | Client `guest-service` | same file | Confidential, service account with realm-management `manage-users`, `view-users`, `query-users` only. Default scopes include **`kc-admin-api`**: Keycloak 26.8 refuses Admin API calls (401) without that audience |
 | Extension `gh-member-activation` | `infra/keycloak-extensions/gh-member-activation` | Authenticator (accepts the token) + `POST /realms/gh-guests/gh-activation/users/{id}/send` (issues the token, sends the email) + email theme (`gh-welcome.ftl`) + login theme (Golden Hills colours) |
 | guest-service | `services/guest-service` (:8092, `guest_db`) | `POST /internal/guests/provision`, `POST /internal/guests/{id}/resend` (called by access-service), `GET /api/v1/portal/me` |
+| Landing page | `landing-page/src/app/guest-auth.ts`, `member/activate`, `guest-session.ts` | keycloak-js PKCE sign-in, the activation hand-off, the member session ([membership.md](../../04-modules/membership.md) "Landing page") |
 | access-service | `membership` package | After verify: provision + welcome; `POST /api/v1/admin/memberships/{id}/resend-welcome`; stores `guest_user_id`, `account_status` |
 
 ## 5. Security rules

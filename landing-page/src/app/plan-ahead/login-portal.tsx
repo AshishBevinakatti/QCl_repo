@@ -7,8 +7,6 @@ import {
   User,
   Mail,
   Lock,
-  Eye,
-  EyeOff,
   Phone,
   ArrowRight,
   ArrowLeft,
@@ -22,6 +20,8 @@ import {
 } from "lucide-react";
 import { logo, logoLight, getScene } from "../resort-assets";
 import { portalApi, type GuestUser } from "../portal-client";
+import { register as keycloakRegister, signIn } from "../guest-auth";
+import { signOut as endSession, useSession } from "../guest-session";
 
 const LOGIN_SCENES = [
   { id: "dusk-pool-candidate-p38", title: "Golden Hills Resort Dusk Pool & Cottages" },
@@ -50,17 +50,12 @@ export default function LoginPortal() {
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
   // Register form state
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPhone, setRegPhone] = useState("");
-  const [regPassword, setRegPassword] = useState("");
-  const [regConfirmPassword, setRegConfirmPassword] = useState("");
-  const [showRegPassword, setShowRegPassword] = useState(false);
   const [enrollPrivilege, setEnrollPrivilege] = useState(true);
   const [agreeTerms, setAgreeTerms] = useState(true);
 
@@ -94,6 +89,13 @@ export default function LoginPortal() {
     }
   }, []);
 
+  // A real sign-in (Keycloak, gh-guests; D-119) shows the same signed-in card.
+  const session = useSession();
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (session && session.kind !== "sample") setCurrentUser(session.user);
+  }, [session]);
+
   // -------------------------------------------------------------------------
   // Sign In Handler (Connected to portalApi.login)
   // -------------------------------------------------------------------------
@@ -106,34 +108,12 @@ export default function LoginPortal() {
       setErrorMsg("Please enter a valid guest email address.");
       return;
     }
-    if (!loginPassword || loginPassword.length < 6) {
-      setErrorMsg("Password must be at least 6 characters.");
-      return;
-    }
-
+    // The password is typed on the secure Golden Hills page (Keycloak), never here.
     setIsLoading(true);
     try {
-      const user = await portalApi.login(loginEmail, loginPassword);
-      setCurrentUser(user);
-      setSuccessMsg(`Welcome back, ${user.name}! Accessing your guest folio & member ledger...`);
-    } catch (err: unknown) {
-      // If backend service is not running locally, provide graceful fallback session
-      const message = err instanceof Error ? err.message : "Sign in failed";
-      if (message.includes("fetch") || message.includes("Failed to fetch") || message.includes("NetworkError")) {
-        const fallbackUser: GuestUser = {
-          guestId: "GHR-" + Math.floor(1000 + Math.random() * 9000),
-          name: loginEmail.split("@")[0].replace(".", " "),
-          email: loginEmail,
-          phone: "+91 98765 43210",
-          token: "demo-jwt-token-" + Date.now(),
-        };
-        portalApi.setStoredUser(fallbackUser);
-        setCurrentUser(fallbackUser);
-        setSuccessMsg(`Signed in as ${fallbackUser.name} (Offline Preview mode).`);
-      } else {
-        setErrorMsg(message);
-      }
-    } finally {
+      await signIn(loginEmail.trim(), "/membership?welcome=1");
+    } catch {
+      setErrorMsg("We could not reach the sign-in service. Please try again in a moment.");
       setIsLoading(false);
     }
   };
@@ -159,42 +139,17 @@ export default function LoginPortal() {
       setErrorMsg("Please enter a valid 10-digit mobile number.");
       return;
     }
-    if (!regPassword || regPassword.length < 6) {
-      setErrorMsg("Password must be at least 6 characters.");
-      return;
-    }
-    if (regPassword !== regConfirmPassword) {
-      setErrorMsg("Passwords do not match. Please re-enter.");
-      return;
-    }
     if (!agreeTerms) {
       setErrorMsg("Please accept the Terms of Service and Privacy Policy.");
       return;
     }
 
+    // The account (with its password) is created on the secure Golden Hills page (Keycloak registration).
     setIsLoading(true);
     try {
-      const user = await portalApi.register(regName.trim(), regEmail.trim(), cleanPhone, regPassword);
-      setCurrentUser(user);
-      setSuccessMsg(`Welcome to Golden Hills Resort, ${user.name}! Your guest account has been created.`);
-    } catch (err: unknown) {
-      // If backend service is not running locally, provide graceful fallback session
-      const message = err instanceof Error ? err.message : "Registration failed";
-      if (message.includes("fetch") || message.includes("Failed to fetch") || message.includes("NetworkError")) {
-        const fallbackUser: GuestUser = {
-          guestId: "GHR-" + Math.floor(1000 + Math.random() * 9000),
-          name: regName.trim(),
-          email: regEmail.trim(),
-          phone: "+91 " + cleanPhone,
-          token: "demo-jwt-token-" + Date.now(),
-        };
-        portalApi.setStoredUser(fallbackUser);
-        setCurrentUser(fallbackUser);
-        setSuccessMsg(`Account created for ${fallbackUser.name}! (Connected via local preview).`);
-      } else {
-        setErrorMsg(message);
-      }
-    } finally {
+      await keycloakRegister("/membership?welcome=1");
+    } catch {
+      setErrorMsg("We could not reach the sign-in service. Please try again in a moment.");
       setIsLoading(false);
     }
   };
@@ -283,6 +238,7 @@ export default function LoginPortal() {
   // Sign Out Handler
   // -------------------------------------------------------------------------
   const handleSignOut = () => {
+    endSession();   // also ends a Keycloak session (guest-session.ts)
     portalApi.logout();
     setCurrentUser(null);
     setSuccessMsg("You have signed out safely.");
@@ -295,10 +251,8 @@ export default function LoginPortal() {
     setSuccessMsg("");
     if (type === "guest") {
       setLoginEmail("guest.retreat@goldenhills.in");
-      setLoginPassword("GoldenHills2026!");
     } else {
       setLoginEmail("privilege.vip@goldenhills.in");
-      setLoginPassword("ClubPrivilege2026!");
     }
   };
 
@@ -566,51 +520,9 @@ export default function LoginPortal() {
                     </div>
                   </div>
 
-                  <div className="login-field-row">
-                    <div className="login-field-group">
-                      <label htmlFor="reg-password" className="login-label">
-                        Password *
-                      </label>
-                      <div className="login-input-wrapper">
-                        <Lock size={17} className="login-input-icon" />
-                        <input
-                          id="reg-password"
-                          type={showRegPassword ? "text" : "password"}
-                          required
-                          value={regPassword}
-                          onChange={(e) => setRegPassword(e.target.value)}
-                          placeholder="Min. 6 chars"
-                          className="login-input login-input-password"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowRegPassword(!showRegPassword)}
-                          className="login-password-toggle"
-                          aria-label={showRegPassword ? "Hide password" : "Show password"}
-                        >
-                          {showRegPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="login-field-group">
-                      <label htmlFor="reg-confirm" className="login-label">
-                        Confirm Password *
-                      </label>
-                      <div className="login-input-wrapper">
-                        <Lock size={17} className="login-input-icon" />
-                        <input
-                          id="reg-confirm"
-                          type={showRegPassword ? "text" : "password"}
-                          required
-                          value={regConfirmPassword}
-                          onChange={(e) => setRegConfirmPassword(e.target.value)}
-                          placeholder="Repeat password"
-                          className="login-input login-input-password"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  <p className="login-secure-note">
+                    <Lock size={15} /> Next you choose your password on the secure Golden Hills page and confirm your email.
+                  </p>
 
                   {/* Privilege Club Enrollment Opt-in */}
                   <div className="register-privilege-box">
@@ -693,33 +605,39 @@ export default function LoginPortal() {
                       className={`login-tab ${authTab === "password" ? "active" : ""}`}
                     >
                       <Mail size={15} />
-                      <span>Email &amp; Password</span>
+                      <span>Email</span>
                     </button>
                     <button
                       type="button"
                       role="tab"
                       aria-selected={authTab === "otp"}
+                      disabled
+                      aria-disabled="true"
+                      title="Coming soon"
                       onClick={() => {
                         setAuthTab("otp");
                         setErrorMsg("");
                       }}
-                      className={`login-tab ${authTab === "otp" ? "active" : ""}`}
+                      className={`login-tab is-soon ${authTab === "otp" ? "active" : ""}`}
                     >
                       <Phone size={15} />
-                      <span>Mobile OTP</span>
+                      <span>Mobile OTP · Coming soon</span>
                     </button>
                     <button
                       type="button"
                       role="tab"
                       aria-selected={authTab === "booking"}
+                      disabled
+                      aria-disabled="true"
+                      title="Coming soon"
                       onClick={() => {
                         setAuthTab("booking");
                         setErrorMsg("");
                       }}
-                      className={`login-tab ${authTab === "booking" ? "active" : ""}`}
+                      className={`login-tab is-soon ${authTab === "booking" ? "active" : ""}`}
                     >
                       <Search size={15} />
-                      <span>Find Booking</span>
+                      <span>Find Booking · Coming soon</span>
                     </button>
                   </div>
 
@@ -747,41 +665,18 @@ export default function LoginPortal() {
 
                       <div className="login-field-group">
                         <div className="login-label-row">
-                          <label htmlFor="login-password" className="login-label">
-                            Password
-                          </label>
+                          <span className="login-label">Password</span>
                           <button
                             type="button"
-                            onClick={() => {
-                              setForgotPasswordOpen(true);
-                              setForgotEmail(loginEmail);
-                            }}
+                            onClick={() => void signIn(loginEmail.trim(), "/membership?welcome=1")}
                             className="login-forgot-link"
                           >
                             Forgot password?
                           </button>
                         </div>
-                        <div className="login-input-wrapper">
-                          <Lock size={17} className="login-input-icon" />
-                          <input
-                            id="login-password"
-                            type={showLoginPassword ? "text" : "password"}
-                            autoComplete="current-password"
-                            required
-                            value={loginPassword}
-                            onChange={(e) => setLoginPassword(e.target.value)}
-                            placeholder="••••••••••••"
-                            className="login-input login-input-password"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowLoginPassword(!showLoginPassword)}
-                            className="login-password-toggle"
-                            aria-label={showLoginPassword ? "Hide password" : "Show password"}
-                          >
-                            {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                          </button>
-                        </div>
+                        <p className="login-secure-note">
+                          <Lock size={15} /> You will enter your password on the secure Golden Hills sign-in page.
+                        </p>
                       </div>
 
                       <div className="login-options-row">

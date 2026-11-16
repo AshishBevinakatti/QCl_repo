@@ -533,3 +533,20 @@
 @media (prefers-reduced-motion: reduce) {
   .nstay { animation: none; }
 }
+
+/* Real Gold Member extras on /profile (member-extras.tsx; D-123) */
+.mx { display: grid; gap: 16px; margin: 4px 0 24px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.mx > div { border: 1px solid var(--color-line); border-radius: 14px; padding: 16px 18px; background: var(--color-chalk); }
+.mx-kicker { margin: 0 0 6px; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-brass-ink); }
+.mx-active { margin: 0; font-weight: 600; color: var(--color-forest); }
+.mx-active span { color: #2f8a4c; margin-right: 4px; }
+.mx-valid { margin: 4px 0 10px; font-size: 14px; color: var(--color-muted); font-variant-numeric: tabular-nums; }
+.mx-actions { display: flex; flex-wrap: wrap; gap: 14px; }
+.mx-amenities ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.mx-amenities li { display: grid; grid-template-columns: 1fr auto; column-gap: 8px; font-size: 14px; }
+.mx-amenities li strong { color: var(--color-ink); }
+.mx-amenities li span { grid-column: 1; color: var(--color-muted); font-size: 13px; }
+.mx-amenities li em { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-style: normal; font-size: 11px; color: var(--color-brass-ink); border: 1px dashed var(--color-brass); border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.mx-exec { display: flex; gap: 12px; align-items: center; margin: 0 0 10px; }
+.mx-exec small { display: block; color: var(--color-muted); font-size: 12px; }
+.mx-avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--color-forest); color: var(--color-chalk); font-weight: 700; }

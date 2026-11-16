@@ -2693,3 +2693,25 @@
   background: var(--color-brass);
   will-change: width;
 }
+
+/* Sign-in through Keycloak (D-119, D-123): password typed on the secure page; OTP and booking lookup not built yet. */
+.login-secure-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--color-line);
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--color-muted);
+  background: var(--color-chalk);
+}
+.login-tab.is-soon,
+.login-tab:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.plan-subtab-btn.is-soon,
+.plan-subtab-btn:disabled { opacity: 0.55; cursor: not-allowed; }

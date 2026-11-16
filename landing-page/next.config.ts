@@ -9,6 +9,12 @@ const nextConfig: NextConfig = {
     "*.ngrok-free.dev",
     ...(process.env.DEV_PUBLIC_HOSTS?.split(",").map((h) => h.trim()).filter(Boolean) ?? []),
   ],
+  // The portal API is called same-origin ("/api/v1/portal", portal-client.ts). On the shared public URL the
+  // proxy sends /api to the gateway before Next sees it; on plain http://localhost:3000 this rewrite does.
+  async rewrites() {
+    const gateway = process.env.GATEWAY_URL || "http://localhost:8082";
+    return [{ source: "/api/:path*", destination: `${gateway}/api/:path*` }];
+  },
 };
 
 export default nextConfig;
