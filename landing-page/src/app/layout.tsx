@@ -18,6 +18,7 @@ import "./experiences.css";
 import "./gatherings.css";
 import "./stay.css";
 import "./profile.css";
+import "./mobile.css";
 import { PencilDefs } from "./pencil";
 import SketchObserver from "./sketch-observer";
 import ScrollToTop from "./scroll-to-top";

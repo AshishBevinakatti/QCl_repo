@@ -36,6 +36,31 @@ export function MemberHeroCopy({ children }: { children: ReactNode }) {
   );
 }
 
+/** Sales sections (welcome box, "before you enrol" FAQ, the enrolment form)
+ *  only make sense to someone who is not a member yet. Signed in with a
+ *  membership, they are not rendered. A guest signed in without one still
+ *  sees them. */
+export function ProspectOnly({ children }: { children: ReactNode }) {
+  const m = useSession()?.membership;
+  return m ? null : <>{children}</>;
+}
+
+/** The ledger heading: a pitch for visitors, a reference for members. */
+export function LedgerHeading() {
+  const m = useSession()?.membership;
+  return m ? (
+    <>
+      <p className="mem-kicker">Your privileges in full</p>
+      <h2 id="ledger-title">Every voucher and coupon in your booklet</h2>
+    </>
+  ) : (
+    <>
+      <p className="mem-kicker">What is inside</p>
+      <h2 id="ledger-title">Seven parts of the resort, one booklet</h2>
+    </>
+  );
+}
+
 /** The figures strip: the booklet's totals for visitors, the member's own
  *  standing once signed in. */
 export function MemberFigures({ children }: { children: ReactNode }) {

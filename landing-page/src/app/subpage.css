@@ -143,7 +143,7 @@
   text-decoration: none;
   transition: background-color .2s var(--ease-out);
 }
-.sp-callout-btn:hover { background: color-mix(in srgb, var(--color-brass) 88%, #000); }
+@media (hover: hover) and (pointer: fine) { .sp-callout-btn:hover { background: color-mix(in srgb, var(--color-brass) 88%, #000); } }
 .sp-callout-btn:focus-visible { outline: 2px solid var(--color-chalk); outline-offset: 3px; }
 
 /* Tablet ------------------------------------------------------------------- */

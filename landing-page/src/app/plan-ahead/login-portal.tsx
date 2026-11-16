@@ -31,14 +31,6 @@ const LOGIN_SCENES = [
   { id: "hero-pool-day-desktop-p37", title: "Central Colonnade Infinity Pool & Sun Terrace" },
 ];
 
-const LOGIN_SCENES = [
-  { id: "dusk-pool-candidate-p38", title: "Golden Hills Resort Dusk Pool & Cottages" },
-  { id: "cottage-pool-terrace-p34", title: "Private Poolside Cottage & Daybed Terrace" },
-  { id: "suite-master-bed-p18", title: "Master Suite Room with Jacuzzi Bath" },
-  { id: "cottage-entry-p32", title: "Standalone Timber Cottage & Wellness Enclave" },
-  { id: "hero-pool-day-desktop-p37", title: "Central Colonnade Infinity Pool & Sun Terrace" },
-];
-
 export default function LoginPortal() {
   // Main view mode: "login" or "register"
   const [viewMode, setViewMode] = useState<"login" | "register">("login");

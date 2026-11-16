@@ -5,6 +5,12 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { ApiError, type Me } from "./api";
 import { config } from "./config";
+import {
+  Camera,
+  ImageIcon,
+  X,
+  ZoomIn,
+} from "lucide-react";
 
 export interface Member {
   id: string; membershipId: string; firstName: string; lastName: string; dob: string; mobile: string; email: string;
@@ -90,10 +96,11 @@ export function Memberships({ me, request }: { me: Me; request: Request }) {
 
   return (
     <section>
-      <div style={{ marginBottom: "1.25rem" }}>
+      <header className="page-head">
+        <p className="page-kicker">Privilege Club</p>
         <h1>Gold Membership</h1>
         <p>Register members in the field, follow your registrations and verify payments.</p>
-      </div>
+      </header>
 
       <div className="mem-tabs" role="tablist" aria-label="Memberships">
         {tabs.map((t) => (
@@ -276,8 +283,14 @@ function RegisterMember({ me, request, onRegistered }: { me: Me; request: Reques
                 </div>
               ) : (
                 <div className="mem-proof-pick">
-                  <button type="button" className="btn-secondary" onClick={() => gallery.current?.click()}>📁 Choose from gallery</button>
-                  <button type="button" className="btn-secondary" onClick={() => camera.current?.click()}>📷 Open camera</button>
+                  <button type="button" className="btn-secondary" onClick={() => gallery.current?.click()}>
+                    <ImageIcon size={15} aria-hidden="true" />
+                    <span>Choose from gallery</span>
+                  </button>
+                  <button type="button" className="btn-secondary" onClick={() => camera.current?.click()}>
+                    <Camera size={15} aria-hidden="true" />
+                    <span>Open camera</span>
+                  </button>
                 </div>
               )}
               {/* Two inputs: "capture" opens the rear camera directly on phones; the other opens the gallery/files. */}
@@ -323,7 +336,7 @@ function MemberTable({ items, onReview, showExecutive }: { items: Member[]; onRe
   if (items.length === 0) return <p className="mem-empty">Nothing here yet.</p>;
   return (
     <div className="table-container">
-      <table>
+      <table className="cards-on-phone">
         <thead>
           <tr>
             <th>Member</th><th>Membership ID</th><th>Payment</th>{showExecutive && <th>Enrolled by</th>}<th>Status</th>
@@ -339,10 +352,10 @@ function MemberTable({ items, onReview, showExecutive }: { items: Member[]; onRe
                   <span className="row-sub">{m.mobile} · {day(m.createdAt)}</span>
                 </div>
               </td>
-              <td><code>{m.membershipId}</code></td>
-              <td>{PAYMENT_LABEL[m.payment.type] ?? m.payment.type} · {inr(m.payment.amount)}</td>
-              {showExecutive && <td>{m.enrolledBy.name}</td>}
-              <td title={m.payment.rejectionReason ?? ""}><StatusPill status={m.status} /></td>
+              <td data-label="Membership ID"><code>{m.membershipId}</code></td>
+              <td data-label="Payment">{PAYMENT_LABEL[m.payment.type] ?? m.payment.type} · {inr(m.payment.amount)}</td>
+              {showExecutive && <td data-label="Enrolled by">{m.enrolledBy.name}</td>}
+              <td data-label="Status" title={m.payment.rejectionReason ?? ""}><StatusPill status={m.status} /></td>
               {onReview && (
                 <td className="actions">
                   <button type="button" className="btn-secondary" aria-label={`Review ${m.membershipId}`} onClick={() => onReview(m)}>Review</button>
@@ -480,7 +493,9 @@ function ReviewDrawer({ member: m, me, request, onClose, onDecided }:
             <h2>{m.firstName} {m.lastName}</h2>
             <StatusPill status={m.status} />
           </div>
-          <button type="button" className="btn-outline" onClick={onClose} aria-label="Close">✕</button>
+          <button type="button" className="btn-outline" onClick={onClose} aria-label="Close">
+            <X size={16} />
+          </button>
         </div>
 
         <dl className="mem-details">
@@ -504,7 +519,10 @@ function ReviewDrawer({ member: m, me, request, onClose, onDecided }:
             {img
               ? <>
                   <img src={img} alt="Payment screenshot" className="mem-shot-img" onClick={() => setZoom(true)} />
-                  <button type="button" className="btn-secondary" onClick={() => setZoom(true)}>Zoom to read the UTR</button>
+                  <button type="button" className="btn-secondary" onClick={() => setZoom(true)}>
+                    <ZoomIn size={14} aria-hidden="true" />
+                    <span>Zoom to read the UTR</span>
+                  </button>
                 </>
               : <p>Loading screenshot…</p>}
             <small>SHA-256 {m.payment.proof.sha256.slice(0, 16)}… · {(m.payment.proof.sizeBytes / 1024).toFixed(0)} KB</small>

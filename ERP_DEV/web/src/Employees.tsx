@@ -1,6 +1,13 @@
 // Employees admin (api.md §3; AUTHENTICATION §4, §8). The backend checks permissions; this only hides what can't be used.
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { ApiError } from "./api";
+import {
+  RefreshCw,
+  Search,
+  Shield,
+  UserPlus,
+  Users,
+} from "lucide-react";
 
 export interface Employee {
   id: string; firstName: string; lastName: string; email: string; username: string; mobile: string;
@@ -70,10 +77,11 @@ export function Employees({ request, canManage, canAssignRoles = false }: { requ
 
   return (
     <section>
-      <div style={{ marginBottom: "1.5rem" }}>
+      <header className="page-head">
+        <p className="page-kicker">People</p>
         <h1>Employees</h1>
-        <p>Manage staff accounts, assign operational roles, and oversee onboarding status.</p>
-      </div>
+        <p>Staff accounts, roles and invitations.</p>
+      </header>
 
       {canManage && <AddEmployee request={request} onCreated={load} />}
 
@@ -85,16 +93,14 @@ export function Employees({ request, canManage, canAssignRoles = false }: { requ
         <div className="table-card">
           <div className="table-header-bar">
             <div className="table-title-group">
-              <h2>Team Roster</h2>
+              <Users size={18} aria-hidden="true" />
+              <h2>Team roster</h2>
               <span className="count-badge">
                 {list.length} {list.length === 1 ? "Employee" : "Employees"}
               </span>
             </div>
             <div className="search-input-wrapper">
-              <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
+              <Search className="search-icon" size={15} aria-hidden="true" />
               <input
                 type="search"
                 placeholder="Search by name, email, or role…"
@@ -106,7 +112,7 @@ export function Employees({ request, canManage, canAssignRoles = false }: { requ
           </div>
 
           <div className="table-container">
-            <table>
+            <table className="cards-on-phone">
               <thead>
                 <tr>
                   <th>Name</th>
@@ -131,14 +137,14 @@ export function Employees({ request, canManage, canAssignRoles = false }: { requ
                           </div>
                         </div>
                       </td>
-                      <td>{e.username}</td>
-                      <td>{e.email}</td>
-                      <td>
+                      <td data-label="Username"><code>{e.username}</code></td>
+                      <td data-label="Email">{e.email}</td>
+                      <td data-label="Role">
                         <span className={`role-badge role-${e.jobRole.toLowerCase()}`}>
                           {ROLE_LABELS[e.jobRole] ?? e.jobRole}
                         </span>
                       </td>
-                      <td title={e.statusReason ?? ""}>
+                      <td data-label="Account" title={e.statusReason ?? ""}>
                         <span className={`status-pill status-${statusKey}`}>
                           <span className="status-dot"></span>
                           <span>
@@ -147,7 +153,7 @@ export function Employees({ request, canManage, canAssignRoles = false }: { requ
                           </span>
                         </span>
                       </td>
-                      <td className="actions" style={{ justifyContent: "flex-end" }}>
+                      <td className="actions">
                         {canManage && (e.status === "PENDING_PROVISIONING" || (e.status === "INVITE_EMAIL_FAILED" && !e.identityLinked)) && (
                           <button className="btn-secondary" onClick={() => void act(`${base(e.id)}/retry-provisioning`)}>
                             Retry
@@ -236,15 +242,10 @@ function AddEmployee({ request, onCreated }: { request: Request; onCreated: () =
       <div className="form-header">
         <div>
           <h2>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--primary)" }}>
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <line x1="19" y1="8" x2="19" y2="14"></line>
-              <line x1="22" y1="11" x2="16" y2="11"></line>
-            </svg>
+            <UserPlus size={18} aria-hidden="true" />
             Add employee
           </h2>
-          <p>Provide contact details and assign resort operational roles. Keycloak sends an account activation invite.</p>
+          <p>Contact details and a role. They get an email to verify the address and set a password.</p>
         </div>
       </div>
 
@@ -298,20 +299,13 @@ function AddEmployee({ request, onCreated }: { request: Request; onCreated: () =
           <button type="submit" disabled={busy}>
             {busy ? (
               <>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 1s linear infinite" }}>
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
-                </svg>
-                Saving…
+                <RefreshCw size={14} style={{ animation: "spin 1s linear infinite" }} aria-hidden="true" />
+                <span>Saving…</span>
               </>
             ) : (
               <>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                  <line x1="19" y1="8" x2="19" y2="14"></line>
-                  <line x1="22" y1="11" x2="16" y2="11"></line>
-                </svg>
-                Add employee
+                <UserPlus size={14} aria-hidden="true" />
+                <span>Add employee</span>
               </>
             )}
           </button>
@@ -334,10 +328,11 @@ export function AuditLog({ request }: { request: Request }) {
 
   return (
     <section>
-      <div style={{ marginBottom: "1.5rem" }}>
+      <header className="page-head">
+        <p className="page-kicker">Security</p>
         <h1>Audit log</h1>
-        <p>Immutable record of system security, employee access changes, and role assignments.</p>
-      </div>
+        <p>Every access and role change, recorded as it happened and never edited.</p>
+      </header>
 
       {error && <p role="alert">{error}</p>}
 
@@ -347,12 +342,13 @@ export function AuditLog({ request }: { request: Request }) {
         <div className="table-card">
           <div className="table-header-bar">
             <div className="table-title-group">
-              <h2>Security Events</h2>
-              <span className="count-badge">{rows.length} Events Logged</span>
+              <Shield size={18} aria-hidden="true" />
+              <h2>Events</h2>
+              <span className="count-badge">{rows.length}</span>
             </div>
           </div>
           <div className="table-container">
-            <table>
+            <table className="cards-on-phone">
               <thead>
                 <tr>
                   <th>When</th>
@@ -367,22 +363,20 @@ export function AuditLog({ request }: { request: Request }) {
                   const isSuccess = r.outcome.toUpperCase() === "SUCCESS";
                   return (
                     <tr key={r.id}>
-                      <td style={{ whiteSpace: "nowrap", color: "var(--muted)" }}>
-                        {new Date(r.occurredAt).toLocaleString()}
+                      <td data-label="When" className="audit-when">
+                        {new Date(r.occurredAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
                       </td>
-                      <td>
-                        <strong style={{ color: "var(--ink)" }}>{r.actor}</strong>
+                      <td data-label="Who">
+                        <strong className="audit-actor">{r.actor}</strong>
                       </td>
-                      <td>
-                        <code style={{ fontSize: "0.85rem", background: "var(--bg)", padding: "0.2rem 0.5rem", borderRadius: "4px", border: "1px solid var(--line)" }}>
-                          {r.action}
-                        </code>
+                      <td data-label="What">
+                        <code className="audit-action">{r.action}</code>
                       </td>
-                      <td>{r.reason ?? "—"}</td>
-                      <td>
+                      <td data-label="Reason" className={r.reason ? "" : "is-empty"}>{r.reason ?? "—"}</td>
+                      <td data-label="Outcome">
                         <span className={`status-pill ${isSuccess ? "status-active" : "status-failed"}`}>
                           <span className="status-dot"></span>
-                          {r.outcome}
+                          <span>{r.outcome}</span>
                         </span>
                       </td>
                     </tr>

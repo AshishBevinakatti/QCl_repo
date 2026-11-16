@@ -489,7 +489,7 @@
   .dfeat-shot-clip img, .dfeat.is-in .dfeat-shot-clip img { transform: none; transition: none; }
   .dfeat-text { transform: none; }
   .dfeat-view, .dindex-name, .dindex-status > svg { transition: none; }
-  .dindex-row:hover .dindex-name { transform: none; }
+  @media (hover: hover) and (pointer: fine) { .dindex-row:hover .dindex-name { transform: none; } }
   .dbox-figure { animation-name: dining-fade; }
 }
 .dining-close { padding-bottom: clamp(64px, 8vw, 104px); }

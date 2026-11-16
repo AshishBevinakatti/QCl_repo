@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { portalApi, type GuestUser, type InquiryRecord } from "./portal-client";
 import { Check, Minus, Plus } from "./icons";
+import { getTodayStr, addDays, getNightsBetween } from "./booking-dates";
 
 // Both rates come from stay-data.ts: "Excl. 12% GST" and "+₹600 / night".
 const GST_RATE = 0.12;
@@ -80,16 +81,25 @@ export default function BookingCard(props: Props) {
   // the build day and mismatch on hydration.
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- browser-only initial values, set once after hydration */
-    setToday(day(0));
-    setCheckin(day(1));
-    setCheckout(day(3));
+    const t = getTodayStr();
+    setToday(t);
+    setCheckin(addDays(t, 1));
+    setCheckout(addDays(t, 3));
     setUser(portalApi.getStoredUser());
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
+  const handleCheckinChange = (val: string) => {
+    setCheckin(val);
+    if (!val) return;
+    if (checkout && val >= checkout) {
+      setCheckout(addDays(val, 2));
+    }
+  };
+
   const capacity = maxGuests + (bed ? 1 : 0);
   const guestCount = Math.min(guests, capacity);
-  const nights = nightsBetween(checkin, checkout);
+  const nights = getNightsBetween(checkin, checkout);
   const roomCost = tariff * nights;
   const bedCost = bed ? EXTRA_BED_RATE * nights : 0;
   const gst = (roomCost + bedCost) * GST_RATE;
@@ -167,13 +177,23 @@ export default function BookingCard(props: Props) {
             <div className="bk-dates">
               <label className="bk-field">
                 <span>Check-in</span>
-                <input type="date" required value={checkin} min={today || undefined}
-                  onChange={(e) => setCheckin(e.target.value)} />
+                <input
+                  type="date"
+                  required
+                  value={checkin}
+                  min={today || undefined}
+                  onChange={(e) => handleCheckinChange(e.target.value)}
+                />
               </label>
               <label className="bk-field">
                 <span>Checkout</span>
-                <input type="date" required value={checkout} min={checkin || undefined}
-                  onChange={(e) => setCheckout(e.target.value)} />
+                <input
+                  type="date"
+                  required
+                  value={checkout}
+                  min={checkin ? addDays(checkin, 1) : (today ? addDays(today, 1) : undefined)}
+                  onChange={(e) => setCheckout(e.target.value)}
+                />
               </label>
             </div>
             <div className="bk-guests">

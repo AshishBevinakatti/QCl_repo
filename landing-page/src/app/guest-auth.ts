@@ -45,7 +45,7 @@ export function initAuth(): Promise<boolean> {
       silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
     }).catch(() => false);   // Keycloak unreachable: behave as signed out
   }
-  return ready;
+  return ready ?? Promise.resolve(false);
 }
 
 export type AuthProfile = { sub: string; email: string; name: string; emailVerified: boolean };

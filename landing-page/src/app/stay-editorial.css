@@ -138,9 +138,9 @@
   user-select: none;
 }
 
-.stay-mood-btn:hover {
+@media (hover: hover) and (pointer: fine) { .stay-mood-btn:hover {
   color: var(--color-chalk);
-}
+} }
 
 .stay-mood-btn:active {
   transform: scale(0.97);
@@ -282,9 +282,9 @@
   user-select: none;
 }
 
-.stay-filter-btn:hover {
+@media (hover: hover) and (pointer: fine) { .stay-filter-btn:hover {
   color: var(--color-ink);
-}
+} }
 
 .stay-filter-btn:active {
   transform: scale(0.97);
@@ -412,10 +412,10 @@
   transition: border-color 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out);
 }
 
-.flagship-card:hover {
+@media (hover: hover) and (pointer: fine) { .flagship-card:hover {
   border-color: rgba(16, 64, 40, 0.3);
   box-shadow: 0 24px 54px -16px rgba(24, 36, 29, 0.14);
-}
+} }
 
 .flagship-grid {
   display: grid;
@@ -485,10 +485,10 @@
   user-select: none;
 }
 
-.flagship-angle-btn:hover {
+@media (hover: hover) and (pointer: fine) { .flagship-angle-btn:hover {
   background: var(--color-chalk);
   transform: translateY(-1px);
-}
+} }
 
 .flagship-angle-btn:active {
   transform: scale(0.97);
@@ -539,9 +539,9 @@
   transition: color 0.2s var(--ease-out);
 }
 
-.flagship-title a:hover {
+@media (hover: hover) and (pointer: fine) { .flagship-title a:hover {
   color: var(--color-forest);
-}
+} }
 
 .flagship-lead {
   font-size: 14px;
@@ -614,15 +614,15 @@
   transition: transform 0.2s var(--ease-out), background-color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
 }
 
-.flagship-cta:hover {
+@media (hover: hover) and (pointer: fine) { .flagship-cta:hover {
   background: #0b301e;
   transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(16, 64, 40, 0.28);
-}
+} }
 
-.flagship-cta:hover svg {
+@media (hover: hover) and (pointer: fine) { .flagship-cta:hover svg {
   transform: translateX(3px);
-}
+} }
 
 .flagship-cta svg {
   transition: transform 0.2s var(--ease-out);
@@ -660,10 +660,10 @@
   transition: border-color 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out);
 }
 
-.duet-card:hover {
+@media (hover: hover) and (pointer: fine) { .duet-card:hover {
   border-color: rgba(16, 64, 40, 0.25);
   box-shadow: 0 20px 44px -12px rgba(24, 36, 29, 0.1);
-}
+} }
 
 .duet-media {
   position: relative;
@@ -703,9 +703,9 @@
   user-select: none;
 }
 
-.duet-angle-pill:hover {
+@media (hover: hover) and (pointer: fine) { .duet-angle-pill:hover {
   background: var(--color-chalk);
-}
+} }
 
 .duet-angle-pill:active {
   transform: scale(0.97);
@@ -748,9 +748,9 @@
   transition: color 0.2s var(--ease-out);
 }
 
-.duet-name a:hover {
+@media (hover: hover) and (pointer: fine) { .duet-name a:hover {
   color: var(--color-forest);
-}
+} }
 
 .duet-feats {
   display: flex;
@@ -804,15 +804,15 @@
   transition: background-color 0.2s var(--ease-out), color 0.2s var(--ease-out), transform 0.2s var(--ease-out);
 }
 
-.duet-cta-link:hover {
+@media (hover: hover) and (pointer: fine) { .duet-cta-link:hover {
   background: var(--color-forest);
   color: var(--color-chalk);
   transform: translateX(2px);
-}
+} }
 
-.duet-cta-link:hover svg {
+@media (hover: hover) and (pointer: fine) { .duet-cta-link:hover svg {
   transform: translateX(2px);
-}
+} }
 
 .duet-cta-link svg {
   transition: transform 0.2s var(--ease-out);
@@ -849,10 +849,10 @@
   transition: border-color 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out);
 }
 
-.trio-card:hover {
+@media (hover: hover) and (pointer: fine) { .trio-card:hover {
   border-color: rgba(16, 64, 40, 0.25);
   box-shadow: 0 16px 36px -10px rgba(24, 36, 29, 0.09);
-}
+} }
 
 .trio-media {
   position: relative;
@@ -888,9 +888,9 @@
   user-select: none;
 }
 
-.trio-angle-pill:hover {
+@media (hover: hover) and (pointer: fine) { .trio-angle-pill:hover {
   background: var(--color-chalk);
-}
+} }
 
 .trio-angle-pill:active {
   transform: scale(0.97);
@@ -933,9 +933,9 @@
   transition: color 0.2s var(--ease-out);
 }
 
-.trio-name a:hover {
+@media (hover: hover) and (pointer: fine) { .trio-name a:hover {
   color: var(--color-forest);
-}
+} }
 
 .trio-feats {
   display: flex;
@@ -988,11 +988,11 @@
   transition: all 0.2s var(--ease-out);
 }
 
-.trio-cta-link:hover {
+@media (hover: hover) and (pointer: fine) { .trio-cta-link:hover {
   background: var(--color-forest);
   color: var(--color-chalk);
   transform: translateX(2px);
-}
+} }
 
 .trio-cta-link:active {
   transform: scale(0.97);

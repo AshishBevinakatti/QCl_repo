@@ -1,7 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import type { Me } from "./api";
 import { AuditLog, Employees } from "./Employees";
 import { Memberships } from "./Memberships";
+import {
+  ArrowRight,
+  Award,
+  Inbox,
+  LayoutDashboard,
+  LogOut,
+  Moon,
+  Plus,
+  ShieldCheck,
+  Sun,
+  Users,
+} from "lucide-react";
 
 export const MODULE_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
@@ -9,6 +21,14 @@ export const MODULE_LABELS: Record<string, string> = {
   leads: "Leads",
   memberships: "Memberships",
   audit: "Audit log",
+};
+
+export const MODULE_ICONS: Record<string, ComponentType<{ size?: number; className?: string }>> = {
+  dashboard: LayoutDashboard,
+  employees: Users,
+  memberships: Award,
+  audit: ShieldCheck,
+  leads: Inbox,
 };
 
 /** Friendly names for the realm roles (REQ-IAM-008). Unknown roles fall through unchanged. */
@@ -25,29 +45,47 @@ const WORKSPACES = [
   { role: "SALES_EXECUTIVE", title: "Sales Executive", detail: "Lead queue and guest enquiries" },
 ];
 
+/** What each module is for, in one line, for the dashboard. */
+const MODULE_LINES: Record<string, string> = {
+  employees: "Staff accounts, roles and invitations",
+  memberships: "Register Gold members and verify payments",
+  audit: "Every access and role change, as it happened",
+  leads: "Guest enquiries from the website",
+};
+
+const BRAND = import.meta.env.BASE_URL + "brand/";
+
 function getInitials(first?: string, last?: string) {
   return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "GH";
 }
 
 export function SignIn({ onSignIn }: { onSignIn: () => void }) {
   return (
-    <div className="signin-wrapper">
+    <div className="signin">
+      <div className="signin-art" aria-hidden="true">
+        <img src={BRAND + "logo-light.png"} alt="" className="signin-art-logo" />
+        <p className="signin-art-line">Staff console</p>
+        <svg className="signin-hills" viewBox="0 0 600 160" preserveAspectRatio="none">
+          <path d="M0 160 C 120 60 220 40 300 90 C 380 40 480 50 600 120 L 600 160 Z" />
+          <path d="M0 160 C 140 100 260 90 360 120 C 440 100 520 110 600 140 L 600 160 Z" />
+        </svg>
+      </div>
       <main className="signin-card">
-        <div className="signin-crest">GH</div>
-        <h1>Golden Hills Resort</h1>
-        <p>Hospitality Operations & Staff ERP Portal. Select your role workspace to sign in securely.</p>
+        <img src={BRAND + "logo-color.png"} alt="Golden Hills Resort" className="signin-logo" />
+        <h1>Sign in to the staff console</h1>
+        <p>Choose your workspace. Your account decides what opens.</p>
         <div className="role-picker">
           {WORKSPACES.map((w) => (
             <button key={w.role} type="button" className="role-choice" onClick={onSignIn}>
-              <div className="role-choice-text">
+              <span className="role-choice-text">
                 <strong>{w.title}</strong>
                 <small>{w.detail}</small>
-              </div>
-              <span className="role-choice-arrow" aria-hidden="true">→</span>
+              </span>
+              <ArrowRight size={18} className="role-choice-arrow" aria-hidden="true" />
             </button>
           ))}
         </div>
-        <p className="hint">Your account decides what opens — the card only starts the sign-in.</p>
+        <p className="hint">The card only starts the sign-in; no password is asked for here.</p>
       </main>
     </div>
   );
@@ -70,13 +108,71 @@ export function Dashboard({ loadMe, onSignOut, request }: { loadMe: () => Promis
   const page = useHash();
   const [error, setError] = useState<string | null>(null);
 
+  // Theme: light or dark, remembered per browser.
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("gh_erp_theme");
+        if (saved === "dark" || saved === "light") return saved;
+        if (typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+          return "dark";
+        }
+      } catch {
+        // Fallback for sandboxed test environments
+      }
+    }
+    return "light";
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+      root.setAttribute("data-theme", "dark");
+    } else {
+      root.classList.remove("dark");
+      root.setAttribute("data-theme", "light");
+    }
+    try {
+      localStorage.setItem("gh_erp_theme", theme);
+    } catch {}
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((t) => (t === "light" ? "dark" : "light"));
+  };
+
+  // Live figures for the dashboard
+  const [employeeCount, setEmployeeCount] = useState<number | null>(null);
+  const [pendingMemberships, setPendingMemberships] = useState<number | null>(null);
+  const [auditCount, setAuditCount] = useState<number | null>(null);
+
   useEffect(() => {
     loadMe().then(setMe, (e: Error) => setError(e.message || "Could not load your profile."));
   }, [loadMe]);
 
+  useEffect(() => {
+    if (!request || !me) return;
+    if (me.modules.includes("employees")) {
+      request<{ total: number }>("/api/v1/admin/employees?size=1")
+        .then((p) => setEmployeeCount(p.total))
+        .catch(() => {});
+    }
+    if (me.modules.includes("memberships")) {
+      request<{ total: number; pendingCount: number | null }>("/api/v1/admin/memberships?status=PENDING_VERIFICATION&size=1")
+        .then((p) => setPendingMemberships(p.pendingCount ?? p.total))
+        .catch(() => {});
+    }
+    if (me.modules.includes("audit")) {
+      request<{ total: number }>("/api/v1/admin/audit?size=1")
+        .then((p) => setAuditCount(p.total))
+        .catch(() => {});
+    }
+  }, [request, me]);
+
   if (error) {
     return (
-      <main style={{ maxWidth: "500px", margin: "10vh auto", textAlign: "center" }}>
+      <main className="erp-state">
         <p role="alert">{error}</p>
         <button onClick={onSignOut}>Sign out</button>
       </main>
@@ -85,7 +181,8 @@ export function Dashboard({ loadMe, onSignOut, request }: { loadMe: () => Promis
 
   if (!me) {
     return (
-      <main style={{ maxWidth: "500px", margin: "15vh auto", textAlign: "center" }}>
+      <main className="erp-state">
+        <span className="erp-spinner" aria-hidden="true" />
         <p>Loading…</p>
       </main>
     );
@@ -95,87 +192,169 @@ export function Dashboard({ loadMe, onSignOut, request }: { loadMe: () => Promis
   const initials = me.employee ? getInitials(me.employee.firstName, me.employee.lastName) : "GH";
   const friendlyRole = me.roles.map((r) => ROLE_LABELS[r] ?? r).join(", ") || "no role";
 
+  const navigateTo = (mod: string) => {
+    window.location.hash = `#${mod}`;
+  };
+
+  const activePageLabel = MODULE_LABELS[page || "dashboard"] ?? "Dashboard";
+  const today = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+  /* The figures this person can open, each with its live count. */
+  const figures = [
+    me.modules.includes("employees") && { id: "employees", label: "Employees", value: employeeCount },
+    me.modules.includes("audit") && { id: "audit", label: "Audit events", value: auditCount },
+  ].filter(Boolean) as { id: string; label: string; value: number | null }[];
+  const otherModules = me.modules.filter((m) => m !== "dashboard");
+
   return (
-    <div className="shell">
-      <header>
-        <div className="brand-wrapper">
-          <div className="brand-crest">GH</div>
-          <div className="brand-info">
-            <span className="brand-title">Golden Hills Resort</span>
-            <span className="brand-subtitle">Staff ERP</span>
-          </div>
+    <div className="erp">
+      <aside className="erp-side">
+        <div className="erp-brand">
+          <img src={BRAND + "logo-light.png"} alt="Golden Hills Resort" />
+          <span>Staff console</span>
         </div>
 
-        <div className="user-profile">
-          <div className="user-badge">
-            <div className="user-avatar">{initials}</div>
-            <div className="user-meta">
-              <span className="user-name">{name ?? "Signed in"}</span>
-              <span className="user-role-tag">{friendlyRole}</span>
-            </div>
-          </div>
-          <button className="btn-outline" onClick={onSignOut} title="End session">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-            Sign out
+        <nav aria-label="Modules" className="erp-nav">
+          {me.modules.map((m) => {
+            const isActive = page === m || (page === "" && m === "dashboard");
+            const Icon = MODULE_ICONS[m] ?? LayoutDashboard;
+            return (
+              <a
+                key={m}
+                href={`#${m}`}
+                className={`erp-nav-item${isActive ? " active" : ""}`}
+                data-active={isActive}
+                aria-current={isActive ? "page" : undefined}
+              >
+                <Icon size={18} aria-hidden="true" />
+                <span>{MODULE_LABELS[m] ?? m}</span>
+              </a>
+            );
+          })}
+        </nav>
+
+        <div className="erp-user">
+          <span className="erp-user-avatar" aria-hidden="true">{initials}</span>
+          <span className="erp-user-info">
+            <span className="erp-user-name">{name ?? "Signed in"}</span>
+            <span className="erp-user-role">{friendlyRole}</span>
+          </span>
+          <button
+            type="button"
+            className="erp-signout"
+            onClick={onSignOut}
+            title="End session"
+            aria-label="Sign out"
+          >
+            <LogOut size={16} aria-hidden="true" />
           </button>
         </div>
-      </header>
+      </aside>
 
-      <nav aria-label="Modules">
-        {/* Visibility only; the backend checks every request (AUTHENTICATION §5 step 6). */}
-        {me.modules.map((m) => {
-          const isActive = page === m || (page === "" && m === "dashboard");
-          return (
-            <a key={m} href={`#${m}`} className={isActive ? "active" : ""} data-active={isActive}>
-              {MODULE_LABELS[m] ?? m}
-            </a>
-          );
-        })}
-      </nav>
+      <div className="erp-main">
+        <header className="erp-top">
+          <p className="erp-top-title">{activePageLabel}</p>
+          <div className="erp-top-actions">
+            <button
+              type="button"
+              className="erp-icon-btn"
+              onClick={toggleTheme}
+              title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+              aria-label="Toggle theme"
+            >
+              {theme === "light" ? <Moon size={17} /> : <Sun size={17} />}
+            </button>
+          </div>
+        </header>
 
-      <main>
-        {!name ? (
-          <p role="alert">Your sign-in works, but your ERP employee record is not set up yet. Ask an administrator.</p>
-        ) : page === "employees" && me.modules.includes("employees") && request ? (
-          <Employees request={request} canManage={me.permissions.includes("employees.manage")}
-                     canAssignRoles={me.permissions.includes("roles.assign")} />
-        ) : page === "memberships" && me.modules.includes("memberships") && request ? (
-          <Memberships me={me} request={request} />
-        ) : page === "audit" && me.modules.includes("audit") && request ? (
-          <AuditLog request={request} />
-        ) : (
-          <section>
-            <div style={{ marginBottom: "2rem" }}>
-              <h1>Welcome, {name}</h1>
-              <p>Welcome to Golden Hills Resort operational management portal.</p>
-            </div>
+        <main className="erp-canvas">
+          {!name ? (
+            <p role="alert" className="erp-notice">Your sign-in works, but your ERP employee record is not set up yet. Ask an administrator.</p>
+          ) : page === "employees" && me.modules.includes("employees") && request ? (
+            <Employees
+              request={request}
+              canManage={me.permissions.includes("employees.manage")}
+              canAssignRoles={me.permissions.includes("roles.assign")}
+            />
+          ) : page === "memberships" && me.modules.includes("memberships") && request ? (
+            <Memberships me={me} request={request} />
+          ) : page === "audit" && me.modules.includes("audit") && request ? (
+            <AuditLog request={request} />
+          ) : (
+            <section className="dash">
+              <header className="page-head">
+                <p className="page-kicker">{today}</p>
+                <h1>Welcome, {name}</h1>
+                <p>Golden Hills Resort, Biligi · {me.modules.length} {me.modules.length === 1 ? "workspace" : "workspaces"} open to you</p>
+              </header>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.25rem", marginBottom: "2rem" }}>
-              <div className="form-card" style={{ margin: 0, padding: "1.5rem" }}>
-                <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--primary)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Identity & Access</span>
-                <h3 style={{ margin: "0.5rem 0 0.25rem" }}>Keycloak Verified</h3>
-                <p style={{ fontSize: "0.85rem", margin: 0 }}>Active SSO session on gh-staff realm</p>
-              </div>
+              {/* The one thing waiting on this person: payments to verify. */}
+              {me.modules.includes("memberships") && (
+                <button type="button" className="dash-lead" onClick={() => navigateTo("memberships")}>
+                  <span className="dash-lead-label">Gold memberships waiting to be verified</span>
+                  <span className="dash-lead-figure">{pendingMemberships ?? "—"}</span>
+                  <span className="dash-lead-cta">Open the verification queue <ArrowRight size={16} aria-hidden="true" /></span>
+                  <svg className="dash-lead-hills" viewBox="0 0 400 120" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M0 120 C 80 40 150 30 210 70 C 270 30 340 40 400 90 L 400 120 Z" />
+                  </svg>
+                </button>
+              )}
 
-              <div className="form-card" style={{ margin: 0, padding: "1.5rem" }}>
-                <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--success-text)", textTransform: "uppercase", letterSpacing: "0.06em" }}>System Status</span>
-                <h3 style={{ margin: "0.5rem 0 0.25rem" }}>Operational</h3>
-                <p style={{ fontSize: "0.85rem", margin: 0 }}>API Gateway, Keycloak & Database Active</p>
-              </div>
+              {figures.length > 0 && (
+                <div className="dash-figures">
+                  {figures.map((f) => (
+                    <button key={f.id} type="button" className="dash-figure" onClick={() => navigateTo(f.id)}>
+                      <span className="dash-figure-label">{f.label}</span>
+                      <span className="dash-figure-value">{f.value ?? "—"}</span>
+                      <ArrowRight size={16} className="dash-figure-arrow" aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
+              )}
 
-              <div className="form-card" style={{ margin: 0, padding: "1.5rem" }}>
-                <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Authorized Modules</span>
-                <h3 style={{ margin: "0.5rem 0 0.25rem" }}>{me.modules.length} Active</h3>
-                <p style={{ fontSize: "0.85rem", margin: 0 }}>{me.modules.map(m => MODULE_LABELS[m] ?? m).join(", ")}</p>
-              </div>
-            </div>
-          </section>
-        )}
-      </main>
+              {(me.permissions.includes("employees.manage") || me.permissions.includes("memberships.register")) && (
+                <div className="dash-actions">
+                  {me.permissions.includes("employees.manage") && (
+                    <button type="button" className="btn-secondary" onClick={() => navigateTo("employees")}>
+                      <Plus size={15} aria-hidden="true" />
+                      <span>Add employee</span>
+                    </button>
+                  )}
+                  {me.permissions.includes("memberships.register") && (
+                    <button type="button" className="btn-secondary" onClick={() => navigateTo("memberships")}>
+                      <Plus size={15} aria-hidden="true" />
+                      <span>Register member</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {otherModules.length > 0 && (
+                <div className="dash-modules">
+                  <h2>Your workspaces</h2>
+                  <ul>
+                    {otherModules.map((m) => {
+                      const Icon = MODULE_ICONS[m] ?? LayoutDashboard;
+                      return (
+                        <li key={m}>
+                          <button type="button" className="dash-module" onClick={() => navigateTo(m)}>
+                            <span className="dash-module-icon" aria-hidden="true"><Icon size={18} /></span>
+                            <span className="dash-module-text">
+                              <strong>{MODULE_LABELS[m] ?? m}</strong>
+                              <small>{MODULE_LINES[m] ?? ""}</small>
+                            </span>
+                            <ArrowRight size={16} className="dash-module-arrow" aria-hidden="true" />
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+            </section>
+          )}
+        </main>
+      </div>
     </div>
   );
 }

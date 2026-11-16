@@ -28,6 +28,7 @@ import { logoLight, getScene, impression } from "../resort-assets";
 import { portalApi, type GuestUser, type InquiryRecord, type InquirySubmission } from "../portal-client";
 import { register as keycloakRegister, signIn } from "../guest-auth";
 import { signOut as endSession, useSession } from "../guest-session";
+import { getTodayStr, addDays, getNightsBetween, isValidDateStr } from "../booking-dates";
 import { useMotionPreference } from "../motion-provider";
 
 const ROOM_OPTIONS = [
@@ -124,14 +125,65 @@ export default function PlanStayPortal() {
     if (session && session.kind !== "sample") setCurrentUser(session.user);
   }, [session]);
 
-  // Check stored user on mount
+  // Check stored user on mount and initialize booking dates from URL or defaults
   useEffect(() => {
+    const today = getTodayStr();
+    let initialIn = addDays(today, 1);
+    let initialOut = addDays(initialIn, 2);
+
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const qIn = params.get("checkin");
+      const qOut = params.get("checkout");
+      const qGuests = Number(params.get("guests"));
+
+      if (qIn && isValidDateStr(qIn) && qIn >= today) {
+        initialIn = qIn;
+      }
+      const minOut = addDays(initialIn, 1);
+      if (qOut && isValidDateStr(qOut) && qOut >= minOut) {
+        initialOut = qOut;
+      } else {
+        initialOut = addDays(initialIn, 2);
+      }
+
+      if (Number.isInteger(qGuests) && qGuests >= 1 && qGuests <= 12) {
+        setGuestCount(qGuests);
+      }
+    }
+
+    setCheckinDate(initialIn);
+    setCheckoutDate(initialOut);
+
     const stored = portalApi.getStoredUser();
     if (stored) {
       setCurrentUser(stored);
       fetchUserInquiries(stored.token);
     }
   }, []);
+
+  const handleCheckinDateChange = (val: string) => {
+    setErrorMsg("");
+    setCheckinDate(val);
+    if (!val) return;
+    const today = getTodayStr();
+    if (val < today) {
+      setErrorMsg("Check-in date cannot be in the past.");
+      return;
+    }
+    // If checkout is <= new checkin, automatically move checkout to 2 nights later
+    if (checkoutDate && val >= checkoutDate) {
+      setCheckoutDate(addDays(val, 2));
+    }
+  };
+
+  const handleCheckoutDateChange = (val: string) => {
+    setErrorMsg("");
+    setCheckoutDate(val);
+    if (checkinDate && val && val <= checkinDate) {
+      setErrorMsg("Check-out date must be after check-in date.");
+    }
+  };
 
   const fetchUserInquiries = async (token: string) => {
     try {
@@ -211,6 +263,15 @@ export default function PlanStayPortal() {
     }
     if (!checkinDate || !checkoutDate) {
       setErrorMsg("Please select your check-in and check-out dates.");
+      return;
+    }
+    const today = getTodayStr();
+    if (checkinDate < today) {
+      setErrorMsg("Check-in date cannot be in the past.");
+      return;
+    }
+    if (checkoutDate <= checkinDate) {
+      setErrorMsg("Check-out date must be at least 1 night after check-in.");
       return;
     }
 
@@ -860,19 +921,23 @@ export default function PlanStayPortal() {
                               id="inq-checkin"
                               type="date"
                               required
+                              min={getTodayStr()}
                               value={checkinDate}
-                              onChange={(e) => setCheckinDate(e.target.value)}
+                              onChange={(e) => handleCheckinDateChange(e.target.value)}
                               className="plan-input plan-date-input"
                             />
                           </div>
                           <div className="plan-field">
-                            <label htmlFor="inq-checkout">Check-out Date</label>
+                            <label htmlFor="inq-checkout">
+                              Check-out Date {checkinDate && checkoutDate ? `(${getNightsBetween(checkinDate, checkoutDate)} nights)` : ""}
+                            </label>
                             <input
                               id="inq-checkout"
                               type="date"
                               required
+                              min={checkinDate ? addDays(checkinDate, 1) : addDays(getTodayStr(), 1)}
                               value={checkoutDate}
-                              onChange={(e) => setCheckoutDate(e.target.value)}
+                              onChange={(e) => handleCheckoutDateChange(e.target.value)}
                               className="plan-input plan-date-input"
                             />
                           </div>
@@ -979,13 +1044,8 @@ export default function PlanStayPortal() {
 
             <div className="plan-visual-scrim" />
 
-            {/* Top Bar with Biligi Ridge Coordinates & 4s Autoplay Indicator */}
+            {/* Top bar: the 4s autoplay indicator */}
             <div className="plan-visual-top">
-              <div className="plan-visual-badge">
-                <span className="plan-badge-dot" />
-                <span>16.3475° N, 75.6259° E · Biligi Ridge</span>
-              </div>
-
               <div className="plan-slideshow-indicator" title={isPaused ? "Slideshow paused on hover" : "Slideshow playing (4s per image)"}>
                 <span className="plan-slideshow-dot" />
                 <span>{isPaused ? "Paused" : `4s Slide · ${sceneIdx + 1}/${SCENE_STORY.length}`}</span>
