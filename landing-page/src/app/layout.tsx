@@ -20,6 +20,7 @@ import "./stay.css";
 import "./profile.css";
 import { PencilDefs } from "./pencil";
 import SketchObserver from "./sketch-observer";
+import ScrollToTop from "./scroll-to-top";
 
 export const metadata: Metadata = {
   title: "Golden Hills Resort | Stay, dine and gather in Biligi",
@@ -41,6 +42,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <ScrollToTop />
         <PencilDefs />
         {children}
         <SketchObserver />

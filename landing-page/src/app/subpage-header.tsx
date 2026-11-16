@@ -93,11 +93,25 @@ export default function SubpageHeader({ overlay = false }: { overlay?: boolean }
     if (menu.current) menu.current.open = false;
   }
 
+  function handleLogoClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    if (pathname === "/") {
+      e.preventDefault();
+      window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    } else {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
+  }
+
   return (
     <header className={`site-navbar-header${overlay ? " is-overlay" : ""}${clear ? " is-clear" : ""}`} role="banner">
       <div className="wrap site-navbar-inner">
         {/* Top-Left Corner: Brand Logo */}
-        <Link href="/" className="site-navbar-logo" aria-label="Golden Hills Resort, return home">
+        <Link
+          href="/"
+          onClick={handleLogoClick}
+          className="site-navbar-logo"
+          aria-label="Golden Hills Resort, return home"
+        >
           <Image
             src={logo}
             alt="Golden Hills Resort"
@@ -156,7 +170,16 @@ export default function SubpageHeader({ overlay = false }: { overlay?: boolean }
                 <div className="opening-mobile-group">
                   <p>Explore Golden Hills</p>
                   {mobileExploreLinks.map((link) => (
-                    <Link key={link.href} href={link.href} onClick={close}>
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={(e) => {
+                        close();
+                        if (link.href === "/") {
+                          handleLogoClick(e);
+                        }
+                      }}
+                    >
                       {link.label}
                       <ArrowRight />
                     </Link>

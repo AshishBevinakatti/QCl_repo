@@ -54,7 +54,10 @@
 @keyframes xfade { from { opacity: 0; } }
 
 /* --- The day track ------------------------------------------------------- */
-.xday { position: relative; }
+.xday {
+  position: relative;
+  margin-bottom: clamp(80px, 12vw, 160px);
+}
 .xday-stage { position: relative; }
 .xday.is-pinned .xday-stage {
   position: sticky;

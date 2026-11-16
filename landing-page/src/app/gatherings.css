@@ -68,19 +68,27 @@
 @keyframes gfade { from { opacity: 0; } }
 
 /* --- The stack ----------------------------------------------------------- */
-.gstack { padding-top: clamp(40px, 6vw, 80px); }
+.gstack {
+  padding-top: clamp(40px, 6vw, 80px);
+  padding-bottom: clamp(60px, 10vw, 120px);
+  margin-bottom: clamp(40px, 6vw, 80px);
+}
 .vstack { list-style: none; margin: 0; padding: 0; display: grid; gap: 24px; }
 .vstack.is-stacked { display: block; }
 .vstack.is-stacked .vslot {
   position: sticky;
   top: calc(var(--header-height, 84px) + 16px);
-  height: calc(100svh - var(--header-height, 84px) - 40px);
-  margin-bottom: 18svh;
+  min-height: calc(100svh - var(--header-height, 84px) - 40px);
+  height: auto;
+  margin-bottom: 24svh;
 }
-.vstack.is-stacked .vslot:last-child { margin-bottom: 0; }
+.vstack.is-stacked .vslot:last-child {
+  margin-bottom: clamp(120px, 20vh, 220px);
+}
 
 .vpanel {
-  height: 100%;
+  min-height: calc(100svh - var(--header-height, 84px) - 40px);
+  height: auto;
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
   gap: clamp(20px, 3vw, 40px);
@@ -214,9 +222,22 @@
   .vpanel-name { margin-top: 0; }
   /* Stacked on a phone or tablet: the photo takes the top of the panel, the
      facts the rest; long "what is included" lists scroll inside. */
-  .vstack.is-stacked .vslot { height: calc(100svh - var(--header-height, 84px) - 24px); top: calc(var(--header-height, 84px) + 8px); margin-bottom: 12svh; }
-  /* The facts take the room they need; the photo fills the rest. */
-  .vstack.is-stacked .vpanel { grid-template-rows: minmax(0, 1fr) auto; gap: 12px; padding: 10px; }
+  .vstack.is-stacked .vslot {
+    min-height: calc(100svh - var(--header-height, 84px) - 24px);
+    height: auto;
+    top: calc(var(--header-height, 84px) + 8px);
+    margin-bottom: 16svh;
+  }
+  .vstack.is-stacked .vslot:last-child {
+    margin-bottom: clamp(90px, 16vh, 160px);
+  }
+  .vstack.is-stacked .vpanel {
+    min-height: calc(100svh - var(--header-height, 84px) - 24px);
+    height: auto;
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 12px;
+    padding: 10px;
+  }
   .vstack.is-stacked .vpanel-text { max-height: 52svh; }
   .vstack.is-stacked .vpanel-shot { aspect-ratio: auto; height: 100%; }
   .vstack.is-stacked .vpanel-text { overflow-y: auto; overscroll-behavior: contain; padding: 4px 6px 8px; }

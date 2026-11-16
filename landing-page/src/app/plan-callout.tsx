@@ -14,7 +14,7 @@ export default function PlanCallout({ title, href, action, sketch = "hills" }: {
   sketch?: SketchName;
 }) {
   return (
-    <section className="wrap">
+    <section className="wrap sp-callout-section">
       <div className="sp-callout">
         <Sketch name={sketch} className="sp-callout-sketch" />
         <h2>{title}</h2>

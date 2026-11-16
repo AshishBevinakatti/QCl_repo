@@ -101,6 +101,13 @@
 .sp-facts dt { font-size: 13px; line-height: 1.4; color: var(--color-muted); }
 
 /* Closing invitation ------------------------------------------------------- */
+.sp-callout-section {
+  position: relative;
+  z-index: 10;
+  clear: both;
+  margin-top: clamp(64px, 10vw, 120px);
+  margin-bottom: clamp(48px, 6vw, 80px);
+}
 .sp-callout {
   display: flex;
   align-items: center;

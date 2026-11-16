@@ -24,6 +24,7 @@ import { Clock, MapPin, Users } from "./icons";
  *   get the same cards as a plain vertical list. */
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+const END_BUFFER = 180; // px of vertical scroll buffer after sideways motion completes
 const PHASES = [
   { key: "day", label: "Day" },
   { key: "sunset", label: "Sunset" },
@@ -64,25 +65,32 @@ export default function ExperienceDay({ experiences }: { experiences: Experience
       const travel = Math.max(0, el.scrollWidth - window.innerWidth + 48);
       distance.set(travel);
       barWidth.set(bar.current?.offsetWidth ?? 0);
-      // Vertical room equals the sideways travel, so one pixel of scroll
-      // moves the track one pixel.
-      setHeight(travel + window.innerHeight);
+      // Vertical room equals sideways travel plus buffer to hold final card
+      setHeight(travel + window.innerHeight + END_BUFFER);
     };
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, [pinned, distance, barWidth]);
 
-  const x = useTransform(() => -distance.get() * p.get());
+  // Normalized progress that completes sideways travel before unpinning
+  const activeP = useTransform(() => {
+    const travel = distance.get();
+    if (travel <= 0) return p.get();
+    const total = travel + END_BUFFER;
+    return Math.min(1, (p.get() * total) / travel);
+  });
+
+  const x = useTransform(() => -distance.get() * activeP.get());
   /* Day -> sunset -> night as two layers: a warm sand that comes in through
    * the sundowner, then the forest night over it. Forest straight over paper
    * passes through a flat grey-green halfway. */
-  const sunset = useTransform(() => clamp01((p.get() - 0.22) / 0.2));
-  const night = useTransform(() => clamp01((p.get() - 0.5) / 0.3));
-  const sunX = useTransform(() => Math.max(0, barWidth.get() - 28) * p.get());
-  const sunY = useTransform(() => -Math.sin(Math.PI * p.get()) * 10);
-  const sunOpacity = useTransform(() => 1 - clamp01((p.get() - 0.62) / 0.12));
-  const moonOpacity = useTransform(() => clamp01((p.get() - 0.66) / 0.12));
+  const sunset = useTransform(() => clamp01((activeP.get() - 0.22) / 0.2));
+  const night = useTransform(() => clamp01((activeP.get() - 0.5) / 0.3));
+  const sunX = useTransform(() => Math.max(0, barWidth.get() - 28) * activeP.get());
+  const sunY = useTransform(() => -Math.sin(Math.PI * activeP.get()) * 10);
+  const sunOpacity = useTransform(() => 1 - clamp01((activeP.get() - 0.62) / 0.12));
+  const moonOpacity = useTransform(() => clamp01((activeP.get() - 0.66) / 0.12));
 
   return (
     <section
