@@ -51,12 +51,25 @@ public class MembershipService {
 
     /** Raw form values as typed; everything is checked and normalised here so the rules live in one place. */
     public record RegisterForm(String firstName, String lastName, String dob, String mobile, String email, String address,
-                               String paymentType, String amount, String transactionId) { }
+                               String paymentType, String amount, String transactionId,
+                               String idType, String idNumber, String pincode, String city, String state, String country) { }
 
     public record Upload(byte[] bytes, String fileName) { }
 
+    /** idNumber is the normalised full number: used only to mask and hash it, never stored, logged or printed. */
     record Clean(String firstName, String lastName, LocalDate dob, String mobile, String email, String address,
-                 String paymentType, BigDecimal amount, String transactionId) { }
+                 String paymentType, BigDecimal amount, String transactionId,
+                 String idType, String idNumber, String pincode, String city, String state, String country) {
+        @Override
+        public String toString() {   // used in the idempotency request hash: never the full ID number
+            return String.join("|", firstName, lastName, String.valueOf(dob), mobile, email, address, paymentType,
+                    String.valueOf(amount), String.valueOf(transactionId), idType, IdentityNumbers.mask(idType, idNumber),
+                    pincode, city, state, country);
+        }
+    }
+
+    /** Members must be 18 or older on the registration date, in resort time (D-132). */
+    static final java.time.ZoneId RESORT_ZONE = java.time.ZoneId.of("Asia/Kolkata");
 
     /** The enrolling or deciding employee: ERP id, display name and username. */
     public record Staff(UUID employeeId, String name, String username, String ip) {
@@ -74,10 +87,12 @@ public class MembershipService {
     private final JsonMapper json;
     private final Period validity;
     private final GuestAccounts guests;
+    private final IdentityNumbers ids;
 
     MembershipService(JdbcTemplate jdbc, TransactionTemplate tx, ProofStorage proofs, AuditLog audit, JsonMapper json,
-                      @Value("${erp.membership.validity:P12M}") String validity, GuestAccounts guests) {
+                      @Value("${erp.membership.validity:P12M}") String validity, GuestAccounts guests, IdentityNumbers ids) {
         this.guests = guests;
+        this.ids = ids;
         this.jdbc = jdbc;
         this.tx = tx;
         this.proofs = proofs;
@@ -100,7 +115,9 @@ public class MembershipService {
     public MemberView register(RegisterForm form, Upload proof, Staff by, UUID idempotencyKey) {
         Clean c = validate(form, proof);
         if (proof != null) ProofStorage.checkImage(proof.bytes());   // type and size before anything is saved
-        String hash = ProofStorage.sha256(json.writeValueAsBytes(List.of(c.toString(),
+        String idHash = ids.hash(c.idType(), c.idNumber());
+        String idMasked = IdentityNumbers.mask(c.idType(), c.idNumber());
+        String hash = ProofStorage.sha256(json.writeValueAsBytes(List.of(c.toString(), idHash,
                 proof == null ? "" : ProofStorage.sha256(proof.bytes()))));
         MemberView replay = replay(by, idempotencyKey, hash);
         if (replay != null) return replay;
@@ -113,7 +130,7 @@ public class MembershipService {
                 // failed registration gives its number back (the counter update rolls back with it).
                 jdbc.update("INSERT INTO idempotency_key (key, actor_id, request_hash, response_json, created_at) VALUES (?, ?, ?, ?::jsonb, ?)",
                         idempotencyKey, by.employeeId(), hash, json.writeValueAsString(Map.of("memberId", id)), Timestamp.from(now().toInstant()));
-                ensureNoLiveMember(c.email(), c.mobile());
+                ensureNoLiveMember(c.email(), c.mobile(), idHash);
                 List<Integer> taken = jdbc.queryForList("""
                         UPDATE membership_number_counter SET next_number = next_number + 1
                         WHERE series = ? AND next_number <= last_number RETURNING next_number - 1""", Integer.class, SERIES);
@@ -126,10 +143,12 @@ public class MembershipService {
                 jdbc.update("""
                         INSERT INTO resort_member (id, membership_id, first_name, last_name, dob, mobile_e164, email, address,
                                                    tier, status, enrolled_by_id, enrolled_by_name, enrolled_by_username,
-                                                   created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'GOLD', 'PENDING_VERIFICATION', ?, ?, ?, ?, ?)""",
+                                                   created_at, updated_at, registration_form, id_type, id_number_masked,
+                                                   id_number_hash, pincode, city, state, country)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'GOLD', 'PENDING_VERIFICATION', ?, ?, ?, ?, ?, 2, ?, ?, ?, ?, ?, ?, ?)""",
                         id, membershipId, c.firstName(), c.lastName(), c.dob(), c.mobile(), c.email(), c.address(),
-                        by.employeeId(), by.name(), by.username(), now, now);
+                        by.employeeId(), by.name(), by.username(), now, now, c.idType(), idMasked, idHash,
+                        c.pincode(), c.city(), c.state(), c.country());
                 jdbc.update("""
                         INSERT INTO member_payment (id, member_id, payment_type, amount, currency, transaction_id,
                                                     proof_file_key, proof_file_name, proof_content_type, proof_size_bytes,
@@ -141,7 +160,8 @@ public class MembershipService {
                         stored == null ? null : stored.sha256(), now);
                 audit.record(by.actor(), "MEMBER_REGISTERED", ENTITY, id, null,
                         Map.of("membershipId", membershipId, "paymentType", c.paymentType(), "amount", c.amount().toPlainString(),
-                                "proof", stored == null ? "none" : stored.sha256()), null, true);
+                                "proof", stored == null ? "none" : stored.sha256(),
+                                "idType", c.idType(), "idNumber", idMasked, "pincode", c.pincode()), null, true);
             });
         } catch (RuntimeException e) {
             if (stored != null) proofs.delete(stored.key());
@@ -149,6 +169,7 @@ public class MembershipService {
                 MemberView again = replay(by, idempotencyKey, hash);   // lost a race on the same key
                 if (again != null) return again;
                 if (mentions(d, "resort_member_email_live", "resort_member_mobile_live")) throw memberExists();
+                if (mentions(d, "resort_member_id_live")) throw idInUse();
             }
             throw e;
         }
@@ -166,11 +187,19 @@ public class MembershipService {
         return get(UUID.fromString(memberId));
     }
 
-    private void ensureNoLiveMember(String email, String mobile) {
+    private void ensureNoLiveMember(String email, String mobile, String idHash) {
         Integer n = jdbc.queryForObject("""
                 SELECT count(*) FROM resort_member WHERE status <> 'REJECTED' AND (email = ? OR mobile_e164 = ?)""",
                 Integer.class, email, mobile);
         if (n != null && n > 0) throw memberExists();
+        Integer byId = jdbc.queryForObject("SELECT count(*) FROM resort_member WHERE status <> 'REJECTED' AND id_number_hash = ?",
+                Integer.class, idHash);
+        if (byId != null && byId > 0) throw idInUse();
+    }
+
+    private static ApiException idInUse() {
+        return new ApiException(HttpStatus.CONFLICT, "ID_ALREADY_REGISTERED",
+                "A membership with this ID proof already exists (pending or active).");
     }
 
     private static ApiException memberExists() {
@@ -188,22 +217,45 @@ public class MembershipService {
 
     static Clean validate(RegisterForm f, Upload proof) {
         Map<String, String> errors = new LinkedHashMap<>();
-        String first = text(f.firstName(), 100, "firstName", "Enter the first name.", errors);
-        String last = text(f.lastName(), 100, "lastName", "Enter the last name.", errors);
-        String address = text(f.address(), 500, "address", "Enter the complete address.", errors);
+        String first = titleCase(text(f.firstName(), 100, "firstName", "Enter the first name.", errors));
+        String last = titleCase(text(f.lastName(), 100, "lastName", "Enter the last name.", errors));
+        String address = text(f.address(), 500, "address", "Enter the street address (house, street, area).", errors);
 
         LocalDate dob = null;
         try {
             dob = LocalDate.parse(f.dob() == null ? "" : f.dob().strip());
-            if (!dob.isBefore(LocalDate.now(ZoneOffset.UTC)) || !dob.isAfter(LocalDate.of(1900, 1, 1))) {
+            LocalDate today = LocalDate.now(RESORT_ZONE);
+            if (!dob.isBefore(today) || !dob.isAfter(LocalDate.of(1900, 1, 1))) {
                 errors.put("dob", "Enter a real date of birth in the past.");
+            } else if (dob.isAfter(today.minusYears(18))) {
+                errors.put("dob", "Customer must be at least 18 years old");
             }
         } catch (DateTimeParseException e) {
             errors.put("dob", "Enter the date of birth (YYYY-MM-DD).");
         }
 
         String mobile = normaliseMobile(f.mobile());
-        if (mobile == null) errors.put("mobile", "Enter a mobile number, e.g. +91 98765 43210.");
+        if (mobile == null) errors.put("mobile", "Enter a 10-digit Indian mobile number starting with 6, 7, 8 or 9.");
+
+        // ID proof: Aadhaar or driving licence (D-131)
+        String idType = f.idType() == null ? "" : f.idType().strip().toUpperCase(Locale.ROOT);
+        String idNumber = IdentityNumbers.normalise(idType, f.idNumber());
+        if (!List.of(IdentityNumbers.AADHAAR, IdentityNumbers.DRIVING_LICENCE).contains(idType)) {
+            errors.put("idType", "Choose Aadhaar or driving licence.");
+        } else {
+            String problem = IdentityNumbers.problem(idType, idNumber);
+            if (problem != null) errors.put("idNumber", problem);
+        }
+
+        // Structured address (D-133)
+        String pincode = f.pincode() == null ? "" : f.pincode().replaceAll("\\s", "");
+        if (!pincode.matches("^[1-9][0-9]{5}$")) errors.put("pincode", "Enter the 6-digit pincode (it can't start with 0).");
+        String city = titleCase(text(f.city(), 100, "city", "Enter the city or town.", errors));
+        String state = IndianStates.find(f.state()).orElse(null);
+        if (state == null) errors.put("state", "Choose the state or union territory.");
+        String country = f.country() == null || f.country().isBlank() ? "India" : f.country().strip();
+        if (!"india".equalsIgnoreCase(country)) errors.put("country", "Gold Membership addresses must be in India.");
+        country = "India";
 
         String email = f.email() == null ? "" : f.email().strip().toLowerCase(Locale.ROOT);
         if (email.length() > 254 || !EMAIL.matcher(email).matches()) errors.put("email", "Enter a valid email address.");
@@ -227,7 +279,7 @@ public class MembershipService {
         }
 
         if (!errors.isEmpty()) throw new FieldErrorsException(errors);
-        return new Clean(first, last, dob, mobile, email, address, type, amount, txn);
+        return new Clean(first, last, dob, mobile, email, address, type, amount, txn, idType, idNumber, pincode, city, state, country);
     }
 
     private static String text(String v, int max, String field, String missing, Map<String, String> errors) {
@@ -237,12 +289,31 @@ public class MembershipService {
         return s;
     }
 
-    /** "+91 98765-43210" → "+919876543210"; a bare 10-digit Indian mobile gets +91. Null when invalid. */
+    /**
+     * An Indian mobile as +91XXXXXXXXXX, from what was typed or pasted: "+91 98765-43210", "919876543210",
+     * "09876543210" and "9876543210" all work. 10 digits starting with 6–9; null otherwise.
+     */
     static String normaliseMobile(String raw) {
         if (raw == null) return null;
-        String s = raw.replaceAll("[\\s()-]", "");
-        if (s.matches("^[6-9][0-9]{9}$")) s = "+91" + s;
-        return E164.matcher(s).matches() ? s : null;
+        String s = raw.replaceAll("[^0-9]", "");
+        if (s.length() == 12 && s.startsWith("91")) s = s.substring(2);
+        else if (s.length() == 11 && s.startsWith("0")) s = s.substring(1);
+        String e164 = "+91" + s;
+        return s.matches("^[6-9][0-9]{9}$") && E164.matcher(e164).matches() ? e164 : null;
+    }
+
+    /**
+     * "anoop kumar" → "Anoop Kumar"; "ANOOP" → "Anoop". A word typed in mixed case (McDonald, D'Souza) is kept as typed.
+     */
+    static String titleCase(String s) {
+        if (s == null || s.isBlank()) return s;
+        StringBuilder out = new StringBuilder();
+        for (String w : s.strip().split("\\s+")) {
+            if (!out.isEmpty()) out.append(' ');
+            boolean uniform = w.equals(w.toLowerCase(Locale.ROOT)) || w.equals(w.toUpperCase(Locale.ROOT));
+            out.append(uniform ? w.substring(0, 1).toUpperCase(Locale.ROOT) + w.substring(1).toLowerCase(Locale.ROOT) : w);
+        }
+        return out.toString();
     }
 
     // --- Verification ------------------------------------------------------------------------------------------------
@@ -422,7 +493,9 @@ public class MembershipService {
                 rs.getString("address"), rs.getString("tier"), rs.getString("status"),
                 new EnrolledBy(rs.getObject("enrolled_by_id", UUID.class), rs.getString("enrolled_by_name"), rs.getString("enrolled_by_username")),
                 rs.getString("decided_by_username"), odt(rs.getTimestamp("decided_at")), odt(rs.getTimestamp("valid_from")),
-                odt(rs.getTimestamp("valid_until")), rs.getString("account_status"), odt(rs.getTimestamp("created_at")), payment);
+                odt(rs.getTimestamp("valid_until")), rs.getString("account_status"), odt(rs.getTimestamp("created_at")), payment,
+                rs.getString("id_type"), rs.getString("id_number_masked"), rs.getString("pincode"), rs.getString("city"),
+                rs.getString("state"), rs.getString("country"));
     };
 
     private static OffsetDateTime odt(Timestamp t) {

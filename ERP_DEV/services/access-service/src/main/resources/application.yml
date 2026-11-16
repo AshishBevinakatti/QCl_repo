@@ -44,6 +44,9 @@ erp:
     # 32 random bytes, base64 (openssl rand -base64 32). Required: without it registrations with a proof fail.
     # Losing it makes the stored proofs unreadable.
     proof-key: ${MEMBERSHIP_PROOF_KEY:}
+    # Key for the ID-proof hash (HMAC-SHA256; D-131): at least 32 random bytes, base64 (openssl rand -base64 32).
+    # Required for registration. Changing it later breaks duplicate detection against existing members.
+    id-hash-key: ${MEMBERSHIP_ID_HASH_KEY:}
     validity: ${MEMBERSHIP_VALIDITY:P12M}   # Gold validity from verification (membership-data.ts: 12 months)
   guest-service:   # customer accounts + welcome email (D-120); internal API, not via the gateway
     url: ${GUEST_SERVICE_URL:http://localhost:8092}

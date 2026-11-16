@@ -2,6 +2,7 @@ package com.quantumclk.erp.access;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import com.quantumclk.erp.access.membership.IdentityNumbers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -121,11 +122,31 @@ class MembershipTest {
     static Map<String, String> customer() {
         int n = SEQ.incrementAndGet();
         String r = UUID.randomUUID().toString().substring(0, 6);
-        return new java.util.LinkedHashMap<>(Map.of(
+        Map<String, String> c = new java.util.LinkedHashMap<>(Map.of(
                 "firstName", "Rohan", "lastName", "Sharma" + n, "dob", "1990-05-17",
                 "mobile", "+91 9" + String.format("%09d", Math.abs((r + n).hashCode()) % 1_000_000_000),
-                "email", "Rohan." + r + n + "@Example.test", "address", "12 MG Road, Vijayapura, Karnataka",
+                "email", "Rohan." + r + n + "@Example.test", "address", "12 MG Road, Tilakwadi",
                 "paymentType", "CASH", "amount", "25000.00"));
+        c.put("idType", "AADHAAR");
+        c.put("idNumber", aadhaar());
+        c.put("pincode", "590006");
+        c.put("city", "belagavi");
+        c.put("state", "Karnataka");
+        c.put("country", "India");
+        return c;
+    }
+
+    /** A different Aadhaar number with a valid Verhoeff check digit on every call, formatted as on the card. */
+    static String aadhaar() {
+        String body = "2" + String.format("%010d", Math.abs(UUID.randomUUID().getMostSignificantBits()) % 10_000_000_000L);
+        String n = body + IdentityNumbers.verhoeffCheckDigit(body);
+        return n.substring(0, 4) + " " + n.substring(4, 8) + " " + n.substring(8);
+    }
+
+    /** The same digits with a wrong last digit (fails the checksum). */
+    static String typo(String aadhaar) {
+        String d = aadhaar.replace(" ", "");
+        return d.substring(0, 11) + ((d.charAt(11) - '0' + 1) % 10);
     }
 
     private MockMultipartHttpServletRequestBuilder form(Map<String, String> fields, MockMultipartFile proof) {
@@ -259,6 +280,142 @@ class MembershipTest {
                 .andExpect(jsonPath("$.fields.address").exists())
                 .andExpect(jsonPath("$.fields.email").exists())
                 .andExpect(jsonPath("$.fields.dob").exists());
+    }
+
+    // --- Smart fields: ID proof, 18+, structured address (D-131…D-134) -----------------------------------------------
+
+    @Test
+    void storesOnlyTheMaskedAadhaarAndAKeyedHashNeverTheNumber() throws Exception {
+        Map<String, String> c = customer();
+        String digits = c.get("idNumber").replace(" ", "");
+        JsonNode m = registerOk(se1(), c, null);
+        assertThat(m.get("idType").asString()).isEqualTo("AADHAAR");
+        assertThat(m.get("idNumberMasked").asString()).isEqualTo("XXXX-XXXX-" + digits.substring(8));
+        assertThat(m.get("pincode").asString()).isEqualTo("590006");
+        assertThat(m.get("city").asString()).isEqualTo("Belagavi");   // title-cased
+        assertThat(m.get("state").asString()).isEqualTo("Karnataka");
+        assertThat(m.get("country").asString()).isEqualTo("India");
+        assertThat(m.toString()).doesNotContain(digits);
+        UUID id = UUID.fromString(m.get("id").asString());
+        Map<String, Object> row = jdbc.queryForMap("SELECT * FROM resort_member WHERE id = ?", id);
+        assertThat(((Number) row.get("registration_form")).intValue()).isEqualTo(2);
+        assertThat(row.values().stream().map(String::valueOf)).noneMatch(v -> v.contains(digits));
+        assertThat(String.valueOf(row.get("id_number_hash")).trim()).matches("[0-9a-f]{64}").isNotEqualTo(sha256Hex("AADHAAR:" + digits));
+        String audit = jdbc.queryForObject("SELECT after_json::text FROM audit_event WHERE entity_id = ? AND action = 'MEMBER_REGISTERED'", String.class, id);
+        assertThat(audit).contains("XXXX-XXXX-" + digits.substring(8)).doesNotContain(digits);
+    }
+
+    static String sha256Hex(String s) throws Exception {
+        return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+    }
+
+    @Test
+    void customerMustBe18OnTheRegistrationDate() throws Exception {
+        java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Kolkata"));
+        Map<String, String> exactly18 = customer();
+        exactly18.put("dob", today.minusYears(18).toString());
+        registerOk(se1(), exactly18, null);
+
+        Map<String, String> almost = customer();
+        almost.put("dob", today.minusYears(18).plusDays(1).toString());
+        register(se1(), almost, null, UUID.randomUUID()).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fields.dob").value("Customer must be at least 18 years old"));
+    }
+
+    @Test
+    void aadhaarMustHave12DigitsStart2To9AndPassTheChecksum() throws Exception {
+        for (String bad : List.of(typo(aadhaar()), "1234 5678 9012", "2345 6789 01")) {
+            Map<String, String> c = customer();
+            c.put("idNumber", bad);
+            register(se1(), c, null, UUID.randomUUID()).andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.fields.idNumber").exists());
+        }
+        Map<String, String> noType = customer();
+        noType.put("idType", "PAN");
+        register(se1(), noType, null, UUID.randomUUID()).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fields.idType").exists());
+    }
+
+    @Test
+    void aDrivingLicenceIsAcceptedAndMasked() throws Exception {
+        Map<String, String> c = customer();
+        c.put("idType", "DRIVING_LICENCE");
+        String dl = "KA01 2019" + String.format("%07d", SEQ.incrementAndGet() * 7919 % 10_000_000);
+        c.put("idNumber", dl.toLowerCase());
+        JsonNode m = registerOk(se1(), c, null);
+        String normalised = dl.replace(" ", "");
+        assertThat(m.get("idType").asString()).isEqualTo("DRIVING_LICENCE");
+        assertThat(m.get("idNumberMasked").asString()).isEqualTo("X".repeat(normalised.length() - 4) + normalised.substring(normalised.length() - 4));
+
+        Map<String, String> bad = customer();
+        bad.put("idType", "DRIVING_LICENCE");
+        bad.put("idNumber", "12345");
+        register(se1(), bad, null, UUID.randomUUID()).andExpect(status().isBadRequest()).andExpect(jsonPath("$.fields.idNumber").exists());
+    }
+
+    @Test
+    void addressNeedsAValidPincodeCityAndState() throws Exception {
+        for (String pin : List.of("012345", "5900", "59000A")) {
+            Map<String, String> c = customer();
+            c.put("pincode", pin);
+            register(se1(), c, null, UUID.randomUUID()).andExpect(status().isBadRequest()).andExpect(jsonPath("$.fields.pincode").exists());
+        }
+        Map<String, String> c = customer();
+        c.put("state", "Atlantis");
+        c.remove("city");
+        c.put("country", "Nepal");
+        register(se1(), c, null, UUID.randomUUID()).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fields.state").exists()).andExpect(jsonPath("$.fields.city").exists())
+                .andExpect(jsonPath("$.fields.country").exists());
+    }
+
+    @Test
+    void mobileAcceptsPastedFormsButOnlyIndianMobiles() throws Exception {
+        for (String typed : List.of("09876543210", "919876543211", "+91 98765-43212")) {
+            Map<String, String> c = customer();
+            c.put("mobile", typed);
+            String expected = "+91" + typed.replaceAll("[^0-9]", "").replaceFirst("^(91|0)(?=\\d{10}$)", "");
+            assertThat(registerOk(se1(), c, null).get("mobile").asString()).isEqualTo(expected);
+        }
+        Map<String, String> landline = customer();
+        landline.put("mobile", "5876543210");
+        register(se1(), landline, null, UUID.randomUUID()).andExpect(status().isBadRequest()).andExpect(jsonPath("$.fields.mobile").exists());
+    }
+
+    @Test
+    void namesAreTitleCased() throws Exception {
+        Map<String, String> c = customer();
+        c.put("firstName", "anoop kumar");
+        c.put("lastName", "D'Souza");
+        JsonNode m = registerOk(se1(), c, null);
+        assertThat(m.get("firstName").asString()).isEqualTo("Anoop Kumar");
+        assertThat(m.get("lastName").asString()).isEqualTo("D'Souza");
+    }
+
+    @Test
+    void oneIdProofHoldsOneLiveMembershipButARejectedOneCanRegisterAgain() throws Exception {
+        Map<String, String> c = customer();
+        JsonNode first = registerOk(se1(), c, null);
+        Map<String, String> sameId = customer();
+        sameId.put("idNumber", c.get("idNumber").replace(" ", ""));   // same number, typed differently
+        register(se1(), sameId, null, UUID.randomUUID()).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ID_ALREADY_REGISTERED"));
+
+        reject(mgr(), first.get("id").asString(), "Wrong ID").andExpect(status().isOk());
+        registerOk(se1(), sameId, null);
+    }
+
+    @Test
+    void theDatabaseRefusesAnUnder18Form2RowEvenWithoutTheService() {
+        UUID enrolled = jdbc.queryForObject("SELECT id FROM employee WHERE username = 'sam.one'", UUID.class);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> jdbc.update("""
+                INSERT INTO resort_member (id, membership_id, first_name, last_name, dob, mobile_e164, email, address, status,
+                    enrolled_by_id, enrolled_by_name, enrolled_by_username, created_at, updated_at, registration_form,
+                    id_type, id_number_masked, id_number_hash, pincode, city, state, country)
+                VALUES (gen_random_uuid(), 'GRH-LM-9999', 'Kid', 'Test', CURRENT_DATE - INTERVAL '10 years', '+919000000001',
+                    'kid@example.test', 'x', 'PENDING_VERIFICATION', ?, 'Sam', 'sam.one', now(), now(), 2,
+                    'AADHAAR', 'XXXX-XXXX-0000', repeat('a', 64), '590006', 'Belagavi', 'Karnataka', 'India')""", enrolled))
+                .hasMessageContaining("resort_member_form2_complete");
     }
 
     // --- Proof files ------------------------------------------------------------------------------------------------

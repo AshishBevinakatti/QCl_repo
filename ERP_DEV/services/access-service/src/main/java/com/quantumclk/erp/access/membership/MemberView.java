@@ -5,11 +5,16 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
-/** What the staff ERP sees of a Gold Membership registration (api.md "Memberships"). */
+/**
+ * What the staff ERP sees of a Gold Membership registration (api.md "Memberships"). ID proof only as idType +
+ * idNumberMasked (never the full number, D-131); address = street address, with city/state/pincode/country separate.
+ * Members registered before V3 (registration form 1) have null ID and structured-address fields.
+ */
 public record MemberView(UUID id, String membershipId, String firstName, String lastName, LocalDate dob, String mobile,
                          String email, String address, String tier, String status, EnrolledBy enrolledBy,
                          String decidedBy, OffsetDateTime decidedAt, OffsetDateTime validFrom, OffsetDateTime validUntil,
-                         String accountStatus, OffsetDateTime createdAt, Payment payment) {
+                         String accountStatus, OffsetDateTime createdAt, Payment payment,
+                         String idType, String idNumberMasked, String pincode, String city, String state, String country) {
 
     public record EnrolledBy(UUID employeeId, String name, String username) { }
 

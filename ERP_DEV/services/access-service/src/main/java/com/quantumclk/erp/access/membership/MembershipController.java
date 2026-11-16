@@ -62,12 +62,15 @@ public class MembershipController {
                                         @RequestParam(required = false) String email, @RequestParam(required = false) String address,
                                         @RequestParam(required = false) String paymentType, @RequestParam(required = false) String amount,
                                         @RequestParam(required = false) String transactionId,
+                                        @RequestParam(required = false) String idType, @RequestParam(required = false) String idNumber,
+                                        @RequestParam(required = false) String pincode, @RequestParam(required = false) String city,
+                                        @RequestParam(required = false) String state, @RequestParam(required = false) String country,
                                         @RequestPart(name = "proof", required = false) MultipartFile proof,
                                         @RequestHeader("Idempotency-Key") UUID key, JwtAuthenticationToken auth,
                                         HttpServletRequest http) throws IOException {
         Upload upload = proof == null || proof.isEmpty() ? null : new Upload(proof.getBytes(), proof.getOriginalFilename());
         MemberView m = service.register(new RegisterForm(firstName, lastName, dob, mobile, email, address, paymentType, amount,
-                transactionId), upload, staff(employees, auth, http), key);
+                transactionId, idType, idNumber, pincode, city, state, country), upload, staff(employees, auth, http), key);
         return ResponseEntity.status(HttpStatus.CREATED).body(m);
     }
 
