@@ -56,3 +56,11 @@ Earlier questions: `archive/hotel-draft:ERP_DEV/docs/logs/OPEN_QUESTIONS.md`.
 ### 2026-11-16 update (D-127, D-128)
 - **Q-034** placeholder changed: remember-me sessions in `gh-guests` now idle **30 days** (max 30 days); the welcome link and the default-ticked "Keep me signed in" use them. Still to confirm with the client.
 - **Q-022 / Q-033** also cover how long Keycloak keeps guest sign-in events (placeholder 90 days) and guest_db sign-in records (kept, no deletion).
+
+### 2026-11-16 (Gold Member smart fields, D-131…D-134)
+| ID | Question | Where | Placeholder until answered |
+|---|---|---|---|
+| Q-038 | Which driving-licence number formats must be accepted (older state formats differ from KA01 20190001234)? | Registration form, `IdentityNumbers` | 2 letters + 2 digits + 9–13 letters/digits |
+| Q-039 | Aadhaar/licence: consent wording shown to the customer and how long the masked number and hash are kept (DPDP; extends Q-033) | Registration form, access_db | No consent text; kept with the member |
+| Q-040 | **Resource request:** India Post "All India Pincode Directory" CSV (data.gov.in) in the resource folder, for pincode → city/state auto-fill | `web/scripts/build-pincodes.mjs` | Manual city; state dropdown |
+- **Q-030** note: quick amount chips read `VITE_GOLD_FEE_CHIPS`; empty (no chips) until the fee is confirmed.

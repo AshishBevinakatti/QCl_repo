@@ -23,3 +23,4 @@ Not consulted: pricing/experience PDFs, loyalty voucher and membership spreadshe
 | 2026-11-16 | LM Mem ID.xlsx | 7ddbd976a756bcc0 | Membership ID series `GRH-LM-0101 … GRH-LM-0601` (D-117) |
 | 2026-11-16 | Golden_Hills_Resort_Loyalty_Voucher_Numbers_5000.xlsx | fef2324a3d9c4363 | Member No. 1–5000 → `GRH-LM-0101 … GRH-LM-5100` (D-117) |
 | 2026-11-16 | Golden Hills Resorts(experience and pricing).pdf | 07c0157af2e9b9d0 | Searched for a membership fee / benefits: none found (Q-030, Q-032) |
+| 2026-11-16 | Golden_Hills_Discovery_Call_Summary_2026-10-28.md | 733068bcd2dc90d0 | "Guest details: … ID proof (Aadhaar or driving licence)" → Gold Member ID proof Aadhaar or DL (D-131) |

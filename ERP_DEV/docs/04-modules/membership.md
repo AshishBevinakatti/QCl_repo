@@ -23,6 +23,13 @@ Decisions: D-116…D-125 ([DECISIONS.md](../logs/DECISIONS.md)). Open questions:
 | Screenshots: JPEG/PNG/WebP ≤ 5 MB, checked by their first bytes, stored AES-256-GCM encrypted under a random name, SHA-256 kept and re-checked | Payment screenshots are personal/payment data (engineering rules §11). A renamed script must not pass as an image | REQ-MEM-003 |
 | Money is `NUMERIC(12,2)` rupees and travels as a string `"25000.00"` | No floating point for money (rules §1) | — |
 | The fee is entered by the executive; nothing checks it against a price | The client has not given the Gold fee yet | Q-030 |
+| Quick amount chips only from `VITE_GOLD_FEE_CHIPS` (none by default) | No guessed prices | Q-030; D-133 |
+| ID proof: Aadhaar or driving licence. Aadhaar = 12 digits, first 2–9, Verhoeff check digit | What the client asked for; the checksum catches typos before saving | Discovery Call [22:56]; D-131 |
+| Only the masked ID (XXXX-XXXX-0123) and a **keyed** hash are stored; one live membership per ID | Aadhaar must not be kept in full; an unkeyed hash of ~10^12 numbers could be reversed. The hash still lets the DB refuse duplicates | D-131 |
+| 18 or older on the registration date (IST); checked in the form, the API and the DB | Members sign a contract; the DB rule uses the registration date, so it never shifts | D-132 |
+| Address = street + pincode + city + state + country (India). Pincode auto-fill from India Post data only | Clean, searchable addresses without invented data | D-133; Q-040 |
+| Mobile = Indian 10 digits starting 6–9 (pasted +91/91/0 removed); names and city title-cased; email lower-cased | Fewer typos and duplicates from formatting | D-133 |
+| Members registered before these rules keep `registration_form = 1` and show "ID proof: not recorded" | Members are never deleted or back-filled with guesses | D-134 |
 | Every change is in `audit_event` (`entity_type = 'MEMBER'`) | Append-only history of who registered, verified or rejected, with the reason | Rules §6 |
 | Members are never deleted | A rejected registration is part of the payment history | — |
 
@@ -54,6 +61,7 @@ Not changed (increment 2): the reservation-request form still shows an "Offline 
 
 - `membership_number_counter`: one row per series (`GRH-LM`, next 101, last 5100).
 - `resort_member`: the customer, status (`PENDING_VERIFICATION` → `ACTIVE` | `REJECTED`), who enrolled them (id + name + username snapshot), who decided and when, validity, and (S3) the customer's Keycloak id `guest_user_id` with `account_status`.
+- V3 (`V3__member_smart_fields.sql`): `registration_form`, `id_type`, `id_number_masked`, `id_number_hash` (HMAC, partial unique `resort_member_id_live`), `pincode`, `city`, `state`, `country`; CHECK `resort_member_form2_complete` (all present and 18+ for form 2).
 - `member_payment`: type, amount, currency, transaction ID, proof file metadata (opaque key, original name for display, type, size, SHA-256), status and rejection reason.
 
 ## Code map (`services/access-service`, package `com.quantumclk.erp.access.membership`)
@@ -64,6 +72,8 @@ Not changed (increment 2): the reservation-request form still shows an "Offline 
 | `MembershipAdminController` | `/api/v1/admin/memberships…`: queue with `pendingCount`, detail, proof, verify, reject |
 | `MembershipService` | All rules: validation and normalisation, numbering, idempotency, state changes, audit, reading views |
 | `ProofStorage` | Image checks, encryption at rest, integrity check on read |
+| `IdentityNumbers` | Aadhaar/licence rules (Verhoeff), normalising, masking, keyed hash |
+| `IndianStates` | The 28 states + 8 UTs for the address |
 | `MemberView` | The JSON shape returned to the ERP |
 
 ## Configuration
@@ -73,11 +83,15 @@ Not changed (increment 2): the reservation-request form still shows an "Offline 
 | `MEMBERSHIP_PROOF_KEY` | AES-256 key, base64 of 32 random bytes (`openssl rand -base64 32`). Without it Scan-QR registrations get 503 | none |
 | `MEMBERSHIP_PROOF_DIR` | Folder for the encrypted files; back it up together with the database | `./data/membership-proofs` (git-ignored) |
 | `MEMBERSHIP_VALIDITY` | Validity from verification (ISO period) | `P12M` |
+| `MEMBERSHIP_ID_HASH_KEY` | HMAC key for the ID-proof hash, base64 of ≥ 32 random bytes. Required to register; don't change it later | none |
+| web `VITE_GOLD_FEE_CHIPS` | Quick amounts on the form, e.g. `25000,30000,50000` | empty (no chips) |
 | gateway `MAX_UPLOAD_SIZE` | Body limit on `POST /api/v1/sales/memberships` only | `6MB` |
 
 Keycloak (`gh-staff`, client `erp-api`): roles `memberships.register`, `memberships.read_own`, `memberships.read_all`, `memberships.verify`, mapped into the realm roles and into the `erp-web` token scope. A realm created before 2026-11-16 needs them added once; see [KEYCLOAK-SETUP §5.4](../02-architecture/identity/KEYCLOAK-SETUP.md).
 
 ## Tests
+
+**Smart fields (D-131…D-134):** backend `MembershipTest` +9 (masked + keyed hash only, nothing of the full number in response/DB/audit; 18 exactly → 201, a day short → 400; Aadhaar checksum / 0–1 start / length; licence; pincode/city/state/country; pasted mobiles; title case; one live membership per ID, re-register after rejection → 201; DB refuses an under-18 form-2 row) and `IdentityNumbersTest` (4). Web `smartFields.test.ts` (6) and `Memberships.test.tsx` +5 (age pill and disabled Register, Aadhaar format/typo/mask, pincode auto-fill, mobile clean + tick + title case, amount chips, masked ID + full address in the drawer, "not recorded" for older members).
 
 Web: `Memberships.test.tsx` (10 tests: provisional ID and locked executive card, multipart submit with Idempotency-Key, card/QR fields, camera and gallery inputs, preview/remove, no submit without a screenshot, server field errors, my members, queue badge, review + verify, reject needs a reason, no Verify on one's own registration) and `api.test.ts` (FormData, image Blob). Backend: `MembershipTest` (21 tests, real PostgreSQL via Testcontainers): validation per field, payment rules, gap-free numbering (sequential and 6 in parallel), idempotency, encryption on disk, who may download a proof, uniqueness after rejection, RBAC, self-verification, the verify/reject state machine and the audit rows. Gateway: `GatewayRoutingTest` checks the per-route upload limit.
 

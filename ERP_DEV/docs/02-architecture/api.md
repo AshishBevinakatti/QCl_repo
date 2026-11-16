@@ -88,7 +88,7 @@ Module guide: [04-modules/membership.md](../04-modules/membership.md).
 | Method & path | Permission | Purpose |
 |---|---|---|
 | `GET /api/v1/sales/memberships/next-number` | `memberships.register` | `{ membershipId: "GRH-LM-0101", provisional: true }`: preview only; the real number is given on save |
-| `POST /api/v1/sales/memberships` ⓘ | `memberships.register` | `multipart/form-data` registration → `201 MemberView` (`status: PENDING_VERIFICATION`). Needs `Idempotency-Key` |
+| `POST /api/v1/sales/memberships` ⓘ | `memberships.register` | `multipart/form-data` registration → `201 MemberView` (`status: PENDING_VERIFICATION`). Needs `Idempotency-Key`. Since V3 also `idType` (`AADHAAR`/`DRIVING_LICENCE`), `idNumber`, `pincode`, `city`, `state`, `country` (default India); `mobile` must be an Indian mobile. 400 `fields.*` for: under 18 (`dob`: "Customer must be at least 18 years old"), Aadhaar length/first digit/checksum or licence format (`idNumber`), pincode, city, state, country. 409 `ID_ALREADY_REGISTERED` when a pending/active membership has the same ID. `MemberView` adds `idType`, `idNumberMasked` (never the full number), `pincode`, `city`, `state`, `country` (null for members registered before V3) |
 | `GET /api/v1/sales/memberships?page=&size=` | `memberships.read_own` | The caller's own registrations, newest first |
 | `GET /api/v1/sales/memberships/{id}` | `memberships.read_own` | Own registration; anyone else's → 404 |
 | `GET /api/v1/sales/memberships/{id}/proof` | `memberships.read_own` | Own payment screenshot (image bytes) |
