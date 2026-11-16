@@ -67,7 +67,7 @@
   text-decoration: none;
   transition: background-color .2s var(--ease-out);
 }
-.mem-btn:hover { background: color-mix(in srgb, var(--color-brass) 88%, #000); }
+@media (hover: hover) and (pointer: fine) { .mem-btn:hover { background: color-mix(in srgb, var(--color-brass) 88%, #000); } }
 .mem-btn:focus-visible { outline: 2px solid var(--color-chalk); outline-offset: 3px; }
 .mem-link {
   display: inline-flex;
@@ -79,7 +79,7 @@
   text-decoration: none;
   border-bottom: 1px solid color-mix(in srgb, var(--color-garden) 60%, transparent);
 }
-.mem-link:hover { color: var(--color-garden); }
+@media (hover: hover) and (pointer: fine) { .mem-link:hover { color: var(--color-garden); } }
 
 /* --- The card ------------------------------------------------------------- */
 .mcard-stage { perspective: 1100px; }

@@ -31,6 +31,8 @@ Done:
 
 15. Memberships per executive in Sales Performance (D-140), uncommitted: access-service `MembershipService.summary`, `/admin/memberships/summary`, list filters; web KPIs, leaderboard columns, "Top in memberships", drill-down member list. access-service 76/76, web 59/59 + build + lint.
 
+16. Ritvik's UI merged (D-141) on branch `merge/ritvik-ui` (backup of the pre-merge tip: `backup/phase1-membership-pre-ritvik` = 0f3ab72). Backend/infra/API unchanged versus the backup (checked with git diff). Web 61/61 + build + lint; landing typecheck + `next build` OK.
+
 Next action:
 1. Present changes to Ashish and request commit approval (Rule 7).
 2. Live check on phone / browser via tunnel.

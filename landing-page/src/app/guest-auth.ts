@@ -53,7 +53,7 @@ export function initAuth(): Promise<boolean> {
     }).catch(() => false);   // Keycloak unreachable: behave as signed out
     ready = Promise.race([check, later(8000, false)]);
   }
-  return ready;
+  return ready ?? Promise.resolve(false);
 }
 
 export type AuthProfile = { sub: string; email: string; name: string; emailVerified: boolean };

@@ -7,6 +7,7 @@ import type { Scene } from "./resort-assets";
 import { impression } from "./resort-assets";
 import { useMotionPreference } from "./motion-provider";
 import { Sketch, type SketchName } from "./pencil";
+import { getTodayStr, addDays, getNightsBetween } from "./booking-dates";
 
 /* The home opening (unit 3.22). A full-bleed render with the headline and a
  * booking bar, the way a hotel opens on film. Scrolling pulls the camera back:
@@ -177,7 +178,7 @@ export default function HomeOpening({ slides, features, intro }: {
               <p className="hop-kicker">Golden Hills Resort · Biligi, Bagalkote</p>
               <h1 className="hop-title">Stay, dine and gather in northern Karnataka</h1>
               <BookingBar />
-              <p className="hop-impression">{slide.label} · {impression}</p>
+              <p className="hop-impression"><span className="hop-impression-label">{slide.label} · </span>{impression}</p>
             </div>
           </motion.div>
 
@@ -209,27 +210,104 @@ export default function HomeOpening({ slides, features, intro }: {
 }
 
 /* Sends the dates to the booking form on /plan-ahead, which pre-fills from
- * these parameters. The form itself does the validation and the ERP call. */
+ * these parameters. Enforces valid dates (check-in >= today, checkout > check-in). */
 function BookingBar() {
+  const [today, setToday] = useState("");
+  const [checkin, setCheckin] = useState("");
+  const [checkout, setCheckout] = useState("");
+  const [guests, setGuests] = useState("2");
+  const [dateError, setDateError] = useState<string | null>(null);
+
+  // Initialize dates after client hydration to prevent SSR mismatch
+  useEffect(() => {
+    const t = getTodayStr();
+    const ci = addDays(t, 1);
+    const co = addDays(ci, 2);
+    setToday(t);
+    setCheckin(ci);
+    setCheckout(co);
+  }, []);
+
+  const handleCheckinChange = (val: string) => {
+    setDateError(null);
+    setCheckin(val);
+    if (!val) return;
+    if (today && val < today) {
+      setDateError("Check-in date cannot be in the past.");
+      return;
+    }
+    // If checkout is on or before new checkin, automatically move checkout to 2 nights later
+    if (checkout && val >= checkout) {
+      setCheckout(addDays(val, 2));
+    }
+  };
+
+  const handleCheckoutChange = (val: string) => {
+    setDateError(null);
+    setCheckout(val);
+    if (checkin && val && val <= checkin) {
+      setDateError("Check-out date must be after check-in.");
+    }
+  };
+
+  const minCheckin = today || undefined;
+  const minCheckout = checkin ? addDays(checkin, 1) : (today ? addDays(today, 1) : undefined);
+  const nights = checkin && checkout ? getNightsBetween(checkin, checkout) : 0;
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    if (!checkin || !checkout) {
+      e.preventDefault();
+      setDateError("Please select both check-in and check-out dates.");
+      return;
+    }
+    if (today && checkin < today) {
+      e.preventDefault();
+      setDateError("Check-in date cannot be in the past.");
+      return;
+    }
+    if (checkout <= checkin) {
+      e.preventDefault();
+      setDateError("Check-out date must be at least 1 night after check-in.");
+      return;
+    }
+  };
+
   return (
-    <form className="hop-book" action="/plan-ahead#bookings" method="get">
+    <form className="hop-book" action="/plan-ahead#bookings" method="get" onSubmit={handleSubmit}>
       <label>
         <span>Check-in</span>
-        <input type="date" name="checkin" required />
+        <input
+          type="date"
+          name="checkin"
+          required
+          min={minCheckin}
+          value={checkin}
+          onChange={(e) => handleCheckinChange(e.target.value)}
+        />
       </label>
       <label>
-        <span>Check-out</span>
-        <input type="date" name="checkout" required />
+        <span>Check-out {nights > 0 ? `(${nights} ${nights === 1 ? "night" : "nights"})` : ""}</span>
+        <input
+          type="date"
+          name="checkout"
+          required
+          min={minCheckout}
+          value={checkout}
+          onChange={(e) => handleCheckoutChange(e.target.value)}
+        />
       </label>
       <label>
         <span>Guests</span>
-        <select name="guests" defaultValue="2">
+        <select name="guests" value={guests} onChange={(e) => setGuests(e.target.value)}>
           {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
             <option key={n} value={n}>{n} {n === 1 ? "guest" : "guests"}</option>
           ))}
         </select>
       </label>
       <button type="submit">Check availability</button>
+      {dateError && (
+        <p className="hop-book-error" role="alert">{dateError}</p>
+      )}
     </form>
   );
 }

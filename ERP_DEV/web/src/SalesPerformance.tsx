@@ -293,7 +293,7 @@ export function SalesPerformance({ request, selected }: { request: Request; sele
               <p className="perf-empty">No Sales Executives yet. Add one in Team Roster.</p>
             ) : (
               <div className="table-container">
-                <table aria-label="Sales executive leaderboard">
+                <table className="cards-on-phone" aria-label="Sales executive leaderboard">
                   <thead>
                     <tr>
                       {header("rank", "#")}
@@ -329,18 +329,18 @@ export function SalesPerformance({ request, selected }: { request: Request; sele
                             </div>
                           </div>
                         </td>
-                        <td><strong>{r.s.attendedCount}</strong></td>
-                        <td>{r.s.inProgressCount}</td>
-                        <td className="perf-good">{r.s.convertedCount}</td>
-                        <td>{r.s.lostCount}</td>
-                        <td>{r.s.attendedCount ? pct(r.s.conversionRate) : "—"}</td>
-                        <td>{formatMinutes(r.s.avgFirstResponseMinutes)}</td>
-                        <td className="perf-bar-col"><StatusBar s={r.s} /></td>
-                        <td>
+                        <td data-label="Attended"><strong>{r.s.attendedCount}</strong></td>
+                        <td data-label="In progress">{r.s.inProgressCount}</td>
+                        <td data-label="Converted" className="perf-good">{r.s.convertedCount}</td>
+                        <td data-label="Lost">{r.s.lostCount}</td>
+                        <td data-label="Conversion">{r.s.attendedCount ? pct(r.s.conversionRate) : "—"}</td>
+                        <td data-label="Avg response">{formatMinutes(r.s.avgFirstResponseMinutes)}</td>
+                        <td data-label="Outcome" className="perf-bar-col"><StatusBar s={r.s} /></td>
+                        <td data-label="Memberships">
                           <strong className="perf-good">{r.m.activeCount}</strong>
                           {r.m.pendingCount > 0 && <span className="row-sub"> +{r.m.pendingCount} pending</span>}
                         </td>
-                        <td className="perf-money">{inr(r.m.verifiedAmount)}</td>
+                        <td data-label="Revenue" className="perf-money">{inr(r.m.verifiedAmount)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -424,7 +424,7 @@ function ExecutiveLeads({ request, row, position, teamSize, qs, periodLabel, fro
           <p className="perf-empty">{row.name} has not registered any Gold Members in this period.</p>
         ) : (
           <div className="table-container">
-            <table aria-label={`Memberships brought in by ${row.name}`}>
+            <table className="cards-on-phone" aria-label={`Memberships brought in by ${row.name}`}>
               <thead>
                 <tr>
                   <th>Membership</th>
@@ -437,17 +437,17 @@ function ExecutiveLeads({ request, row, position, teamSize, qs, periodLabel, fro
               <tbody>
                 {memberList.map((m) => (
                   <tr key={m.id}>
-                    <td><code className="perf-ref">{m.membershipId}</code></td>
+                    <td data-label="Membership"><code className="perf-ref">{m.membershipId}</code></td>
                     <td>
                       <div className="row-name">{m.firstName} {m.lastName}</div>
                       <div className="row-sub">{m.mobile}</div>
                     </td>
-                    <td className="row-sub">{formatDateTime(m.createdAt)}</td>
-                    <td>
+                    <td data-label="Registered" className="row-sub">{formatDateTime(m.createdAt)}</td>
+                    <td data-label="Payment">
                       <div className="perf-money">{inr(m.payment.amount)}</div>
                       <div className="row-sub">{m.payment.type.replace("_", " ")} · {m.payment.status.toLowerCase()}</div>
                     </td>
-                    <td>
+                    <td data-label="Status">
                       <span className={`lead-pill ${m.status === "ACTIVE" ? "lead-converted" : m.status === "REJECTED" ? "lead-lost" : "lead-progress"}`}>
                         {MEMBER_STATUS[m.status] ?? m.status}
                       </span>
@@ -492,7 +492,7 @@ function ExecutiveLeads({ request, row, position, teamSize, qs, periodLabel, fro
           <p className="perf-empty">No leads match the filter.</p>
         ) : (
           <div className="table-container">
-            <table aria-label={`Leads attended by ${row.name}`}>
+            <table className="cards-on-phone" aria-label={`Leads attended by ${row.name}`}>
               <thead>
                 <tr>
                   <th>Reference</th>
@@ -515,16 +515,16 @@ function ExecutiveLeads({ request, row, position, teamSize, qs, periodLabel, fro
                       <div className="row-sub"><a href={`tel:${l.phone}`}>{l.phone}</a></div>
                       <div className="row-sub"><a href={`mailto:${l.email}`}>{l.email}</a></div>
                     </td>
-                    <td>
+                    <td data-label="Stay">
                       <div>{l.roomCategory}</div>
                       <div className="row-sub">{formatDate(l.checkinDate)} → {formatDate(l.checkoutDate)} · {l.guestCount} {l.guestCount === 1 ? "guest" : "guests"}</div>
                     </td>
-                    <td><span className={`lead-pill ${STATUS[l.status]?.cls ?? "lead-new"}`}>{STATUS[l.status]?.label ?? l.status}</span></td>
-                    <td className="row-sub">
+                    <td data-label="Status"><span className={`lead-pill ${STATUS[l.status]?.cls ?? "lead-new"}`}>{STATUS[l.status]?.label ?? l.status}</span></td>
+                    <td data-label="Came in / claimed" className="row-sub">
                       <div>{formatDateTime(l.createdAt)}</div>
                       <div>{l.claimedAt ? `Claimed ${formatDateTime(l.claimedAt)}` : "Not claimed"}</div>
                     </td>
-                    <td className="perf-notes">{l.notes || "—"}</td>
+                    <td data-label="Notes" className="perf-notes">{l.notes || "—"}</td>
                   </tr>
                 ))}
               </tbody>

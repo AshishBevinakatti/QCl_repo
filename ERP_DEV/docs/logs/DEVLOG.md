@@ -353,3 +353,69 @@ History before 2026-11-15 is in `archive/hotel-draft:ERP_DEV/docs/logs/DEVLOG.md
 - Added to Employees → Sales Performance rather than a new screen, same period filter. "Sold" = ACTIVE (verified); revenue = VERIFIED payments only, summed in PostgreSQL, sent as strings.
 - Checks: access-service `./mvnw -o test` (new `adminSeesMembershipsEachExecutiveBroughtIn`); web `npx vitest run` 59/59, `npm run build`, `npm run lint`.
 - Not committed (ask first, Rule 7).
+
+## 2026-11-16 — Sales Admin web UI redesign (UI only, uncommitted)
+- Request: redesign the Sales Admin dashboard and pages to match the landing-page palette, with no backend, API or behaviour change. Keycloak sign-in is bypassed for UI work through the existing `VITE_UI_BYPASS_AUTH` / `preview.ts`, which was already in place and not touched.
+- Changed: `web/src/App.tsx` (sign-in, shell and dashboard markup), `Employees.tsx` and `Memberships.tsx` (markup and class names only), and `styles.css` (rewritten; forest #104028, brass #b88828, paper #f7f2ec, General Sans + Inter, self-hosted to satisfy the CSP).
+- Added: `web/src/assets/fonts/*.woff2` and `web/public/brand/logo-{light,color}.png`, copied from landing-page.
+- Not changed: api.ts, auth.ts, config.ts, main.tsx, preview.ts, vite.config.ts, index.html, tests, services. All API paths, handlers and permission checks are unchanged.
+- Removed from the dashboard: the fake estate selector and the "Operational Clearance" and "WhatsApp notifications active" chips.
+- Mobile first: on phones a forest top bar and a fixed bottom tab bar; from 960px up a 264px sidebar. Tables become card rows under 760px. The review drawer is a bottom sheet on phones and a right drawer from 760px up.
+- Fix during the work: the card entrance animation (transform, fill `both`) trapped the fixed review drawer. It is now opacity-only with fill `backwards`.
+- Checks: `npx vitest run` 33/33, `npx tsc -b` clean, `npx oxlint src` clean, `npx vite build` OK. Checked by screenshot at 1440×900 and 390×844, in light and dark, with no horizontal scroll.
+- Notes: the preview audit data uses outcome `ALLOWED`, but the backend writes `SUCCESS`/`FAILURE`, so preview rows show red. The dev console CSP error for `ws://localhost:443` (HMR `clientPort: 443`) was already there and is dev-only.
+
+## 2026-11-16 — Landing page: mobile pass (desktop unchanged, uncommitted)
+- Request: the landing page felt crowded and broken on phone browsers; make it mobile first without changing desktop.
+- New `landing-page/src/app/mobile.css`, imported last in `layout.tsx`. Every rule sits inside a `max-width` query (980/900/760/380px); a PostCSS check found 0 unscoped rules.
+- Fixed overflow: the membership enquiry grid and the plan-ahead shell used a bare `1fr` column, so long content pushed them past the screen; both now use `minmax(0, 1fr)`. Hero booking date fields, the home status label on the membership teaser, and the login method tabs no longer spill out.
+- Less crowded: amenities two to a row, "why choose us" one tile per row with the icon beside the text, gallery filters in one swipe row, map header on two rows, more space above the dining CTA, 44px tap targets on small links and tabs.
+- Hover: wrapped 125 `:hover` rules in 11 stylesheets in `@media (hover: hover) and (pointer: fine)`, in place (PostCSS script), so taps no longer leave a hover state stuck. This changes nothing for a mouse.
+- Bug found: `.plan-mode-tab span { position: relative }` collapses the active-tab pill to 0×0, so the active label is invisible. Fixed on phones only; desktop has the same bug and was left as requested.
+- Checks: 1440px pixel diff on all 9 routes with and without the new rules gave 0 changed pixels (plan-ahead compared on the form half because of its slideshow). No horizontal scroll at 360/390/768. `npm run typecheck` clean, eslint clean on layout.tsx. Pre-change CSS backed up in the session scratchpad.
+
+## 2026-11-16 — Landing page: mobile functional check (Chromium phone emulation over CDP)
+- No Chrome DevTools connector in the session; Playwright drove Chromium over the DevTools protocol with phone emulation (390×844 and 360×844, touch, isMobile). Script: tap through every interactive feature, check for overlapping text and covered controls, record console errors.
+- 55 checks per width, 54 pass at both. The one flagged overlap (Gatherings) is stacked venue cards covering earlier ones as designed; confirmed by screenshots.
+- Tested and working: nav menu open and navigate; hero booking → /plan-ahead with dates and guests; room-row swipe; gallery filters; map Satellite toggle and directions link; Stay zone filter and View room; room photo viewer open/close, guest stepper, booking request; dining menu sheet and photo enlarge open/close; Experiences and Gatherings "What is included"; membership sign-in tab switch, FAQ, enquiry form validation; plan-ahead tabs, demo fill, disabled "coming soon" tabs; login Register pill and demo fill; profile sign-in tabs. No sideways scroll on any page.
+- Fixed, phone-only in mobile.css:
+  - Gatherings: the open list scrolled inside the scrolling text column (nested scroll, last item sliced). Now one scroll area with a bottom fade.
+  - Room guest stepper buttons 32 → 40px.
+  - The translucent sticky header let bold headings show through the logo; solid #fcfaf6 at 760px and below (desktop keeps 0.94).
+- Every rule in mobile.css is still inside a max-width query.
+- Not changed: each page logs a CSP `frame-ancestors` block plus a 400 from the Keycloak check-sso iframe (localhost:8081). This happens at every screen size.
+
+## 2026-11-17 — Membership page: hide sales sections once a member signs in (uncommitted)
+- Request: after signing in with membership credentials, stop showing "Reserve your membership", the FAQ and the other pre-enrolment content.
+- `membership-member-hero.tsx`: new `ProspectOnly` (renders children only when the session has no membership) and `LedgerHeading` ("What is inside" for visitors; "Your privileges in full / Every voucher and coupon in your booklet" for members).
+- `membership/page.tsx`: the welcome keepsake box, the "Before you enrol" FAQ and the "Reserve your membership" enquiry are wrapped in `ProspectOnly`. The voucher ledger stays for members: it is the only place listing what each voucher is (the booklet shows counts only).
+- A guest signed in without a membership still sees the sales sections.
+- Checked in Chromium at 390 and 1440: signed out shows everything; signed in (Membership ID + OTP) hides the three sections and swaps the ledger heading, still hidden after reload; signing out brings them back; no page errors. Typecheck and eslint clean.
+
+## 2026-11-17 — Landing first screen lighter on phones; coordinates removed from plan-ahead (uncommitted)
+- Request: the start of the home page felt text-heavy and crowded on mobile; remove the resort coordinates from the plan-your-stay slideshow card.
+- `plan-ahead/plan-stay-portal.tsx`: removed the "16.3475° N, 75.6259° E · Biligi Ridge" badge; the slideshow counter stays. (The same badge is in `stay-editorial.tsx`, which is not imported anywhere; left alone.)
+- `home-opening.tsx`: the slide name in the hero note is now its own span (`hop-impression-label`); desktop text is unchanged.
+- `mobile.css` (760px and below):
+  - Hero: hide the location kicker, which repeats the headline and the statement kicker. Hide the slide name in the note, leaving "Artist's impression. Design subject to change." Guests and Check availability share a row, so the booking card is two rows.
+  - Statement: 16px lead, tighter gap, smaller credit.
+- Checks: screenshots at 390/360; plan-ahead page text has no coordinates; typecheck clean; mobile.css still fully max-width scoped. The eslint errors in home-opening.tsx:226 and plan-stay-portal.tsx were already there.
+
+## 2026-11-17 — Membership ledger on phones: slim tally, calmer motion (uncommitted)
+- Request: on mobile the privileges scroll and its animation overlapped and made the section unpleasant; keep a minimal effect.
+- Cause: at 760px and below the sticky tally stacked step, sketch, name, three rows and the bar: 404px tall, half the screen. Entries scrolled under it while their photos clip-revealed and zoomed and their lines slid up.
+- `mobile.css` (760px and below):
+  - The tally is a one-row strip (step · part name · "N / 180") underlined by the progress bar: 66px, opaque, soft shadow.
+  - Entries no longer clip-reveal or zoom their photos, and their lines no longer slide; lines fade in once (opacity, 0.4s).
+  - The progress bar filling as you scroll is kept.
+  - The per-part voucher/coupon counts stay in each entry's heading.
+- Checked by screenshots at 390 and 360 at three scroll depths. Desktop and tablet ledger unchanged; mobile.css still fully max-width scoped.
+
+## 2026-11-17T02:00:00+05:30 — Ritvik's UI/UX merged without touching our work (D-141)
+- Ashish: take Ritvik's UI and UX changes (incl. booking date validation and responsive layouts) without harming our backend or the new admin sections. Plan approved.
+- `git fetch`: `origin/Ritvik-Frontend` 2c164d9..0db0ede. Shared base 1d7885c. His work: merge ca6b085 (+ skills-lock.json) and 0db0ede (web + landing-page + DEVLOG only; no backend).
+- Safety: branch `backup/phase1-membership-pre-ritvik` (0f3ab72); work on `merge/ritvik-ui`; `git merge --no-ff --no-commit origin/Ritvik-Frontend`.
+- Conflicts and resolution: DEVLOG (kept both entries); styles.css (his file + an alias-token block and our D-131…D-140 classes; `#fff` on primary → `--primary-ink` for dark mode); App.tsx (his shell/theme/sign-in + our routing and menu rules; his dashboard only for roles with `dashboard`); Employees.tsx and Memberships.tsx (ours + his icons, headers, phone-card tables). Auto-merged: guest-auth.ts (our 8 s timeout kept), plan-stay-portal.tsx. Sales Performance tables also made phone cards.
+- Pins: `lucide-react` 1.73.0 (his lock's version), landing `keycloak-js` back to 26.2.5. `skills-lock.json` untracked again (`git rm --cached`; local copy restored).
+- Checks: `git diff --cached backup/phase1-membership-pre-ritvik -- ERP_DEV/services ERP_DEV/infra ERP_DEV/docs/02-architecture ...` empty. Web `npx vitest run` 61/61 (2 new: theme toggle; Manager keeps dashboard, admin doesn't), `npm run build`, `npm run lint` clean. Landing `npm run typecheck`, `npm run build` OK.
+- Not committed yet (ask first, Rule 7).

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { portalApi, type GuestUser, type InquiryRecord } from "../portal-client";
 import { ArrowRight, Check, RefreshCw } from "../icons";
+import { getTodayStr, addDays, sanitizeBookingDates } from "../booking-dates";
 
 /* The accommodation the resort actually offers, in the same words the
  * Rooms section of this page uses. The value is sent straight through to the
@@ -106,19 +107,14 @@ export default function PortalForms() {
       void loadInquiries(user.token);
     }
 
-    const today = new Date();
-    const tmrw = new Date(today);
-    tmrw.setDate(tmrw.getDate() + 1);
-    const co = new Date(today);
-    co.setDate(co.getDate() + 4);
     // The home page booking bar sends ?checkin=&checkout=&guests= here.
     const query = new URLSearchParams(window.location.search);
-    const iso = /^\d{4}-\d{2}-\d{2}$/;
     const qIn = query.get("checkin") ?? "";
     const qOut = query.get("checkout") ?? "";
     const qGuests = Number(query.get("guests"));
-    setCheckin(iso.test(qIn) ? qIn : tmrw.toISOString().split("T")[0]);
-    setCheckout(iso.test(qOut) ? qOut : co.toISOString().split("T")[0]);
+    const [validIn, validOut] = sanitizeBookingDates(qIn, qOut);
+    setCheckin(validIn);
+    setCheckout(validOut);
     if (Number.isInteger(qGuests) && qGuests >= 1 && qGuests <= 12) setGuestCount(qGuests);
   }, [loadInquiries]);
 
@@ -176,6 +172,16 @@ export default function PortalForms() {
     e.preventDefault();
     setBookingError(null);
     setBookingSuccess(null);
+
+    const todayStr = getTodayStr();
+    if (checkin < todayStr) {
+      setBookingError("Check-in date cannot be in the past.");
+      return;
+    }
+    if (checkout <= checkin) {
+      setBookingError("Check-out date must be after check-in date.");
+      return;
+    }
 
     startTransition(async () => {
       try {
@@ -366,14 +372,26 @@ export default function PortalForms() {
                     <label className="portal-field">
                       <span>Check in</span>
                       <input
-                        type="date" required value={checkin}
-                        onChange={(e) => setCheckin(e.target.value)}
+                        type="date"
+                        required
+                        min={getTodayStr()}
+                        value={checkin}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCheckin(val);
+                          if (checkout && val >= checkout) {
+                            setCheckout(addDays(val, 2));
+                          }
+                        }}
                       />
                     </label>
                     <label className="portal-field">
                       <span>Check out</span>
                       <input
-                        type="date" required value={checkout}
+                        type="date"
+                        required
+                        min={checkin ? addDays(checkin, 1) : addDays(getTodayStr(), 1)}
+                        value={checkout}
                         onChange={(e) => setCheckout(e.target.value)}
                       />
                     </label>

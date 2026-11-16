@@ -6,7 +6,7 @@ import SiteFooter from "../site-footer";
 import MembershipCard from "../membership-card";
 import MembershipLedger from "../membership-ledger";
 import MembershipMine from "../membership-mine";
-import { MemberFigures, MemberHeroCopy } from "../membership-member-hero";
+import { LedgerHeading, MemberFigures, MemberHeroCopy, ProspectOnly } from "../membership-member-hero";
 import { Sketch } from "../pencil";
 import MembershipExtras from "../membership-extras";
 import CountUp from "../count-up";
@@ -66,14 +66,16 @@ export default function MembershipPage() {
         <section id="explore" className="mem-ledger-section" aria-labelledby="ledger-title">
           <div className="wrap mem-ledger-head">
             <Sketch name="hills" className="mem-sketch" />
-            <p className="mem-kicker">What is inside</p>
-            <h2 id="ledger-title">Seven parts of the resort, one booklet</h2>
+            <LedgerHeading />
           </div>
           <div className="wrap">
             <MembershipLedger />
           </div>
         </section>
 
+        {/* Not for members: the enrolment box, the pre-enrolment FAQ and
+          * the enrolment form. */}
+        <ProspectOnly>
         <MembershipExtras />
 
         <section id="inquire" className="wrap mem-inquiry-section" aria-labelledby="inquire-title">
@@ -99,6 +101,7 @@ export default function MembershipPage() {
             </div>
           </div>
         </section>
+        </ProspectOnly>
       </main>
       </MotionProvider>
 

@@ -164,9 +164,9 @@
   transition: transform 0.15s ease;
 }
 
-.login-hero-back-link:hover {
+@media (hover: hover) and (pointer: fine) { .login-hero-back-link:hover {
   transform: translateX(-3px);
-}
+} }
 
 /* --------------------------------------------------------------------------
    RIGHT / AUTHENTICATION FORM PANEL
@@ -208,9 +208,9 @@
   transition: color 0.15s ease;
 }
 
-.login-back-button:hover {
+@media (hover: hover) and (pointer: fine) { .login-back-button:hover {
   color: var(--color-ink);
-}
+} }
 
 .login-mobile-brand-img {
   width: 110px;
@@ -253,9 +253,9 @@
   transition: all 0.15s ease;
 }
 
-.login-mode-pill:hover:not(.active) {
+@media (hover: hover) and (pointer: fine) { .login-mode-pill:hover:not(.active) {
   color: var(--color-ink);
-}
+} }
 
 .login-mode-pill.active {
   background: var(--color-forest);
@@ -320,9 +320,9 @@
   text-underline-offset: 3px;
 }
 
-.login-signup-link-btn:hover {
+@media (hover: hover) and (pointer: fine) { .login-signup-link-btn:hover {
   color: var(--color-brass);
-}
+} }
 
 .login-logout-link {
   background: transparent;
@@ -335,9 +335,9 @@
   text-decoration: underline;
 }
 
-.login-logout-link:hover {
+@media (hover: hover) and (pointer: fine) { .login-logout-link:hover {
   color: #b91c1c;
-}
+} }
 
 .login-header-tag {
   font-family: var(--font-sans);
@@ -423,9 +423,9 @@
   white-space: nowrap;
 }
 
-.login-tab:hover:not(.active) {
+@media (hover: hover) and (pointer: fine) { .login-tab:hover:not(.active) {
   color: var(--color-ink);
-}
+} }
 
 .login-tab.active {
   background: #ffffff;
@@ -472,10 +472,10 @@
   padding: 0;
 }
 
-.login-forgot-link:hover {
+@media (hover: hover) and (pointer: fine) { .login-forgot-link:hover {
   text-decoration: underline;
   color: var(--color-brass);
-}
+} }
 
 .login-input-wrapper {
   position: relative;
@@ -532,9 +532,9 @@
   border-radius: 6px;
 }
 
-.login-password-toggle:hover {
+@media (hover: hover) and (pointer: fine) { .login-password-toggle:hover {
   color: var(--color-ink);
-}
+} }
 
 /* Phone input specific */
 .login-phone-wrapper {
@@ -611,9 +611,9 @@
   padding: 0;
 }
 
-.login-resend-btn:hover {
+@media (hover: hover) and (pointer: fine) { .login-resend-btn:hover {
   text-decoration: underline;
-}
+} }
 
 /* Options / Checkbox */
 .login-options-row {
@@ -662,11 +662,11 @@
   box-shadow: 0 4px 14px rgba(16, 64, 40, 0.18);
 }
 
-.login-primary-btn:hover:not(:disabled) {
+@media (hover: hover) and (pointer: fine) { .login-primary-btn:hover:not(:disabled) {
   background: color-mix(in srgb, var(--color-forest) 88%, #000000);
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(16, 64, 40, 0.24);
-}
+} }
 
 .login-primary-btn:disabled {
   opacity: 0.65;
@@ -690,9 +690,9 @@
   transition: all 0.15s ease;
 }
 
-.login-secondary-btn:hover {
+@media (hover: hover) and (pointer: fine) { .login-secondary-btn:hover {
   background: var(--color-paper);
-}
+} }
 
 .login-btn-loading {
   display: inline-flex;
@@ -740,11 +740,11 @@
   transition: all 0.15s ease;
 }
 
-.demo-chip:hover {
+@media (hover: hover) and (pointer: fine) { .demo-chip:hover {
   background: var(--color-forest);
   color: #ffffff;
   border-color: var(--color-forest);
-}
+} }
 
 /* --------------------------------------------------------------------------
    SSO / Social Auth
@@ -789,10 +789,10 @@
   transition: all 0.18s ease;
 }
 
-.login-social-btn:hover {
+@media (hover: hover) and (pointer: fine) { .login-social-btn:hover {
   background: var(--color-paper);
   border-color: color-mix(in srgb, var(--color-brass) 50%, var(--color-line));
-}
+} }
 
 /* --------------------------------------------------------------------------
    Footer Links & Concierge Help
@@ -820,9 +820,9 @@
   text-underline-offset: 3px;
 }
 
-.login-signup-link:hover {
+@media (hover: hover) and (pointer: fine) { .login-signup-link:hover {
   color: var(--color-brass);
-}
+} }
 
 .login-concierge-help {
   display: flex;
@@ -838,9 +838,9 @@
   text-decoration: none;
 }
 
-.login-phone-link:hover {
+@media (hover: hover) and (pointer: fine) { .login-phone-link:hover {
   color: var(--color-forest);
-}
+} }
 
 .login-trust-bar {
   text-align: center;
@@ -965,10 +965,10 @@
   cursor: pointer;
 }
 
-.modal-cancel-btn:hover {
+@media (hover: hover) and (pointer: fine) { .modal-cancel-btn:hover {
   color: var(--color-ink);
   background: var(--color-paper);
-}
+} }
 
 .modal-submit-btn {
   padding: 9px 18px;
@@ -982,9 +982,9 @@
   cursor: pointer;
 }
 
-.modal-submit-btn:hover {
+@media (hover: hover) and (pointer: fine) { .modal-submit-btn:hover {
   background: color-mix(in srgb, var(--color-forest) 88%, #000000);
-}
+} }
 
 .modal-sent-state {
   display: flex;
@@ -1009,10 +1009,10 @@
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
-.login-register-prompt-card:hover {
+@media (hover: hover) and (pointer: fine) { .login-register-prompt-card:hover {
   border-color: color-mix(in srgb, var(--color-brass) 50%, var(--color-line));
   box-shadow: 0 4px 16px -2px rgba(24, 36, 29, 0.08);
-}
+} }
 
 .register-prompt-content {
   display: flex;
@@ -1074,12 +1074,12 @@
   box-shadow: 0 2px 8px rgba(16, 64, 40, 0.06);
 }
 
-.login-register-now-btn:hover {
+@media (hover: hover) and (pointer: fine) { .login-register-now-btn:hover {
   background: var(--color-forest);
   color: #ffffff;
   transform: translateY(-1px);
   box-shadow: 0 4px 14px rgba(16, 64, 40, 0.2);
-}
+} }
 
 /* --------------------------------------------------------------------------
    Responsive Breakpoints
@@ -1291,7 +1291,7 @@
   cursor: pointer;
   transition: color .2s var(--ease-out), background-color .2s var(--ease-out);
 }
-.portal-tab:hover { color: var(--color-ink); }
+@media (hover: hover) and (pointer: fine) { .portal-tab:hover { color: var(--color-ink); } }
 .portal-tab.active {
   color: var(--color-ink);
   background: var(--color-chalk);
@@ -1476,7 +1476,7 @@
   cursor: pointer;
   transition: background-color .2s var(--ease-out);
 }
-.portal-btn-primary:hover { background: color-mix(in srgb, var(--color-forest) 86%, #000); }
+@media (hover: hover) and (pointer: fine) { .portal-btn-primary:hover { background: color-mix(in srgb, var(--color-forest) 86%, #000); } }
 .portal-btn-primary:disabled { opacity: .55; cursor: default; }
 
 .portal-btn-secondary {
@@ -1496,7 +1496,7 @@
   cursor: pointer;
   transition: background-color .2s var(--ease-out);
 }
-.portal-btn-secondary:hover { background: var(--color-limestone); }
+@media (hover: hover) and (pointer: fine) { .portal-btn-secondary:hover { background: var(--color-limestone); } }
 
 .portal-btn-ghost {
   display: inline-flex;
@@ -1513,7 +1513,7 @@
   cursor: pointer;
   transition: color .2s var(--ease-out), background-color .2s var(--ease-out);
 }
-.portal-btn-ghost:hover:not(:disabled) { color: var(--color-ink); background: var(--color-limestone); }
+@media (hover: hover) and (pointer: fine) { .portal-btn-ghost:hover:not(:disabled) { color: var(--color-ink); background: var(--color-limestone); } }
 .portal-btn-ghost:disabled { opacity: .55; cursor: default; }
 
 .portal-btn-link {
@@ -1526,7 +1526,7 @@
   border-bottom: 1px solid var(--color-brass);
   cursor: pointer;
 }
-.portal-btn-link:hover { color: var(--color-forest); }
+@media (hover: hover) and (pointer: fine) { .portal-btn-link:hover { color: var(--color-forest); } }
 
 .portal-error {
   margin: 0;
@@ -1909,9 +1909,9 @@
   user-select: none;
 }
 
-.plan-mode-tab:hover {
+@media (hover: hover) and (pointer: fine) { .plan-mode-tab:hover {
   color: var(--color-ink);
-}
+} }
 
 .plan-mode-tab:active {
   transform: scale(0.97);
@@ -1962,10 +1962,10 @@
   transition: all 0.16s var(--ease-out);
 }
 
-.plan-subtab-btn:hover {
+@media (hover: hover) and (pointer: fine) { .plan-subtab-btn:hover {
   color: var(--color-ink);
   background: rgba(0, 0, 0, 0.04);
-}
+} }
 
 .plan-subtab-btn:active {
   transform: scale(0.97);
@@ -2013,9 +2013,9 @@
   text-underline-offset: 3px;
 }
 
-.plan-text-link:hover {
+@media (hover: hover) and (pointer: fine) { .plan-text-link:hover {
   color: #0b301e;
-}
+} }
 
 .plan-field-row {
   display: grid;
@@ -2096,9 +2096,9 @@
   padding: 4px;
 }
 
-.plan-eye-btn:hover {
+@media (hover: hover) and (pointer: fine) { .plan-eye-btn:hover {
   color: var(--color-ink);
-}
+} }
 
 .plan-options-row {
   display: flex;
@@ -2142,11 +2142,11 @@
   user-select: none;
 }
 
-.plan-submit-btn:hover {
+@media (hover: hover) and (pointer: fine) { .plan-submit-btn:hover {
   background: #0b301e;
   transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(16, 64, 40, 0.26);
-}
+} }
 
 .plan-submit-btn:active {
   transform: scale(0.98);
@@ -2177,10 +2177,10 @@
   transition: all 0.15s var(--ease-out);
 }
 
-.plan-demo-pill:hover {
+@media (hover: hover) and (pointer: fine) { .plan-demo-pill:hover {
   background: var(--color-forest);
   color: var(--color-chalk);
-}
+} }
 
 .plan-demo-pill:active {
   transform: scale(0.97);
@@ -2209,9 +2209,9 @@
   text-underline-offset: 3px;
 }
 
-.plan-switch-action:hover {
+@media (hover: hover) and (pointer: fine) { .plan-switch-action:hover {
   color: #0b301e;
-}
+} }
 
 /* Confirmed Box */
 .plan-reserve-confirmed {
@@ -2338,9 +2338,9 @@
   transition: all 0.2s var(--ease-out);
 }
 
-.plan-primary-action:hover {
+@media (hover: hover) and (pointer: fine) { .plan-primary-action:hover {
   background: #0b301e;
-}
+} }
 
 .plan-primary-action:active {
   transform: scale(0.97);
@@ -2361,9 +2361,9 @@
   transition: all 0.2s var(--ease-out);
 }
 
-.plan-secondary-action:hover {
+@media (hover: hover) and (pointer: fine) { .plan-secondary-action:hover {
   background: var(--color-line);
-}
+} }
 
 .plan-secondary-action:active {
   transform: scale(0.97);
@@ -2504,9 +2504,9 @@
   user-select: none;
 }
 
-.plan-angle-pill:hover {
+@media (hover: hover) and (pointer: fine) { .plan-angle-pill:hover {
   background: var(--color-chalk);
-}
+} }
 
 .plan-angle-pill:active {
   transform: scale(0.97);

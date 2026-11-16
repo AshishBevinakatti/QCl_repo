@@ -69,6 +69,30 @@ describe("Dashboard", () => {
     expect(screen.queryByText(/Leads/)).toBeNull();
   });
 
+  it("switches between light and dark and remembers it (D-141)", async () => {
+    window.location.hash = "";
+    const request = vi.fn(async () => ({ items: [], page: 0, size: 100, total: 0 })) as never;
+    render(<Dashboard loadMe={() => Promise.resolve(admin)} onSignOut={() => {}} request={request} />);
+    const toggle = await screen.findByRole("button", { name: "Toggle theme" });
+    const start = document.documentElement.getAttribute("data-theme");
+    fireEvent.click(toggle);
+    const next = start === "dark" ? "light" : "dark";
+    expect(document.documentElement.getAttribute("data-theme")).toBe(next);
+    expect(localStorage.getItem("gh_erp_theme")).toBe(next);
+  });
+
+  it("a Manager still gets the dashboard; the Sales Admin never does (D-137, D-141)", async () => {
+    window.location.hash = "";
+    const manager: Me = {
+      employee: { id: "3", firstName: "Mohan", lastName: "M", email: "m@example.test", username: "mohan", jobRole: "MANAGER", status: "ACTIVE" },
+      roles: ["MANAGER"], permissions: ["employees.read", "memberships.read_all"], modules: ["dashboard", "employees", "memberships"],
+    };
+    const request = vi.fn(async () => ({ items: [], page: 0, size: 1, total: 2, pendingCount: 2 })) as never;
+    render(<Dashboard loadMe={() => Promise.resolve(manager)} onSignOut={() => {}} request={request} />);
+    expect(await screen.findByRole("heading", { name: "Welcome, Mohan M" })).toBeTruthy();
+    expect(screen.getAllByRole("link").map((a) => a.textContent)).toEqual(["Dashboard", "Employees", "Memberships"]);
+  });
+
   it("explains when the ERP record is missing", async () => {
     render(<Dashboard loadMe={() => Promise.resolve({ ...admin, employee: null })} onSignOut={() => {}} />);
     expect(await screen.findByRole("alert")).toBeTruthy();
