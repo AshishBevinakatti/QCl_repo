@@ -265,3 +265,15 @@ History before 2026-11-15 is in `archive/hotel-draft:ERP_DEV/docs/logs/DEVLOG.md
 - Not changed: the reservation form's "Offline Preview" fake reference (enquiries are increment 2) — to raise with Ashish.
 - **Verified:** `npm run typecheck` ok; eslint on changed files: no new findings (login-portal 4→3, plan-stay-portal 17→16 pre-existing problems; Q-004); `npm run build` ok (19 pages incl. /member/activate). Live smoke via proxy :8088 with the public Host: /member/activate, /silent-check-sso.html, /membership, /login, /plan-ahead 200; Keycloak gh-guests auth page for guest-web renders the golden-hills theme with login_hint; foreign redirect_uri 400; missing PKCE → redirect with `error=invalid_request … code_challenge_method`.
 - **Found:** Ritvik's local `landing-page/.env.local` sets `NEXT_PUBLIC_LEAD_API_URL=http://localhost:8082/api/v1/portal`, which phones on the public URL can't reach — Ashish to delete that line (not edited: local file).
+
+## 2026-11-16T17:44:28+05:30 — S6 committed; .env.local fixed; increment report drafted
+- **Commit** (approved "Yes, commit"): `7b8da30` feat(landing-page): member sign-in with Keycloak PKCE, welcome link, real Gold card (S6).
+- Ashish approved removing `NEXT_PUBLIC_LEAD_API_URL` from `landing-page/.env.local` (its only line; file now empty, git-ignored). The site now uses same-origin `/api/v1/portal`.
+- Ashish: leave the reservation form's "Offline Preview" fake reference for increment 2.
+- Drafted `docs/03-phases/phase-1/inc-membership-REPORT.md` (deliverables, test evidence, live S7 checklist, deviations, open items). S7 live test needs Ashish (service restarts, a real inbox, phone).
+
+## 2026-11-16T18:52:00+05:30 — Stack restarted, runner scripts added, push to GitHub approved
+- Cleanly restarted `access-service` (:8091), `api-gateway` (:8082), and `landing-page` (:3000) with fresh environment variables to run S1–S6 code. Added runner scripts `ERP_DEV/run-access-service.ps1`, `ERP_DEV/run-api-gateway.ps1`, and `run-landing-page.ps1`.
+- Restarted ngrok tunnel on :8088 (`https://weaponless-bertie-hyperorganically.ngrok-free.dev`). All endpoints verified 200 through proxy.
+- Ashish approved committing the increment report, runner scripts, and state logs, and pushing branch `feature/phase1-membership` to `origin`.
+
