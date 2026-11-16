@@ -220,7 +220,7 @@ The interrupted command did **not** write these. Also add both to `.env.example`
 | api-gateway | :8082 |
 | web (Vite) | :5173/erp/ |
 | landing page (Next) | :3000 |
-| ngrok | `ngrok http 8088 --url=weaponless-bertie-hyperorganically.ngrok-free.dev` |
+| ngrok | `ngrok http 127.0.0.1:8088 --url=weaponless-bertie-hyperorganically.ngrok-free.dev` |
 
 - **access-service and the gateway must be restarted** to run the S1/S2 code. Ashish was going to do this and test S5 live; check with him. Staff must sign out and in again for `memberships.*`.
 - **Backend tests:** `cd services/<svc> && env -u KEYCLOAK_ADMIN_URL -u KEYCLOAK_URL -u ERP_WEB_URL ./mvnw -B -q test`, without a sourced `.env`.

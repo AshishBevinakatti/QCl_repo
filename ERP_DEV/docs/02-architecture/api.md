@@ -123,7 +123,7 @@ Staff tokens on `/api/v1/portal/**` → 401; member tokens on staff paths → 40
 |---|---|---|
 | `POST /internal/guests/provision` | access-service service account (gh-staff, aud `erp-api`, permission `guests.provision`) | `{ email, firstName, lastName, mobile?, membershipId: "GRH-LM-0101", validUntil?: "16 Nov 2027", requestedBy? }` → find or create the gh-guests account (no password), set `membershipId`, send the welcome email → `{ guestUserId, welcomeSent, message }`. Repeatable for the same email. 503 `IDENTITY_UNAVAILABLE` when Keycloak can't be reached (nothing stored) |
 | `POST /internal/guests/{guestUserId}/resend` | same | `{ validUntil?, requestedBy? }` → new one-time link and email → same result shape; 404 for an unknown account |
-| `GET /api/v1/portal/me` | signed-in guest (gh-guests, aud `guest-api`) | `{ guestId, email, firstName, lastName, emailVerified, mobile, source: "MEMBERSHIP" or "SELF_REGISTERED" }`; own profile only |
+| `GET /api/v1/portal/me` | signed-in guest (gh-guests, aud `guest-api`) | `{ guestId, email, firstName, lastName, emailVerified, mobile, source: "MEMBERSHIP" or "SELF_REGISTERED", status }`; own profile only. Also keeps guest_db up to date (D-128): creates the row for a self-registered guest, copies email/verification from the token, counts each Keycloak session (`sid`) once as a sign-in with audit `GUEST_SIGNED_IN`. 403 `ACCOUNT_DISABLED` when the account is disabled |
 
 `/internal/**` is not routed by the gateway. A token from the wrong realm gets 401; a staff token without `guests.provision` gets 403. Keycloak extension endpoint used by guest-service: `POST /realms/gh-guests/gh-activation/users/{id}/send` ([MEMBER-LOGIN §5](identity/MEMBER-LOGIN.md)).
 

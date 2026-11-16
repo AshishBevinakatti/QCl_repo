@@ -30,7 +30,7 @@ Plan: [inc-membership-PLAN.md](inc-membership-PLAN.md). Decisions D-116…D-126.
 
 ## 3. Live end-to-end test (S7): steps for Ashish
 
-Before: restart **access-service** and **api-gateway** (they still run pre-S1 code), keep guest-service running (:8092), restart `next dev` if it was started before the `.env.local` change, and keep `ngrok http 8088 --url=…` running. Sign out and back in on the ERP.
+Before: restart **access-service** and **api-gateway** (they still run pre-S1 code), keep guest-service running (:8092), restart `next dev` if it was started before the `.env.local` change, and keep `ngrok http 127.0.0.1:8088 --url=…` running (IPv4, see KEYCLOAK-SETUP §1.1). Run `ERP_DEV/check-stack.ps1` first: every line must say OK. Sign out and back in on the ERP.
 
 1. Phone → `https://<public host>/erp/` → sign in as a **Sales Executive** → **Memberships → Register member**. Fill in a test customer whose **email is an inbox you own**. Choose **Scan QR**, tap **Open camera**, photograph any payment screen, then **Register member**. ✅ "GRH-LM-0101 is registered…".
 2. Sign in as a **Manager or Admin** (another person) → **Verification queue** (badge 1) → **Review** → check the screenshot (tap to zoom) → **Verify & activate**. ✅ Status Active; customer account "Welcome email sent".
@@ -41,7 +41,10 @@ Before: restart **access-service** and **api-gateway** (they still run pre-S1 co
 7. Refresh: ✅ still signed in. In the ERP the account now shows **"Customer has signed in"**.
 8. Tap the email link again: ✅ normal sign-in page (the link worked once).
 9. Sign out, then sign in from `/login` with email → Keycloak → password: ✅ back on your card.
-10. Reject path: register a second test customer, **Reject** with a reason: ✅ status Rejected with the reason; the same email/mobile can be registered again.
+10. **Close the browser completely** (swipe it away), open the site again: ✅ still signed in, card shown ("Keep me signed in", D-127).
+11. **Another browser** on the phone (or the site in Chrome after opening the email in Gmail): `/membership` → email → **Sign in** → Golden Hills page → the password → ✅ the card. A wrong password: ✅ an error on that page.
+12. guest_db: ✅ `guest_account` shows `first_signed_in_at`, `last_signed_in_at`, `sign_in_count`; `audit_event` has `GUEST_SIGNED_IN` (D-128).
+13. Reject path: register a second test customer, **Reject** with a reason: ✅ status Rejected with the reason; the same email/mobile can be registered again.
 
 Record the results in DEVLOG and tick REQ-MEM-008/009 in TRACEABILITY.
 

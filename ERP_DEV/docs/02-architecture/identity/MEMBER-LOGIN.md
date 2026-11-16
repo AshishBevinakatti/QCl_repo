@@ -10,7 +10,7 @@ Customers of the Golden Hills Privilege Club (Gold Members, SOW ERP-05). Decisio
 4. The button opens `https://<public host>/member/activate?t=<one-time token>` on the landing page. The page starts a normal **Authorization Code + PKCE** sign-in with Keycloak and adds the token as the extra parameter `activation_token`.
 5. Keycloak's first sign-in step (`gh-member-activation`) accepts the token. It recognises the member, marks the email verified (they clicked a link sent to it), and shows Keycloak's own **Update password** page.
 6. The member types the new password **once**. Keycloak completes the sign-in and redirects to the landing page with an authorization code. keycloak-js exchanges it for tokens, and the member **is signed in** and sees their Gold card. There is no second login.
-7. Next time they sign in normally with email and password on Keycloak's page (from `/login`, `/profile` or `/membership`). The same account works for the future mobile app and customer web app: each gets its own public PKCE client in `gh-guests`.
+7. They stay signed in, also after closing the browser, for up to 30 days (§8). After that, or on another device or browser, they sign in with the **email they gave the Sales Executive** and their password on Keycloak's page (from `/login`, `/profile` or `/membership`). The same account works for the future mobile app and customer web app: each gets its own public PKCE client in `gh-guests`.
 
 Proved end to end on Keycloak 26.8.2 by `infra/keycloak-extensions/gh-member-activation/src/test/.../ActivationFlowIT.java` (5 tests, real Keycloak + Mailpit).
 
@@ -38,7 +38,7 @@ Keycloak's built-in "execute actions" email lets someone set a password, but it 
 | Piece | Where | What it does |
 |---|---|---|
 | Realm `gh-guests` | `infra/keycloak/gh-guests-realm.json` | Registration, email as username, verify email, remember-me, brute-force protection, password policy as for staff, sessions 7 d idle / 30 d max (Q-034), themes `golden-hills`, user profile with `membershipId` |
-| Client `guest-web` | same file | Public, **PKCE S256 required**, standard flow only. Redirects only to `/login`, `/member/activate`, `/membership`, `/profile`, `/plan-ahead` on `LANDING_PUBLIC_URL` and on localhost:3000. Audience `guest-api`. Its browser flow is overridden by `gh-member-browser` |
+| Client `guest-web` | same file | Public, **PKCE S256 required**, standard flow only. Redirects only to `/login`, `/member/activate`, `/membership`, `/profile`, `/plan-ahead` and exactly `/silent-check-sso.html` (the silent session check; without it every page load waits forever, D-130) on `LANDING_PUBLIC_URL` and on localhost:3000. Audience `guest-api`. Its browser flow is overridden by `gh-member-browser` |
 | Flow `gh-member-browser` | same file | `gh-member-activation` → `auth-cookie` → username/password form (all ALTERNATIVE). Keycloak's standard flows stay as they are |
 | Client `guest-service` | same file | Confidential, service account with realm-management `manage-users`, `view-users`, `query-users` only. Default scopes include **`kc-admin-api`**: Keycloak 26.8 refuses Admin API calls (401) without that audience |
 | Extension `gh-member-activation` | `infra/keycloak-extensions/gh-member-activation` | Authenticator (accepts the token) + `POST /realms/gh-guests/gh-activation/users/{id}/send` (issues the token, sends the email) + email theme (`gh-welcome.ftl`) + login theme (Golden Hills colours) |
@@ -72,5 +72,18 @@ Keycloak's built-in "execute actions" email lets someone set a password, but it 
 | `LANDING_PUBLIC_URL` | `.env` → Keycloak import + guest-service | Public landing-page origin: redirect URIs, web origins, the email link (`<origin>/member/activate`) |
 | `GUEST_SERVICE_URL` | access-service | Default `http://localhost:8092` |
 | `GUEST_DB_PASSWORD` | `.env` → Postgres init + guest-service | `guest_svc` login |
+
+## 8. Staying signed in and signing in again (D-127…D-129)
+
+| What | How |
+|---|---|
+| After the welcome link | The activation step marks the session "remember me", so Keycloak's cookie has a lifetime and survives closing the browser |
+| Normal sign-in | The Golden Hills page shows **Keep me signed in**, ticked by default (theme script `keep-signed-in.js`); a member can untick it on a shared device |
+| Lifetimes | Remember-me sessions: idle 30 days, max 30 days (realm `ssoSessionIdleTimeoutRememberMe` / `…MaxLifespanRememberMe`; Q-034 placeholder) |
+| Back on the site | keycloak-js checks the Keycloak session silently (hidden frame returning to `/silent-check-sso.html`, same origin) and gets new tokens; tokens stay in memory only. If the check hasn't answered after 8 s the visitor is treated as signed out; **Sign in** never waits for it (D-130) |
+| Another browser | Gmail and other mail apps open links in their own browser with separate cookies. In Chrome or Safari the member signs in once with email + password |
+| Where the password is typed | Only on Keycloak's page (D-129). No password grant |
+| Keycloak down | "We could not reach the sign-in service" on our page (the reachability check in `guest-auth.ts`), not an error page |
+| Records | Keycloak keeps sign-in events (LOGIN, LOGIN_ERROR, UPDATE_PASSWORD, ...; 90 days) in its database. guest_db `guest_account` keeps status, email_verified and the sign-in record; `audit_event` gets `GUEST_SIGNED_IN` once per Keycloak session (token `sid`). No passwords, tokens or IP addresses in our databases (D-128) |
 
 Building and loading the extension, importing the realm into an existing Keycloak, and the `guests.provision` permission: [KEYCLOAK-SETUP §5.5, §13](KEYCLOAK-SETUP.md).

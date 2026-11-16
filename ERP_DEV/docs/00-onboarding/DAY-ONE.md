@@ -57,6 +57,7 @@ In four terminals, with `set -a; . ERP_DEV/.env; set +a` first in each backend t
 (cd ERP_DEV/services/api-gateway   && ./mvnw spring-boot:run)    # :8082
 (cd ERP_DEV/web && npm ci && npm run dev)                        # http://localhost:5173/erp/
 ```
+On Windows the same, one PowerShell window each: `ERP_DEV\run-access-service.ps1`, `ERP_DEV\run-guest-service.ps1`, `ERP_DEV\run-api-gateway.ps1`, `run-landing-page.ps1` (they load `ERP_DEV/.env`). `ERP_DEV\check-stack.ps1` then prints OK/DOWN for Docker, Postgres, Keycloak, each service and each proxy path; it changes nothing. Phone testing: `ngrok http 127.0.0.1:8088 --url=<host>` (KEYCLOAK-SETUP §1.1).
 **First admin (once per fresh database):** set `BOOTSTRAP_ADMIN_EMAIL`, `_USERNAME`, `_FIRST_NAME`, `_LAST_NAME` and `_MOBILE` in `ERP_DEV/.env` before starting access-service. On start it logs `Bootstrap ADMIN <username> is INVITED`. ✅ Open Mailpit (http://localhost:8025), click the "Update Your Account" email's link, and set a password (12+ characters). Then open http://localhost:5173/erp/ → **Sign in** → you're the ADMIN. Under **Employees** you can add people; each one gets the same email.
 
 ## 6. Your first change

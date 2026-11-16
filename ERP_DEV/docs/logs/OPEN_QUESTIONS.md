@@ -52,3 +52,7 @@ Earlier questions: `archive/hotel-draft:ERP_DEV/docs/logs/OPEN_QUESTIONS.md`.
 | Q-035 | May an enrolling executive's WhatsApp/mobile number be shown to the member? | Member profile | Only when the employee has WhatsApp opt-in; otherwise the resort desk number |
 | Q-036 | /plan-ahead shows a hard-coded "Privilege Member" label to every signed-in guest; show "Guest" for non-members? | Landing page | Unchanged |
 | Q-037 | Confirm that numbers are issued upward from GRH-LM-0101 and whether any numbers in the series are already used on paper | Membership IDs | Start at 0101 |
+
+### 2026-11-16 update (D-127, D-128)
+- **Q-034** placeholder changed: remember-me sessions in `gh-guests` now idle **30 days** (max 30 days); the welcome link and the default-ticked "Keep me signed in" use them. Still to confirm with the client.
+- **Q-022 / Q-033** also cover how long Keycloak keeps guest sign-in events (placeholder 90 days) and guest_db sign-in records (kept, no deletion).

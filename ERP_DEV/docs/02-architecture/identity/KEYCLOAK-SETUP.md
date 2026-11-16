@@ -45,7 +45,7 @@ phone ──HTTPS──> tunnel (stable hostname) ──> proxy :8088 (Caddy)
                                                └─ everything else ─────> landing page, Next :3000
 ```
 
-Start it: `docker compose --env-file ERP_DEV/.env -f ERP_DEV/infra/docker-compose.yml up -d proxy`, then `ngrok http 8088 --url=<host>`. Locally the same layout is at `http://localhost:8088`.
+Start it: `docker compose --env-file ERP_DEV/.env -f ERP_DEV/infra/docker-compose.yml up -d proxy`, then `ngrok http 127.0.0.1:8088 --url=<host>`. Give the IPv4 address: with plain `8088` ngrok may dial `[::1]:8088`, which the proxy (bound to `127.0.0.1`) refuses, and every page shows ngrok's 502 (ERR_NGROK_8012). Locally the same layout is at `http://localhost:8088`. Before a phone test run `ERP_DEV/check-stack.ps1` (read-only, OK/DOWN for every part).
 
 - Keycloak keeps its root paths (`/realms`, `/resources`), so the issuer, cookies and existing email links do not change. The `erp-web` client's `https://<host>/*` redirect URI already covers `/erp/*` (live realm checked read-only on 2026-11-16; no Keycloak change was needed).
 - `ERP_WEB_URL` = `https://<host>/erp/`: the staff setup email returns there (the origin root is now the landing page). `ERP_WEB_ORIGIN` stays the bare origin.
@@ -271,3 +271,7 @@ Things learned while building it (2026-11-16):
 - **Placeholders in realm files:** `${...}` in a realm file is replaced from the environment at import. Never use it for anything else, e.g. user-profile display names.
 - **Our own flow in a realm file:** declaring one keeps Keycloak's standard flows (browser, registration, reset credentials, direct grant). This is checked by `ActivationFlowIT`.
 - **Secure cookies over plain HTTP:** Keycloak marks its login cookies `Secure` even over http. Browsers accept that for `localhost` and HTTPS; plain-HTTP LAN addresses do not work.
+
+## Live change log: gh-guests (2026-11-16, D-127, D-130)
+- `guest-web` redirect URIs: added `https://<host>/silent-check-sso.html` and `http://localhost:3000/silent-check-sso.html` (admin API, client PUT). Check: `…/protocol/openid-connect/auth?client_id=guest-web&redirect_uri=<host>/silent-check-sso.html&prompt=none&response_type=code&scope=openid&code_challenge=…&code_challenge_method=S256` must answer **302** to that page (`error=login_required` when signed out), never 400.
+- Realm `ssoSessionIdleTimeoutRememberMe` = 2592000 (30 days).
