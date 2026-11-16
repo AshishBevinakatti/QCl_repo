@@ -70,9 +70,14 @@ public class TestSupport {
 
     /** A signed-in guest from gh-guests (landing page). */
     public static String guest(UUID sub, String email) {
+        return guest(sub, email, "session-1");
+    }
+
+    /** sid: the Keycloak session the token belongs to (one sign-in). */
+    public static String guest(UUID sub, String email, String sid) {
         Instant now = Instant.now();
         return sign(new JWTClaimsSet.Builder().issuer(GUEST_ISSUER).subject(sub.toString()).audience("guest-api")
-                .claim("azp", "guest-web").claim("email", email).claim("given_name", "Rohan").claim("family_name", "Sharma")
+                .claim("azp", "guest-web").claim("sid", sid).claim("email", email).claim("given_name", "Rohan").claim("family_name", "Sharma")
                 .claim("email_verified", true).issueTime(Date.from(now)).expirationTime(Date.from(now.plusSeconds(300))).build(), GUEST_KEY);
     }
 

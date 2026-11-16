@@ -59,7 +59,7 @@ public class GuestController {
     @GetMapping("/api/v1/portal/me")
     Map<String, Object> me(JwtAuthenticationToken auth) {
         var t = auth.getToken();
-        return guests.me(UUID.fromString(t.getSubject()), t.getClaimAsString("email"), t.getClaimAsString("given_name"),
+        return guests.me(UUID.fromString(t.getSubject()), t.getClaimAsString("sid"), t.getClaimAsString("azp"), t.getClaimAsString("email"), t.getClaimAsString("given_name"),
                 t.getClaimAsString("family_name"), Boolean.TRUE.equals(t.getClaimAsBoolean("email_verified")));
     }
 

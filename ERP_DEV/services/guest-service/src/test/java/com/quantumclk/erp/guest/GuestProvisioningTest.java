@@ -161,6 +161,58 @@ class GuestProvisioningTest {
         mvc.perform(get("/api/v1/portal/me")).andExpect(status().isUnauthorized());
     }
 
+    // --- Sign-in record (D-128) --------------------------------------------------------------------------------------
+
+    ResultActions me(UUID id, String email, String sid) throws Exception {
+        return mvc.perform(get("/api/v1/portal/me").header("Authorization", "Bearer " + TestSupport.guest(id, email, sid)));
+    }
+
+    @Test
+    void eachSignInIsRecordedOncePerSessionWithAnAuditEntry() throws Exception {
+        String email = email();
+        UUID id = UUID.fromString(json.readTree(provision(PROVISIONER, member(email)).andReturn().getResponse().getContentAsString())
+                .get("guestUserId").asString());
+
+        me(id, email.toLowerCase(), "sid-a").andExpect(status().isOk()).andExpect(jsonPath("$.status").value("ACTIVE"));
+        me(id, email.toLowerCase(), "sid-a").andExpect(status().isOk());   // another page, same sign-in
+        Map<String, Object> row = jdbc.queryForMap("SELECT * FROM guest_account WHERE keycloak_user_id = ?", id);
+        assertThat(row.get("sign_in_count")).isEqualTo(1);
+        assertThat(row.get("first_signed_in_at")).isNotNull();
+        assertThat(row.get("email_verified")).isEqualTo(true);   // copied from Keycloak (welcome link verified it)
+        Object first = row.get("first_signed_in_at");
+
+        me(id, email.toLowerCase(), "sid-b").andExpect(status().isOk());   // signed in again later
+        row = jdbc.queryForMap("SELECT * FROM guest_account WHERE keycloak_user_id = ?", id);
+        assertThat(row.get("sign_in_count")).isEqualTo(2);
+        assertThat(row.get("first_signed_in_at")).isEqualTo(first);
+        assertThat(row.get("last_session_id")).isEqualTo("sid-b");
+        assertThat(jdbc.queryForList("SELECT action FROM audit_event WHERE entity_id = ? AND action = 'GUEST_SIGNED_IN'", String.class, id))
+                .hasSize(2);
+        assertThat(jdbc.queryForObject("SELECT actor_label FROM audit_event WHERE entity_id = ? AND action = 'GUEST_SIGNED_IN' LIMIT 1", String.class, id))
+                .isEqualTo("guest-web");
+    }
+
+    @Test
+    void aGuestWhoRegisteredOnTheWebsiteGetsAnAccountRow() throws Exception {
+        UUID id = UUID.randomUUID();
+        String email = email();
+        me(id, email, "sid-1").andExpect(status().isOk()).andExpect(jsonPath("$.source").value("SELF_REGISTERED"));
+        Map<String, Object> row = jdbc.queryForMap("SELECT * FROM guest_account WHERE keycloak_user_id = ?", id);
+        assertThat(row.get("email")).isEqualTo(email.toLowerCase());
+        assertThat(row.get("source")).isEqualTo("SELF_REGISTERED");
+        assertThat(row.get("sign_in_count")).isEqualTo(1);
+    }
+
+    @Test
+    void aDisabledAccountIsRefused() throws Exception {
+        UUID id = UUID.randomUUID();
+        String email = email();
+        me(id, email, "sid-1").andExpect(status().isOk());
+        jdbc.update("UPDATE guest_account SET status = 'DISABLED' WHERE keycloak_user_id = ?", id);
+        me(id, email, "sid-2").andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("ACCOUNT_DISABLED"));
+        assertThat(jdbc.queryForObject("SELECT sign_in_count FROM guest_account WHERE keycloak_user_id = ?", Integer.class, id)).isEqualTo(1);
+    }
+
     @Test
     void everythingElseIsClosedButHealth() throws Exception {
         mvc.perform(get("/internal/nothing").header("Authorization", "Bearer " + PROVISIONER)).andExpect(status().isNotFound());
