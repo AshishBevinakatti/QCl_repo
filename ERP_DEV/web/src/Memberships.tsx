@@ -110,7 +110,6 @@ export function Memberships({ me, request }: { me: Me; request: Request }) {
       <header className="page-head">
         <p className="page-kicker">Privilege Club</p>
         <h1>Gold Membership</h1>
-        <p>Register members in the field, follow your registrations and verify payments.</p>
       </header>
 
       <div className="mem-tabs" role="tablist" aria-label="Memberships">
@@ -231,7 +230,6 @@ function RegisterMember({ me, request, onRegistered }: { me: Me; request: Reques
         <div className="mem-head">
           <div>
             <h2>New Gold Member</h2>
-            <p>Fill in the customer's details, take the payment, and submit for verification.</p>
           </div>
           <div className="mem-tag" aria-live="polite">
             <span className="mem-tag-label">Membership ID</span>
