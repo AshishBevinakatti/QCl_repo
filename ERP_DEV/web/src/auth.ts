@@ -1,76 +1,39 @@
-/**
- * Staff SSO via Keycloak (PKCE public client — no secret in the browser).
- * One instance, initialized once (StrictMode-safe). Tokens attach to every
- * API call through apiFetch(); the server (not the UI) enforces roles.
- */
-import Keycloak from 'keycloak-js';
+// Keycloak login for employees: Authorization Code + PKCE, tokens kept in memory only (AUTHENTICATION.md §5).
+import Keycloak from "keycloak-js";
+import { config } from "./config";
 
-function cfg() {
-  return {
-    url: import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8081',
-    realm: import.meta.env.VITE_KEYCLOAK_REALM || 'resort',
-    clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'erp-web',
-  };
+export interface Session {
+  /** Returns a fresh access token (refreshed if it expires within 30 s), or throws if the session ended. */
+  token(): Promise<string>;
+  /** Forces a refresh, e.g. after the API said 401. */
+  refresh(): Promise<string>;
+  login(): Promise<void>;
+  logout(): Promise<void>;
 }
 
-let kc: Keycloak | null = null;
-let initPromise: Promise<boolean> | null = null;
-let reachable = false;
+const keycloak = new Keycloak({ url: config.keycloakUrl, realm: config.realm, clientId: config.clientId });
 
-export async function initAuthOnce(): Promise<boolean> {
-  if (initPromise) return initPromise;
-  initPromise = (async () => {
-    try {
-      kc = new Keycloak(cfg());
-      const authed = await kc.init({ onLoad: 'check-sso', pkceMethod: 'S256', checkLoginIframe: false });
-      reachable = true;
-      return authed;
-    } catch {
-      return false; // Keycloak down: shell stays usable in Preview mode.
-    }
-  })();
-  return initPromise;
+/** Completes a login redirect or checks active SSO session silently on page refresh. */
+export async function initAuth(): Promise<boolean> {
+  return keycloak.init({
+    onLoad: "check-sso",
+    // BASE_URL is "/erp/": the ERP lives under /erp/ on the shared public origin (D-124).
+    silentCheckSsoRedirectUri: window.location.origin + import.meta.env.BASE_URL + "silent-check-sso.html",
+    pkceMethod: "S256",
+    checkLoginIframe: false,
+  });
 }
 
-/** Opens the Keycloak sign-in page; loginHint only pre-fills the username (dev shortcuts). */
-export function login(loginHint?: string) {
-  if (kc) void kc.login(loginHint ? { loginHint } : undefined);
-}
-
-/** False when Keycloak could not be reached at startup. */
-export function authReachable(): boolean {
-  return reachable;
-}
-
-export function logout() {
-  if (kc) void kc.logout({ redirectUri: window.location.origin });
-}
-
-export function isAuthenticated(): boolean {
-  return kc?.authenticated ?? false;
-}
-
-export function username(): string {
-  return (kc?.tokenParsed?.preferred_username as string | undefined) ?? '';
-}
-
-export function roles(): string[] {
-  const parsed = kc?.tokenParsed as { realm_access?: { roles?: string[] } } | undefined;
-  return parsed?.realm_access?.roles ?? [];
-}
-
-export function hasRole(...wanted: string[]): boolean {
-  const have = new Set(roles());
-  return wanted.some((r) => have.has(r));
-}
-
-/** Fresh token (refreshes when under 30s left); null when logged out/unreachable. */
-export async function getToken(): Promise<string | null> {
-  if (!kc?.authenticated) return null;
-  try {
-    await kc.updateToken(30);
-  } catch {
-    return null;
-  }
-  return kc.token ?? null;
-}
+export const session: Session = {
+  async token() {
+    await keycloak.updateToken(30);
+    return keycloak.token!;
+  },
+  async refresh() {
+    await keycloak.updateToken(-1);
+    return keycloak.token!;
+  },
+  login: () => keycloak.login(),
+  // Ends the Keycloak SSO session (end-session endpoint with id_token_hint), then comes back to the sign-in page.
+  logout: () => keycloak.logout({ redirectUri: window.location.origin + import.meta.env.BASE_URL }),
+};

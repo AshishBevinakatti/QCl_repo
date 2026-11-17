@@ -1,148 +1,73 @@
-# DAY-ONE — from zero to first change (verified 2026-10-09, slice on `feature/2-slice-hello-world`)
+# Day One — new developer guide
 
-- Purpose: get a new developer productive on day one. Audience: new developers. Owner: project team.
-- Every command below was actually run on 2026-10-09 (Fedora 44, user-local toolchain). Expected outputs are real.
+- Last checked: 2026-11-15, end of increment 1: **followed literally from a clean clone** (landing page, infrastructure, both services, web app, first-admin sign-in, and every README test command). Commands marked ✅ were run.
 
-## 1. What this project is
-Integrated Resort Management ERP for Golden Hills Resort (QuantumCLK Technologies): reservations,
-front office, housekeeping, guest CRM, membership/loyalty, RFID access, billing, OTA sync, reporting
-(SOW modules ERP-01…ERP-09 core, ERP-10…ERP-14 optional). Requirements live in the read-only resource
-folder `/run/media/ash_63/DATA/ERP_Resouce`; derived extracts live in `docs/01-requirements/source-extracts/`.
-Stack (accepted ADR-001): Java 21 + Spring Boot modular monolith, React (Phase 3), Postgres + Redis + Kafka,
-Keycloak, Docker + K8s. First runnable slice: `services/erp-app` (health + room-categories).
+## 1. What you are working on
+The Golden Hills Resort ERP, built by QuantumCLK Technologies. Phase 1 connects the public website (guest registers and inquires) to the staff ERP (employees log in with Keycloak; Sales Executives claim leads). Read in this order: `docs/README.md` → `phase1_plan.md` → `ARCHITECTURE.md` → `identity/AUTHENTICATION.md`.
 
 ## 2. Prerequisites
-- `git --version` → any recent git. Check: `git --version`.
-- Java 21 (Temurin) + Maven 3.9, user-local (no sudo needed):
-  ```
-  curl -sL https://api.adoptium.net/v3/binary/latest/21/ga/linux/x64/jdk/hotspot/normal/eclipse -o /tmp/jdk21.tar.gz
-  mkdir -p ~/.local/java && tar -xzf /tmp/jdk21.tar.gz -C ~/.local/java
-  curl -sL https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz -o /tmp/maven.tar.gz
-  mkdir -p ~/.local/maven && tar -xzf /tmp/maven.tar.gz -C ~/.local/maven --strip-components=1
-  export JAVA_HOME=$(echo ~/.local/java/*/ | head -1) && export PATH=$JAVA_HOME/bin:$HOME/.local/maven/bin:$PATH
-  java -version   # expected: openjdk 21 (Temurin)
-  mvn -version    # expected: Apache Maven 3.9.x, Java 21
-  ```
-- Node 22 LTS, user-local (for `ERP_DEV/web` shell):
-  ```
-  curl -sL https://nodejs.org/dist/v22.12.0/node-v22.12.0-linux-x64.tar.xz -o /tmp/node.tar.xz
-  mkdir -p ~/.local/node && tar -xJf /tmp/node.tar.xz -C ~/.local/node --strip-components=1
-  export PATH=$HOME/.local/node/bin:$PATH
-  node --version  # expected: v22.x
-  ```
-- Docker (only for full local stack: Postgres/Redis/Kafka/Keycloak via `ERP_DEV/infra/docker-compose.local.yml`).
-  Without Docker: unit tests run on H2 (Postgres-compatibility mode); runtime needs real Postgres.
+| Tool | Version | Why |
+|---|---|---|
+| Git | any recent | |
+| Node.js | ≥ 20.9 (✅ checked with 24.22.0) | landing page; staff web later |
+| Java | 21 or newer (✅ built with JDK 25; code targets 21) | backend services |
+| Maven | not needed: each service has `./mvnw` (Maven 3.10.0, sha256-checked) | backend builds |
+| Docker + Compose v2 | ✅ checked with Docker 29.9 / Compose 5.5 | PostgreSQL, Keycloak, Redis, Mailpit (Kafka in increment 2) |
 
-## 3. Clone and look around
-```
-git clone <org-remote-url> && cd ERP_Resort
-git checkout feature/2-slice-hello-world   # or develop for the last merged state
-git status            # expected: clean tree
-ls ERP_DEV            # expected: pom.xml services docs infra .env.example ...
-ls ERP_DEV/docs       # expected: README.md 00-onboarding 01-requirements ... logs templates
-```
-Read `ERP_DEV/docs/README.md`, then `ERP_DEV/docs/logs/STATE.md` (current phase + next action).
-
-## 4. Run the tests
-```
-cd ERP_DEV
-export JAVA_HOME=$(echo ~/.local/java/*/ | head -1) && export PATH=$JAVA_HOME/bin:$HOME/.local/maven/bin:$PATH
-mvn -B verify
-# expected: Tests run: 4, Failures: 0, Errors: 0 (RoomCategoryApiTest) + BUILD SUCCESS;
-# jar at services/erp-app/target/erp-app-0.1.0-SNAPSHOT.jar
+## 3. Get the code
+```bash
+git clone https://github.com/AshishBevinakatti/QCl_repo.git
+cd QCl_repo
+git switch feature/phase1-fresh-start   # until it is merged into main
 ```
 
-## 5. Run the slice live
-PREFERRED (Windows + Fedora): `node run-local.mjs [postgres|h2] [--web]` — one
-command that always sets the DB + issuer vars (lesson 2026-10-10: hand-typed env
-drops the issuer and breaks every login). Prereqs: Node 22 + Java 21 + Maven
-(on PATH, or JAVA_HOME/MAVEN_HOME). `--web` also starts Vite on :5173; `--print`
-shows the resolved Java/Maven paths, classpath cache and env without starting
-anything. Keycloak must be up first (see §5c). Fedora convenience:
-`./run-local.sh [postgres|h2]` (bash, same behaviour). Windows Docker command:
-`docker compose -f ERP_DEV/infra/docker-compose.local.yml up -d keycloak`
-(no `sg docker` wrapper needed there).
+## 4. Landing page (the only runnable app today)
+```bash
+cd landing-page
+npm ci
+npm run typecheck     # ✅ exit 0 on 2026-11-15
+npm run dev           # http://localhost:3000
 ```
-cd ERP_DEV/services/erp-app
-export JAVA_HOME=$(echo ~/.local/java/*/ | head -1) && export PATH=$JAVA_HOME/bin:$PATH
-mvn -B -q dependency:build-classpath -Dmdep.outputFile=/tmp/cp.txt -Dmdep.includeScope=test
-CP="target/classes:$(cat /tmp/cp.txt)"
-DB_URL="jdbc:h2:mem:livedb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1" DB_USER=sa DB_PASSWORD= \
-  timeout 100 java -cp "$CP" com.quantumclk.erp.ErpApplication &
-sleep 30
-curl -s http://localhost:8080/api/v1/health
-# expected: {"status":"UP","service":"erp-app"}
-curl -s http://localhost:8080/api/v1/room-categories | head -c 300
-# expected: {"items":[{"id":"22222222-...","name":"Deluxe",...}],"page":0,"total":3}
-# UI: open http://localhost:8080/ (static slice page; React SPA replaces it in Phase 3)
-# OpenAPI: http://localhost:8080/v3/api-docs (published copy: docs/02-architecture/openapi/erp-app.json)
+- `npm run lint` currently reports 4 errors that were already there (Q-004). Don't fix them as a side job, because the landing page is frozen in Phase 1.
+- Guest register/login/inquiry calls go to `http://localhost:8082/api/v1/portal` (the gateway, increment 1/2). Until then those forms show a connection error. That is expected.
+- If `node_modules` is a symlink to a folder outside the project, `npm run build` fails with *"Symlink … points out of the filesystem root"*. Use a real `npm ci` install instead.
+
+## 5. Local infrastructure (increment 1, slice S1)
+1. Copy the variable names from `ERP_DEV/.env.example` into `ERP_DEV/.env` (git-ignored; create it if missing) and give every secret a value:
+   ```bash
+   python3 -c "import secrets; print(secrets.token_hex(32))"   # run once per secret
+   ```
+2. Start everything from the repo root:
+   ```bash
+   docker compose --env-file ERP_DEV/.env -f ERP_DEV/infra/docker-compose.yml up -d --wait
+   ```
+   Before the first start, build the Keycloak extension (it is mounted into Keycloak): `(cd ERP_DEV/infra/keycloak-extensions/gh-member-activation && ./mvnw -q package -DskipTests)`.
+   ✅ Expected: `postgres`, `keycloak`, `redis` and `mailpit` `Healthy`, plus `proxy` (Caddy, one public origin split by path) running. Keycloak takes about a minute on first start. A missing secret stops compose with `required variable … is missing a value`.
+3. Look around:
+   - Keycloak admin console: http://localhost:8081/admin, log in with `KC_BOOTSTRAP_ADMIN_USERNAME`/`PASSWORD`, then switch to realm **gh-staff** (staff) or **gh-guests** (members and guests).
+   - Mailpit (all dev emails land here): http://localhost:8025
+   - PostgreSQL: `localhost:5433` (not 5432); databases `access_db` (user `access_svc`) and `guest_db` (user `guest_svc`). A volume created before 2026-11-16 has no `guest_db`; create it once: `docker exec golden-hills-erp-postgres-1 psql -U postgres -c "CREATE ROLE guest_svc LOGIN PASSWORD '<GUEST_DB_PASSWORD>'" -c "CREATE DATABASE guest_db OWNER guest_svc"`.
+4. Stop: `docker compose --env-file ERP_DEV/.env -f ERP_DEV/infra/docker-compose.yml down`. Add `-v` to also delete the dev data, which you need after editing the realm file.
+
+## 5b. Run the ERP locally (after §5)
+In four terminals, with `set -a; . ERP_DEV/.env; set +a` first in each backend terminal:
+```bash
+(cd ERP_DEV/services/access-service && ./mvnw spring-boot:run)   # :8091
+(cd ERP_DEV/services/guest-service  && ./mvnw spring-boot:run)   # :8092 (member accounts + welcome email)
+(cd ERP_DEV/services/api-gateway   && ./mvnw spring-boot:run)    # :8082
+(cd ERP_DEV/web && npm ci && npm run dev)                        # http://localhost:5173/erp/
 ```
-With Docker: `docker compose -f ERP_DEV/infra/docker-compose.local.yml up` (Postgres etc.), then run the jar with
-`DB_URL=jdbc:postgresql://localhost:5432/resort_erp DB_USER=resort_user DB_PASSWORD=... java -jar target/*.jar`.
-Note: the global system Postgres already uses 5432 on this machine — start only
-what you need (e.g. `up -d keycloak`), never the compose `postgres` alongside it.
+On Windows the same, one PowerShell window each: `ERP_DEV\run-access-service.ps1`, `ERP_DEV\run-guest-service.ps1`, `ERP_DEV\run-api-gateway.ps1`, `ERP_DEV\run-lead-service.ps1` (adds dev sample leads), `run-landing-page.ps1` (they load `ERP_DEV/.env`). `ERP_DEV\check-stack.ps1` then prints OK/DOWN for Docker, Postgres, Keycloak, each service and each proxy path; it changes nothing. Phone testing: `ngrok http 127.0.0.1:8088 --url=<host>` (KEYCLOAK-SETUP §1.1).
+**First admin (once per fresh database):** set `BOOTSTRAP_ADMIN_EMAIL`, `_USERNAME`, `_FIRST_NAME`, `_LAST_NAME` and `_MOBILE` in `ERP_DEV/.env` before starting access-service. On start it logs `Bootstrap ADMIN <username> is INVITED`. ✅ Open Mailpit (http://localhost:8025), click the "Update Your Account" email's link, and set a password (12+ characters). Then open http://localhost:5173/erp/ → **Sign in** → you're the ADMIN. Under **Employees** you can add people; each one gets the same email.
 
-## 5c. Staff login (Keycloak SSO)
-```
-sg docker -c "docker compose -f ERP_DEV/infra/docker-compose.local.yml up -d keycloak"
-# wait ~60s, then expect 200:
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8081/realms/resort/.well-known/openid-configuration
-# backend with issuer (H2 example; use DB_URL for Postgres):
-KEYCLOAK_ISSUER_URL=http://localhost:8081/realms/resort java -jar target/*.jar
-# web: npm run dev → Staff log in → reception-staff / change-me-dev-only (DEV-ONLY).
-# Full runbook + live proof table: docs/05-operations/keycloak.md
-```
+## 6. Your first change
+1. Create a branch: `git switch -c docs/<short-slug>`.
+2. Edit a doc, keeping the "why" and the source next to each rule.
+3. Add an entry to `docs/logs/DEVLOG.md` (append only) and update `docs/logs/STATE.md`.
+4. Commit with Conventional Commits, e.g. `docs(core): clarify lead claim rule`. Every commit, merge and push needs the project owner's approval.
 
-## 5b. Run the web shell
-```
-cd ERP_DEV/web
-export PATH=$HOME/.local/node/bin:$PATH
-npm install          # first time only (deps → node_modules/, git-ignored)
-npm run build        # expected: ✓ built (tsc + vite)
-npm run dev          # vite dev server; /api proxied to localhost:8080 (see vite.config.ts)
-```
-
-## 5d. Ops console (internal, Phase 1)
-With an `OPS_*` or `SUPERADMIN` login, open **Ops Console** in the web sidebar. It is read-only: status, integrations, flags and audit. Blank `OPS_*_URL` values show `NOT_CONFIGURED` (expected locally).
-```
-curl -s http://127.0.0.1:9091/actuator/health    # {"status":"UP"} on loopback, no token
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/api/v1/ops/status  # 401 anonymously
-```
-JSON logs go to `logs/erp-app.jsonl` under the backend working directory; secrets are redacted. Full runbook: `docs/05-operations/ops-console.md`; signal contract: `docs/02-architecture/observability.md`.
-
-## 6. Repo map
-`ERP_Resort/`: agent config (`.opencode/`, `AGENTS.md`) + `ERP_DEV/` (the project: `pom.xml`, `services/erp-app/`,
-`infra/docker-compose.local.yml`, `docs/`, `.env.example`; `web/` React lands in Phase 3).
-`services/erp-app/src/main/java/com/quantumclk/erp/`: `ErpApplication`, `health/`, `common/` (error shape),
-`erp02/` (room-category slice; packages per SOW module), `ops/` (read-only ops console + logging filters).
-Migrations: `src/main/resources/db/migration/V1__...sql` (V9 = ops permissions/flags).
-Git root is `ERP_Resort/`; skill path `docs/...` = `ERP_DEV/docs/...`.
-
-## 7. Workflow in one page
-Work unit by work unit (Rule 3 loop): understand → docs-only plan (approved) → `feature/<unit>-<slug>`
-from `develop` → tests-first where logic matters → thin vertical slices → verify → document → record →
-present → **ask to commit, wait**. Phase gate at each phase end: report → fresh-developer test →
-"continue to Phase N+1?" → wait. Conventional Commits; never commit/merge/push without explicit approval.
-
-## 8. First small change (worked example, code)
-1. `git checkout develop && git checkout -b feature/<unit>-<slug>`
-2. Change code + test in `services/erp-app`, update the matching `docs/04-modules/*.md` in the same change (Rule 6).
-3. `mvn -B verify` → green; show `git status` / `git diff --stat`; ask the user to approve the commit; only then commit.
-4. Update `logs/DEVLOG.md` + `logs/STATE.md` with what was done, hash, verification.
-
-## 9. Where things are logged
-Decisions: `logs/DECISIONS.md` (big ones → `02-architecture/adr/ADR-NNN-slug.md`).
-Questions: `logs/OPEN_QUESTIONS.md`. Resources used: `logs/RESOURCES_LOG.md`. Risks: `logs/RISKS.md`.
-
-## 10. Common problems
-- Resource drive unreadable → stop, tell the user (never work around it or invent inputs).
-- `mvn` needs Maven Central access on first run (~100MB downloads to `~/.m2`); offline builds fail before that.
-- Live run without Postgres → use the H2 test-classpath command above, or start compose first.
-- Flyway "newer H2 than tested" warning in tests → harmless (test scope only).
-- Logged in but Live screens show only the login hint (or valid tokens get 500) → backend is missing
-  `KEYCLOAK_ISSUER_URL` (lesson 2026-10-10). Run the mandatory pre-login check in
-  `docs/05-operations/keycloak.md` before debugging anything else.
-
-## 11. When stuck
-Read `STATE.md` (next action), `OPEN_QUESTIONS.md` (known unknowns), `WORKING-AGREEMENT.md` (process).
-Ask the user — silence is not approval for commits, merges, or phase moves.
+## 7. Rules you must know on day one
+- Client documents live only in the resource folder (read-only); `docs/01-requirements/source-extracts/` holds hash-stamped text copies. Never commit raw client files, personal data or secrets.
+- Never commit `.env`. Secrets come from environment variables; CI runs a gitleaks secret scan.
+- No custom login, password, OTP or token code: Keycloak owns identity (ADR-002).
+- Phase 1 has no booking or payment features (phase1_plan.md §1.3).

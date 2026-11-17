@@ -2,26 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light dark" />
-    <script>
-      // Runs before paint so the workspace never flashes the wrong theme.
-      // An explicit choice wins; otherwise follow the device (see src/theme.ts).
-      (function () {
-        try {
-          var stored = localStorage.getItem('gh-theme');
-          if (stored !== 'dark' && stored !== 'light') {
-            stored = window.matchMedia
-              && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-          }
-          document.documentElement.dataset.theme = stored;
-        } catch (error) {
-          document.documentElement.dataset.theme = 'light';
-        }
-      })();
-    </script>
-    <title>Golden Hills Resort ERP</title>
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self'; connect-src 'self' http://localhost:8081 http://localhost:8082; frame-src 'self' http://localhost:8081; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self' http://localhost:8081" />
+    <title>Golden Hills ERP</title>
   </head>
   <body>
     <div id="root"></div>

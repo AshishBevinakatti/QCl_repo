@@ -1,13 +1,18 @@
-# Golden Hills Resort ERP
+# ERP_DEV — Golden Hills Resort ERP (staff side)
 
-Integrated Resort Management ERP + Digital Hospitality Platform for **Golden Hills Resort**,
-built by **QuantumCLK Technologies** (Belagavi, Karnataka).
+Backend services, staff web app and infrastructure for the Golden Hills Resort ERP. The public website is `../landing-page/`.
 
-- Modules: ERP-01…ERP-09 core (website & CMS, booking, front office, CRM, membership & loyalty,
-  RFID access, billing, admin & reporting, OTA sync); ERP-10…ERP-14 optional add-ons (client confirmation required).
-- Start here: `docs/README.md` (index) → `docs/00-onboarding/DAY-ONE.md` (setup) →
-  `docs/logs/STATE.md` (where the project stands right now).
-- Requirements source: read-only folder `/run/media/ash_63/DATA/ERP_Resouce` (never write into it);
-  derived extracts: `docs/01-requirements/source-extracts/`.
-- Process: phased delivery with gates; ask-before-commit; full record keeping (see `docs/00-onboarding/WORKING-AGREEMENT.md`).
-- Status: Phase 0 bootstrap (docs skeleton + resource inventory). No application code yet.
+**Status:** Phase 1 in progress: employee identity and accounts, Gold Membership, member website sign-in, and Sales
+Admin lead and membership performance are built. Documentation: `docs/` in the development repository.
+
+| Path | What |
+|---|---|
+| `services/api-gateway/` | Spring Cloud Gateway (JWT check, routing, rate limits), :8082 |
+| `services/access-service/` | Employees, Keycloak account management, audit log, Gold Membership, :8091 |
+| `services/guest-service/` | Member (guest) accounts in Keycloak realm gh-guests, :8092 |
+| `services/lead-service/` | Leads and Sales Admin performance summary, :8093 (guest enquiries: increment 2) |
+| `web/` | Staff ERP, React + TypeScript + Vite, :5173 |
+| `infra/` | Local Docker Compose stack, Keycloak realms and extension, DB init, Caddy proxy |
+| `docs/` | Setup, architecture, API and module documentation |
+
+Local secrets go in `ERP_DEV/.env`, which is git-ignored and must never be committed.

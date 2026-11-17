@@ -69,3 +69,12 @@ nav a,
     scroll-behavior: auto !important;
   }
 }
+
+/* Mobile baseline (unit 3.29): no grey flash over tapped controls (each has
+   its own :active state), and no font inflation when a phone turns sideways. */
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+button, a, [role="button"], summary { touch-action: manipulation; }

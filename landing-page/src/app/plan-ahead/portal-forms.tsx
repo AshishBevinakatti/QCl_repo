@@ -1,16 +1,51 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { portalApi, type GuestUser, type InquiryRecord } from "../portal-client";
-import { ArrowRight } from "../icons";
+import { ArrowRight, Check, RefreshCw } from "../icons";
+import { getTodayStr, addDays, sanitizeBookingDates } from "../booking-dates";
 
+/* The accommodation the resort actually offers, in the same words the
+ * Rooms section of this page uses. The value is sent straight through to the
+ * ERP lead record, so it has to read correctly to the sales desk too. */
 const ROOM_OPTIONS = [
-  "Luxury Pool Villa",
-  "Heritage Cottage",
-  "Hill View Cottage",
-  "Valley Suite",
-  "Plantation Villa",
+  "Premium Room — Queen",
+  "Premium Room — Twin",
+  "Suite Room with Jacuzzi",
+  "Wooden Cottage",
+  "Dormitory Cottage (10–12 guests)",
+  "Private Pool Cottage",
 ];
+
+/* The four states a lead moves through in the ERP (LeadStatus), said in
+ * words a guest can act on rather than the raw enum. */
+const STATUS_COPY: Record<string, string> = {
+  NEW: "Received",
+  IN_PROGRESS: "With our sales team",
+  CONVERTED: "Confirmed",
+  LOST: "Closed",
+};
+
+/* While the tab is open, re-read the inquiry list so a status the sales desk
+ * changes in the ERP turns up here without a reload. */
+const REFRESH_MS = 20000;
+
+function statusLabel(status: string) {
+  return STATUS_COPY[status] ?? status.replace(/_/g, " ").toLowerCase();
+}
+
+function formatDate(iso: string) {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function nightsBetween(from: string, to: string) {
+  const a = new Date(`${from}T00:00:00`);
+  const b = new Date(`${to}T00:00:00`);
+  const n = Math.round((b.getTime() - a.getTime()) / 86400000);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
 
 export default function PortalForms() {
   const [currentUser, setCurrentUser] = useState<GuestUser | null>(null);
@@ -18,7 +53,7 @@ export default function PortalForms() {
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [isPending, startTransition] = useTransition();
 
-  // Booking Form State
+  // Booking form
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -30,41 +65,67 @@ export default function PortalForms() {
   const [bookingSuccess, setBookingSuccess] = useState<InquiryRecord | null>(null);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
-  // Auth Form State
+  // Account form
   const [authName, setAuthName] = useState("");
   const [authEmail, setAuthEmail] = useState("");
   const [authPhone, setAuthPhone] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Inquiries List
+  // Inquiries
   const [myInquiries, setMyInquiries] = useState<InquiryRecord[]>([]);
+  const [listError, setListError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastSynced, setLastSynced] = useState<Date | null>(null);
+
+  const loadInquiries = useCallback(async (token: string) => {
+    setRefreshing(true);
+    try {
+      const list = await portalApi.getMyInquiries(token);
+      setMyInquiries(list);
+      setListError(null);
+      setLastSynced(new Date());
+    } catch {
+      setListError("Could not reach the reservations desk just now");
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
     const user = portalApi.getStoredUser();
+    // Room pages link here with ?tab=inquiries to open the guest's inquiry list.
+    // The URL is only known in the browser; reading it during render would
+    // mismatch the prerendered page on hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (new URLSearchParams(window.location.search).get("tab") === "inquiries") setActiveTab("account");
     if (user) {
       setCurrentUser(user);
       setName(user.name);
       setEmail(user.email);
       setPhone(user.phone);
-      loadInquiries(user.token);
+      void loadInquiries(user.token);
     }
 
-    // Set default dates: checkin = tomorrow, checkout = 3 days later
-    const today = new Date();
-    const tmrw = new Date(today);
-    tmrw.setDate(tmrw.getDate() + 1);
-    const co = new Date(today);
-    co.setDate(co.getDate() + 4);
-    setCheckin(tmrw.toISOString().split("T")[0]);
-    setCheckout(co.toISOString().split("T")[0]);
-  }, []);
+    // The home page booking bar sends ?checkin=&checkout=&guests= here.
+    const query = new URLSearchParams(window.location.search);
+    const qIn = query.get("checkin") ?? "";
+    const qOut = query.get("checkout") ?? "";
+    const qGuests = Number(query.get("guests"));
+    const [validIn, validOut] = sanitizeBookingDates(qIn, qOut);
+    setCheckin(validIn);
+    setCheckout(validOut);
+    if (Number.isInteger(qGuests) && qGuests >= 1 && qGuests <= 12) setGuestCount(qGuests);
+  }, [loadInquiries]);
 
-  function loadInquiries(token: string) {
-    portalApi.getMyInquiries(token)
-      .then(setMyInquiries)
-      .catch(() => {});
-  }
+  /* Poll only while the account tab is actually being looked at. */
+  useEffect(() => {
+    if (!currentUser || activeTab !== "account") return;
+    const id = window.setInterval(() => {
+      if (!document.hidden) void loadInquiries(currentUser.token);
+    }, REFRESH_MS);
+    return () => window.clearInterval(id);
+  }, [currentUser, activeTab, loadInquiries]);
 
   function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -76,9 +137,9 @@ export default function PortalForms() {
         setName(u.name);
         setEmail(u.email);
         setPhone(u.phone);
-        loadInquiries(u.token);
+        void loadInquiries(u.token);
       } catch (err: unknown) {
-        setAuthError(err instanceof Error ? err.message : "Login failed");
+        setAuthError(err instanceof Error ? err.message : "Could not sign in");
       }
     });
   }
@@ -93,9 +154,9 @@ export default function PortalForms() {
         setName(u.name);
         setEmail(u.email);
         setPhone(u.phone);
-        loadInquiries(u.token);
+        void loadInquiries(u.token);
       } catch (err: unknown) {
-        setAuthError(err instanceof Error ? err.message : "Registration failed");
+        setAuthError(err instanceof Error ? err.message : "Could not create the account");
       }
     });
   }
@@ -104,12 +165,23 @@ export default function PortalForms() {
     portalApi.logout();
     setCurrentUser(null);
     setMyInquiries([]);
+    setLastSynced(null);
   }
 
   function handleBookingSubmit(e: React.FormEvent) {
     e.preventDefault();
     setBookingError(null);
     setBookingSuccess(null);
+
+    const todayStr = getTodayStr();
+    if (checkin < todayStr) {
+      setBookingError("Check-in date cannot be in the past.");
+      return;
+    }
+    if (checkout <= checkin) {
+      setBookingError("Check-out date must be after check-in date.");
+      return;
+    }
 
     startTransition(async () => {
       try {
@@ -125,176 +197,230 @@ export default function PortalForms() {
         }, currentUser?.token);
 
         setBookingSuccess(rec);
-        if (currentUser) {
-          loadInquiries(currentUser.token);
-        }
+        if (currentUser) void loadInquiries(currentUser.token);
       } catch (err: unknown) {
-        setBookingError(err instanceof Error ? err.message : "Inquiry submission failed");
+        setBookingError(err instanceof Error ? err.message : "Could not send the inquiry");
       }
     });
   }
 
+  const nights = nightsBetween(checkin, checkout);
+
   return (
     <div className="portal-container wrap">
-      {/* Navigation Tabs */}
-      <div className="portal-tabs" role="tablist">
+      <div className="portal-tabs" role="tablist" aria-label="Guest portal">
         <button
+          type="button"
           className={`portal-tab ${activeTab === "book" ? "active" : ""}`}
           onClick={() => setActiveTab("book")}
           role="tab"
           aria-selected={activeTab === "book"}
         >
-          Book / Inquire Stay
+          Book a stay
         </button>
         <button
+          type="button"
           className={`portal-tab ${activeTab === "account" ? "active" : ""}`}
           onClick={() => setActiveTab("account")}
           role="tab"
           aria-selected={activeTab === "account"}
         >
-          {currentUser ? `Guest Account (${currentUser.name})` : "Guest Login & Register"}
+          Your inquiries
+          {currentUser && myInquiries.length > 0 && (
+            <span className="portal-tab-count">{myInquiries.length}</span>
+          )}
         </button>
       </div>
 
-      {/* Tab 1: Booking Inquiry Form */}
+      {/* Book a stay */}
       {activeTab === "book" && (
         <section className="portal-section" aria-labelledby="book-heading">
           <div className="portal-grid">
             <div className="portal-info">
-              <span className="portal-eyebrow">Reservation Inquiry</span>
-              <h2 id="book-heading">Plan your escape to Golden Hills.</h2>
+              <span className="portal-eyebrow">Reservation inquiry</span>
+              <h2 id="book-heading">Tell us when you would like to come</h2>
               <p>
-                Submit your preferred dates and cottage preference. Our Sales Executive
-                is instantly alerted and will confirm availability, custom itineraries, and tariff plans.
+                Send your dates and the accommodation you have in mind. The inquiry reaches
+                our sales desk with a reference number, and you can follow what happens to it
+                from the inquiries tab.
               </p>
+
+              <ol className="portal-steps">
+                <li><span className="portal-step-n">1</span>You send the dates</li>
+                <li><span className="portal-step-n">2</span>The sales desk picks it up</li>
+                <li><span className="portal-step-n">3</span>We call to confirm availability and tariff</li>
+              </ol>
+
               {currentUser ? (
-                <div className="portal-user-badge">
-                  <span>Logged in as <strong>{currentUser.name}</strong></span>
-                  <button type="button" onClick={handleLogout} className="portal-btn-link">Logout</button>
-                </div>
+                <p className="portal-hint">
+                  Signed in as {currentUser.name}
+                  <button type="button" onClick={handleLogout} className="portal-btn-link">Sign out</button>
+                </p>
               ) : (
                 <p className="portal-hint">
-                  Have an account? <button type="button" onClick={() => { setActiveTab("account"); setAuthMode("login"); }} className="portal-btn-link">Login here</button> to auto-fill your details and track inquiries.
+                  Already have an account?
+                  <button
+                    type="button"
+                    onClick={() => { setActiveTab("account"); setAuthMode("login"); }}
+                    className="portal-btn-link"
+                  >
+                    Sign in
+                  </button>
+                  to fill this in and track the inquiry
                 </p>
               )}
             </div>
 
             <div className="portal-form-wrapper">
               {bookingSuccess ? (
-                <div className="portal-success-card">
-                  <div className="portal-success-icon">✓</div>
-                  <h3>Inquiry Received</h3>
-                  <p className="portal-ref-code">Reference: <strong>{bookingSuccess.publicReference}</strong></p>
-                  <p>
-                    Thank you, <strong>{bookingSuccess.name}</strong>. Your inquiry for <strong>{bookingSuccess.roomCategory}</strong> ({bookingSuccess.checkinDate} to {bookingSuccess.checkoutDate}) has been forwarded to our Sales Executive.
+                <div className="portal-receipt">
+                  <div className="portal-receipt-head">
+                    <span className="portal-receipt-mark" aria-hidden="true"><Check size={18} /></span>
+                    <div>
+                      <h3>Inquiry received</h3>
+                      <p className="portal-receipt-sub">We have it. Nothing more to do for now</p>
+                    </div>
+                  </div>
+
+                  <dl className="portal-receipt-rows">
+                    <div>
+                      <dt>Reference</dt>
+                      <dd className="portal-ref">{bookingSuccess.publicReference}</dd>
+                    </div>
+                    <div>
+                      <dt>Accommodation</dt>
+                      <dd>{bookingSuccess.roomCategory}</dd>
+                    </div>
+                    <div>
+                      <dt>Dates</dt>
+                      <dd>
+                        {formatDate(bookingSuccess.checkinDate)} – {formatDate(bookingSuccess.checkoutDate)}
+                        <span className="portal-dim">
+                          {" "}· {nightsBetween(bookingSuccess.checkinDate, bookingSuccess.checkoutDate)} nights
+                        </span>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Guests</dt>
+                      <dd>{bookingSuccess.guestCount}</dd>
+                    </div>
+                    <div>
+                      <dt>Status</dt>
+                      <dd>
+                        <span className={`portal-status portal-status-${bookingSuccess.status.toLowerCase()}`}>
+                          <span className="portal-dot" aria-hidden="true" />
+                          {statusLabel(bookingSuccess.status)}
+                        </span>
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <p className="portal-receipt-note">
+                    Keep the reference. Quote it when you call, or sign in to see where it has got to.
                   </p>
-                  <p className="portal-note-text">
-                    📱 A notification has been dispatched to our sales team. We will call you shortly to assist with your reservation.
-                  </p>
+
                   <button
                     type="button"
                     onClick={() => setBookingSuccess(null)}
                     className="portal-btn-secondary"
                   >
-                    Submit Another Inquiry
+                    Send another inquiry
                   </button>
                 </div>
               ) : (
                 <form onSubmit={handleBookingSubmit} className="portal-form">
-                  {bookingError && <div className="portal-error-banner">{bookingError}</div>}
+                  {bookingError && <p className="portal-error" role="alert">{bookingError}</p>}
 
                   <div className="portal-row">
-                    <label>
-                      <span>Full Name *</span>
+                    <label className="portal-field">
+                      <span>Full name</span>
                       <input
-                        type="text"
-                        required
-                        value={name}
+                        type="text" required value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. Rahul Sharma"
+                        placeholder="Rahul Sharma"
                       />
                     </label>
-                    <label>
-                      <span>Phone Number *</span>
+                    <label className="portal-field">
+                      <span>Phone</span>
                       <input
-                        type="tel"
-                        required
-                        value={phone}
+                        type="tel" required value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        placeholder="+91-9876543210"
+                        placeholder="+91 98765 43210"
                       />
                     </label>
                   </div>
 
                   <div className="portal-row">
-                    <label>
-                      <span>Email Address *</span>
+                    <label className="portal-field">
+                      <span>Email</span>
                       <input
-                        type="email"
-                        required
-                        value={email}
+                        type="email" required value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="rahul@example.com"
                       />
                     </label>
-                    <label>
-                      <span>Number of Guests</span>
+                    <label className="portal-field">
+                      <span>Guests</span>
                       <input
-                        type="number"
-                        min="1"
-                        max="20"
-                        required
-                        value={guestCount}
+                        type="number" min="1" max="20" required value={guestCount}
                         onChange={(e) => setGuestCount(Number(e.target.value))}
                       />
                     </label>
                   </div>
 
                   <div className="portal-row">
-                    <label>
-                      <span>Check-in Date *</span>
+                    <label className="portal-field">
+                      <span>Check in</span>
                       <input
                         type="date"
                         required
+                        min={getTodayStr()}
                         value={checkin}
-                        onChange={(e) => setCheckin(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCheckin(val);
+                          if (checkout && val >= checkout) {
+                            setCheckout(addDays(val, 2));
+                          }
+                        }}
                       />
                     </label>
-                    <label>
-                      <span>Check-out Date *</span>
+                    <label className="portal-field">
+                      <span>Check out</span>
                       <input
                         type="date"
                         required
+                        min={checkin ? addDays(checkin, 1) : addDays(getTodayStr(), 1)}
                         value={checkout}
                         onChange={(e) => setCheckout(e.target.value)}
                       />
                     </label>
                   </div>
 
-                  <label>
-                    <span>Preferred Accommodation *</span>
-                    <select
-                      value={roomCategory}
-                      onChange={(e) => setRoomCategory(e.target.value)}
-                    >
+                  {nights > 0 && (
+                    <p className="portal-nights">{nights} {nights === 1 ? "night" : "nights"}</p>
+                  )}
+
+                  <label className="portal-field">
+                    <span>Accommodation</span>
+                    <select value={roomCategory} onChange={(e) => setRoomCategory(e.target.value)}>
                       {ROOM_OPTIONS.map((opt) => (
                         <option key={opt} value={opt}>{opt}</option>
                       ))}
                     </select>
                   </label>
 
-                  <label>
-                    <span>Special Requests / Notes</span>
+                  <label className="portal-field">
+                    <span>Anything we should know</span>
                     <textarea
-                      rows={3}
-                      value={notes}
+                      rows={3} value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      placeholder="e.g. Honeymoon celebration, airport pick-up, dietary requests..."
+                      placeholder="Anniversary, airport pick-up, dietary needs"
                     />
                   </label>
 
                   <button type="submit" disabled={isPending} className="portal-btn-primary">
-                    {isPending ? "Submitting Inquiry..." : "Submit Inquiry"} <ArrowRight />
+                    {isPending ? "Sending" : "Send inquiry"} <ArrowRight size={16} />
                   </button>
                 </form>
               )}
@@ -303,152 +429,160 @@ export default function PortalForms() {
         </section>
       )}
 
-      {/* Tab 2: Guest Account (Login / Register / Profile) */}
+      {/* Your inquiries */}
       {activeTab === "account" && (
         <section className="portal-section" aria-labelledby="account-heading">
           {currentUser ? (
-            <div className="portal-account-dashboard">
-              <div className="portal-account-header">
+            <div className="portal-account">
+              <div className="portal-account-head">
                 <div>
-                  <span className="portal-eyebrow">Guest Portal</span>
-                  <h2 id="account-heading">Welcome, {currentUser.name}</h2>
-                  <p>{currentUser.email} • {currentUser.phone}</p>
+                  <span className="portal-eyebrow">Guest portal</span>
+                  <h2 id="account-heading">Your inquiries</h2>
+                  <p className="portal-account-id">{currentUser.email} · {currentUser.phone}</p>
                 </div>
-                <button type="button" onClick={handleLogout} className="portal-btn-secondary">
-                  Logout
-                </button>
+                <div className="portal-account-actions">
+                  <button
+                    type="button"
+                    onClick={() => void loadInquiries(currentUser.token)}
+                    className="portal-btn-ghost"
+                    disabled={refreshing}
+                  >
+                    <RefreshCw size={16} /> {refreshing ? "Checking" : "Refresh"}
+                  </button>
+                  <button type="button" onClick={handleLogout} className="portal-btn-ghost">
+                    Sign out
+                  </button>
+                </div>
               </div>
 
-              <div className="portal-inquiries-box">
-                <h3>Your Submitted Inquiries ({myInquiries.length})</h3>
-                {myInquiries.length === 0 ? (
-                  <p className="portal-muted-text">
-                    You have not submitted any room inquiries yet.
-                    <button type="button" onClick={() => setActiveTab("book")} className="portal-btn-link" style={{ marginLeft: 8 }}>
-                      Submit your first inquiry now
-                    </button>
-                  </p>
-                ) : (
-                  <div className="portal-inquiry-cards">
-                    {myInquiries.map((inq) => (
-                      <div key={inq.id} className="portal-inquiry-card">
-                        <div className="portal-inq-top">
-                          <span className="portal-inq-ref">{inq.publicReference}</span>
-                          <span className={`portal-badge ${inq.status.toLowerCase()}`}>
-                            {inq.status}
+              <p className="portal-sync" aria-live="polite">
+                {listError
+                  ? listError
+                  : lastSynced
+                    ? `Checked with the reservations desk at ${lastSynced.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}`
+                    : "Checking with the reservations desk"}
+              </p>
+
+              {myInquiries.length === 0 ? (
+                <div className="portal-empty">
+                  <p>No inquiries yet</p>
+                  <button type="button" onClick={() => setActiveTab("book")} className="portal-btn-primary">
+                    Book a stay <ArrowRight size={16} />
+                  </button>
+                </div>
+              ) : (
+                <ul className="portal-inquiry-list">
+                  {myInquiries.map((inq) => (
+                    <li key={inq.id} className="portal-inquiry">
+                      <div className="portal-inquiry-main">
+                        <div className="portal-inquiry-top">
+                          <span className="portal-ref">{inq.publicReference}</span>
+                          <span className={`portal-status portal-status-${inq.status.toLowerCase()}`}>
+                            <span className="portal-dot" aria-hidden="true" />
+                            {statusLabel(inq.status)}
                           </span>
                         </div>
-                        <h4>{inq.roomCategory}</h4>
-                        <p className="portal-inq-dates">
-                          {inq.checkinDate} → {inq.checkoutDate} ({inq.guestCount} guests)
+                        <h3>{inq.roomCategory}</h3>
+                        <p className="portal-inquiry-dates">
+                          {formatDate(inq.checkinDate)} – {formatDate(inq.checkoutDate)}
+                          <span className="portal-dim">
+                            {" "}· {nightsBetween(inq.checkinDate, inq.checkoutDate)} nights · {inq.guestCount} guests
+                          </span>
                         </p>
-                        {inq.notes && <p className="portal-inq-notes">"{inq.notes}"</p>}
-                        <div className="portal-inq-footer">
-                          <span>Submitted: {new Date(inq.createdAt).toLocaleDateString()}</span>
-                          {inq.claimedBy && <span className="portal-assigned">Sales Exec: {inq.claimedBy}</span>}
-                        </div>
+                        {inq.notes && <p className="portal-inquiry-notes">{inq.notes}</p>}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                      <div className="portal-inquiry-side">
+                        <span className="portal-dim">Sent {formatDate(inq.createdAt.slice(0, 10))}</span>
+                        {inq.claimedBy && <span>Looked after by {inq.claimedBy}</span>}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           ) : (
-            <div className="portal-auth-split">
-              <div className="portal-auth-toggle">
+            <div className="portal-auth">
+              <div className="portal-auth-toggle" role="tablist" aria-label="Account">
                 <button
-                  type="button"
+                  type="button" role="tab" aria-selected={authMode === "login"}
                   className={authMode === "login" ? "active" : ""}
                   onClick={() => setAuthMode("login")}
                 >
-                  Guest Login
+                  Sign in
                 </button>
                 <button
-                  type="button"
+                  type="button" role="tab" aria-selected={authMode === "register"}
                   className={authMode === "register" ? "active" : ""}
                   onClick={() => setAuthMode("register")}
                 >
-                  Register Account
+                  Create account
                 </button>
               </div>
 
-              {authError && <div className="portal-error-banner">{authError}</div>}
+              {authError && <p className="portal-error" role="alert">{authError}</p>}
 
               {authMode === "login" ? (
                 <form onSubmit={handleLogin} className="portal-form portal-auth-form">
-                  <h3 id="account-heading">Login to Guest Account</h3>
-                  <p>Access your past inquiries and manage your stay requests.</p>
-                  <label>
-                    <span>Email Address *</span>
+                  <h3 id="account-heading">Sign in</h3>
+                  <p className="portal-auth-sub">To see the inquiries you have already sent</p>
+                  <label className="portal-field">
+                    <span>Email</span>
                     <input
-                      type="email"
-                      required
-                      value={authEmail}
+                      type="email" required value={authEmail}
                       onChange={(e) => setAuthEmail(e.target.value)}
                       placeholder="name@example.com"
                     />
                   </label>
-                  <label>
-                    <span>Password *</span>
+                  <label className="portal-field">
+                    <span>Password</span>
                     <input
-                      type="password"
-                      required
-                      value={authPassword}
+                      type="password" required value={authPassword}
                       onChange={(e) => setAuthPassword(e.target.value)}
                       placeholder="••••••••"
                     />
                   </label>
                   <button type="submit" disabled={isPending} className="portal-btn-primary">
-                    {isPending ? "Logging in..." : "Login"} <ArrowRight />
+                    {isPending ? "Signing in" : "Sign in"} <ArrowRight size={16} />
                   </button>
                 </form>
               ) : (
                 <form onSubmit={handleRegister} className="portal-form portal-auth-form">
-                  <h3 id="account-heading">Create a Guest Account</h3>
-                  <p>Register once to submit booking inquiries and track requests.</p>
-                  <label>
-                    <span>Full Name *</span>
+                  <h3 id="account-heading">Create account</h3>
+                  <p className="portal-auth-sub">So your inquiries stay in one place</p>
+                  <label className="portal-field">
+                    <span>Full name</span>
                     <input
-                      type="text"
-                      required
-                      value={authName}
+                      type="text" required value={authName}
                       onChange={(e) => setAuthName(e.target.value)}
-                      placeholder="e.g. Priya Sharma"
+                      placeholder="Priya Sharma"
                     />
                   </label>
-                  <label>
-                    <span>Email Address *</span>
+                  <label className="portal-field">
+                    <span>Email</span>
                     <input
-                      type="email"
-                      required
-                      value={authEmail}
+                      type="email" required value={authEmail}
                       onChange={(e) => setAuthEmail(e.target.value)}
                       placeholder="priya@example.com"
                     />
                   </label>
-                  <label>
-                    <span>Mobile Phone *</span>
+                  <label className="portal-field">
+                    <span>Phone</span>
                     <input
-                      type="tel"
-                      required
-                      value={authPhone}
+                      type="tel" required value={authPhone}
                       onChange={(e) => setAuthPhone(e.target.value)}
-                      placeholder="+91-9876543210"
+                      placeholder="+91 98765 43210"
                     />
                   </label>
-                  <label>
-                    <span>Password (min. 6 characters) *</span>
+                  <label className="portal-field">
+                    <span>Password</span>
                     <input
-                      type="password"
-                      required
-                      minLength={6}
-                      value={authPassword}
+                      type="password" required minLength={6} value={authPassword}
                       onChange={(e) => setAuthPassword(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder="At least 6 characters"
                     />
                   </label>
                   <button type="submit" disabled={isPending} className="portal-btn-primary">
-                    {isPending ? "Creating Account..." : "Create Account"} <ArrowRight />
+                    {isPending ? "Creating" : "Create account"} <ArrowRight size={16} />
                   </button>
                 </form>
               )}

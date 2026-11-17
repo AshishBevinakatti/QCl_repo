@@ -1,5 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Sketch } from "./pencil";
 import { logo } from "./resort-assets";
 import { ArrowUp } from "./icons";
 
@@ -24,15 +28,27 @@ const planLinks = [
 ];
 
 export default function SiteFooter() {
+  const pathname = usePathname();
+
+  function handleLogoClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    if (pathname === "/") {
+      e.preventDefault();
+      window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    } else {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
+  }
+
   return (
     <footer className="site-footer">
       <div className="wrap">
         <div className="footer-top">
           <div className="footer-brand">
-            <Link href="/" aria-label="Golden Hills Resort, home">
+            <Link href="/" onClick={handleLogoClick} aria-label="Golden Hills Resort, home">
               <Image src={logo} alt="" width={2360} height={1120} sizes="132px" />
             </Link>
             <p>Golden Hills Resort brings together stays, dining, recreation and event celebrations in Anagawadi Village, Biligi Taluk, Bagalkote District. All property imagery is an artist&rsquo;s impression by Astu Architects and Rajvi Jhaveri.</p>
+            <Sketch name="tree" className="footer-sketch" />
           </div>
 
           <nav className="footer-col" aria-label="Explore the resort">
