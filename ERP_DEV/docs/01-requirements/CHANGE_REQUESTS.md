@@ -1,7 +1,11 @@
 # Change Requests
 
-| ID | Date | Requested by | Description | SOW reference / why out of scope | Impact (effort, schedule, modules) | Status | Decision date |
-|---|---|---|---|---|---|---|---|
-| CR-001 | 2026-10-20 | Project team (user-directed) | Add **Module 2 - Restaurant ERP** as a separately flaggable product module, implementing SOW ERP-11 through submodules R-01 to R-08. Plan: `docs/03-phases/phase-4/MODULE-2-RESTAURANT-ERP-PLAN.pdf`. | SOW ERP-11 (optional digital dining and kitchen management add-on). Outside the CORE baseline confirmed by Q-005 (2026-10-09). | MVP 28-40 developer-days; full plan 31-44 developer-days. New `R-01` to `R-08` submodules. Does not displace or rename CORE ERP-01 to ERP-14. No build until CR-001, Q-012 and the plan are approved. | proposed | - |
+Items outside the signed SOW. Each one needs the client's approval before it is treated as contracted scope (SOW: changes to roles, screens or workflows may be treated as Change Requests). Append-only.
 
-Format: `CR-NNN | date | requested by | description | SOW reference / why out of scope | impact (effort, schedule, modules) | status: proposed / quoted / approved / rejected | decision date`.
+## CR-001 — Sales Executive role and lead pipeline in the staff ERP
+- Raised: 2026-11-15 · Status: **Proposed. Needs client confirmation** (Q-027)
+- What: a `SALES_EXECUTIVE` staff role, the lead queue and claim, and (later) follow-ups and SLA, as described in the Phase 1 Blueprint §10.
+- Why: the Blueprint makes it the core of Phase 1, and Ashish adopted it on 2026-11-15.
+- SOW reference: §22 lists the roles Super Admin, Resort Manager, Reception, Membership, Accounts, Housekeeping, Dining, Spa/Facilities, HR and Marketing, with **no sales role**. §4 ERP-01 includes "Inquiry and contact forms" and "Gallery and enquiry management", which partly covers inquiry handling.
+- Client context (SRS §10): the client's org chart has *Reservation Desk Associates* (Front Office) and *Marketing Executives*. The new role probably maps to one of these (Q-027).
+- Impact: one more role and its screens. No effect on core modules. Effort is already in the Phase 1 plan.

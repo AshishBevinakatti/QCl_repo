@@ -19,6 +19,8 @@
   --color-limestone: #e8e1d7;
   --color-garden: #e0e2d3;
   --color-brass: var(--brand-gold);
+  /* Brass as ink: the accent at AA on cream surfaces (#b88828 is 3.07:1). */
+  --color-brass-ink: #7a5712;
   --color-chalk: #fffaf3;
   --color-forest-soft: #cfd9c9;
   --color-muted: #596a5e;
@@ -67,7 +69,7 @@
   --type-lead: clamp(16px, 1.3vw, 19px);
 
   /* Weights */
-  --weight-hero: 700;
+  --weight-hero: 600;
   --weight-section: 600;
   --weight-card: 600;
   --weight-subheading: 500;

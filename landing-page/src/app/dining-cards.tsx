@@ -16,6 +16,18 @@ export type DiningOutlet = {
   sceneId: string;
   imageAlt: string;
   imageLabel: string;
+  /* Added for the hours chart (unit 3.20): the outlet's open windows as
+   * decimal hours, read straight off the timing string above. Optional, so
+   * nothing that used this type before needs to change. */
+  openWindows?: [number, number][];
+  mark?: "thali" | "grill" | "cocktail" | "burger" | "coffee" | "buffet";
+  /* Added for the menu panel (unit 3.21). `dishes` are three short tags and
+   * `menuPreview` the grouped lines shown until a real menu exists, both cut
+   * down from this outlet's own copy, nothing new. `menuFile` is the real
+   * menu once the resort supplies it: a path under /public, PDF or image. */
+  dishes?: string[];
+  menuPreview?: { heading: string; items: string[] }[];
+  menuFile?: string;
 };
 
 export default function DiningCards({ outlets }: { outlets: DiningOutlet[] }) {

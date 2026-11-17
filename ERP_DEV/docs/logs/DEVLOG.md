@@ -1,672 +1,452 @@
-# Development Log (append-only — add new entries, never rewrite old ones)
-
-## 2026-10-01T09:41:03+05:30 — Session start, state restore (new project)
-- Phase/unit: 0 – bootstrap        Branch: none (no git repo)
-- What: loaded `erp-prp` skill; checked `docs/logs/STATE.md` (absent), `DEVLOG.md` (absent),
-  `OPEN_QUESTIONS.md` (absent); ran `git status` (not a repo); listed resource folder (read-only).
-- Why: Rule 0 — restore state at session start.
-- Resources used: `/run/media/ash_63/DATA/ERP_Resouce` (directory listing only)
-- Files changed: none
-- Commands that changed state: none (read-only checks)
-- Verification: confirmed new project — no STATE.md, no git repo, workspace holds only `AGENTS.md`, `opencode.json`, `.opencode/`
-- Problems & fixes: none
-- User interaction: reported new-project state; user replied "ok plan the phase 0 and create project file structure from resource" + "inside ERP_DEV folder"
-- Next: Phase 0 understand step (inventory + extracts)
-
-## 2026-10-01T09:41:03+05:30 — Resource inventory + extracts
-- Phase/unit: 0 – bootstrap        Branch: none
-- What: hashed all 4 resource-folder files (sha256); extracted SOW + landing checklist via
-  python-docx, tech-stack PDF via pdftotext; copied playbook text; wrote extracts with header
-  (source path, date, hash) to `ERP_DEV/docs/01-requirements/source-extracts/`; read all four documents.
-- Why: Phase 0 activities — inventory + derived extracts (Rule 1); SOW/REQ understanding (Rule 3 loop step 1).
-- Resources used: all four files under `/run/media/ash_63/DATA/ERP_Resouce` (read-only; nothing written there)
-- Files changed: `ERP_DEV/docs/01-requirements/source-extracts/*.md` (4 files)
-- Commands that changed state: `mkdir -p ERP_DEV/docs/...` (new dirs only)
-- Verification: `sha256sum` output captured; extract sizes checked (sow 23530 B, landing 10230 B,
-  tech-stack 20398 B, playbook 23861 B). Content spot-checked against sources. No raw binaries copied.
-- Problems & fixes: no pandoc/libreoffice — used installed python-docx + pdftotext; no new dependencies installed.
-- User interaction: none in this step (authorised in advance)
-- Next: write PLAN.md, skeleton, logs; present for commit approval
-- Deviation note: Rule 3 step 2 says show the plan and wait before building; the user authorised
-  planning + skeleton creation together, so both are presented jointly for approval at commit review.
-
-## 2026-10-01T09:46:34+05:30 — User answers: inventory approved, git-flow-lite confirmed, report-first
-- Phase/unit: 0 – bootstrap        Branch: main (uncommitted)
-- What: presented Phase 0 work + asked 3 questions. User: (1) commit question → "first give the report
-  what you did and then ask re this" (full report requested before any commit); (2) resource inventory
-  → approved (Phase 0 inventory exit item met); (3) Q-001 → git-flow-lite (skill default confirmed).
-- Why: Phase 0 exit needs inventory approval; branching model needed before creating `develop`.
-- Resources used: none
-- Files changed: `RESOURCE_INDEX.md` (approval recorded), `OPEN_QUESTIONS.md` (Q-001 answered),
-  `STATE.md` (updated)
-- Commands that changed state: none
-- Verification: Q-001 row checked after edit; R-002 closed.
-- Problems & fixes: my first Q-001 edit matched the table header instead of the Q-001 row and mangled
-  lines 3–5; repaired immediately with a corrective edit (file uncommitted, no history rewritten) and
-  verified by re-reading. Lesson: anchor table edits on the row ID, not the header tail.
-- User interaction: answers as above; commit still NOT approved — report first, then re-ask.
-- Next: deliver full Phase 0 work report, then re-ask the commit question.
-
-## 2026-10-01T09:46:34+05:30 — Initial commit + develop + fresh-developer test
-- Phase/unit: 0 – bootstrap        Branch: main → develop
-- What: user approved commit ("Yes, commit as proposed"). Pre-commit: read `opencode.json` (no secrets);
-  found `.opencode/node_modules/` — excluded via its nested `.gitignore` (only `skills/` staged).
-  Staged explicit paths (`ERP_DEV`, `AGENTS.md`, `opencode.json`, `.opencode`); fixed malformed
-  `.gitattributes` line 3 (multi-pattern line rejected by git) and re-staged. Committed, created
-  `develop`, switched to it. Fresh-developer test: clean local clone of `develop` — full docs tree,
-  clean status. Wrote `phase-0/PHASE-REPORT.md` (uncommitted).
-- Why: Phase 0 exit — skeleton committed on `develop`, inventory approved, clone-verified.
-- Resources used: none
-- Files changed: 67 files, +2859 (see commit); plus uncommitted `PHASE-REPORT.md`
-- Commands that changed state: `git init -b main`, `git add <explicit paths>`, `git commit`, `git branch develop`, `git checkout develop`, `git clone -b develop . /tmp/opencode/freshclone` (test only)
-- Verification: `git log --oneline -n 5` → `fec27bb docs(core): phase 0 bootstrap — skeleton, inventory, extracts`;
-  `git status` clean on both worktree and clone; forbidden-file scan 0; `git check-attr` clean.
-  NOT verified: clone from a remote (no remote configured — nothing pushed, per rule).
-- Problems & fixes: `.gitattributes` multi-pattern line invalid — split to one pattern per line.
-- User interaction: commit approved as proposed; PHASE-REPORT + continue-to-Phase-1 still to be approved.
-- Next: present commit + report; ask to commit PHASE-REPORT and whether to continue to Phase 1.
-
-## 2026-10-01T09:46:34+05:30 — Report committed (54f4700); Phase 0 gate: PAUSE
-- Phase/unit: 0 – gate        Branch: develop
-- What: user approved report commit and chose "Pause here" at the Phase 0 gate. Committed
-  `54f4700` `docs(core): phase 0 report, gate decision, pause` on `develop` (3 files, +72/−6).
-  Tree clean. This entry + STATE update ride with the next approved commit.
-- Commits this session: `fec27bb` (main, skeleton) + `54f4700` (develop, report) — both user-approved; no merges/tags/pushes.
-- Next: on resume, read STATE.md and await user instruction.
-
-## 2026-10-09T19:18:14+05:30 — Phase 1 baseline drafted (CORE, assumed defaults; coding gated)
-- Phase/unit: 1 – Requirement Discovery (baseline)        Branch: develop (no feature branch — docs on develop working tree until plan approved)
-- What: wrote `03-phases/phase-1/PLAN.md`; baselined `01-requirements/REQUIREMENTS.md` (REQ-ERP02…09 + FAC/HSK/XCUT, all `[ASSUMED]` defaults tagged); rebuilt `TRACEABILITY.md` (61 rows, design/code/tests TBD P2/3); rewrote `DECISIONS-FROM-CLIENT.md` (confirmed CORE-only + D-101…D-114 pending); expanded 11 module docs (`04-modules/erp-02…09, facilities, housekeeping, maintenance`) with rules/sources/states/APIs/tests; updated `OPEN_QUESTIONS.md` (Q-005 answered CORE-only; added Q-008 website location, Q-009 creds/hardware, Q-010 stack confirm), `DECISIONS.md` (D-005…D-008), `RISKS.md` (R-007…R-009), `RESOURCES_LOG.md`, `GLOSSARY.md`, `STATE.md`.
-- Why: user 2026-10-09 "assume and start Phase 1 baseline and start coding" + prior answers (team 2–4BE/2FE/1DevOps/1QA; CORE only; hosting undecided; RFID not procured). REQ sources: SOW §§5–12, 18–25, 28–30 via `source-extracts/sow-extract.md`.
-- Resources used: `/run/media/ash_63/DATA/ERP_Resouce/QuantumCLK_Resort_ERP_SOW.docx` (read-only; derived baseline only)
-- Files changed: `docs/03-phases/phase-1/PLAN.md` (new), `docs/01-requirements/REQUIREMENTS.md`, `TRACEABILITY.md`, `DECISIONS-FROM-CLIENT.md`, `docs/04-modules/{erp-02…09,facilities,housekeeping,maintenance}.md`, `docs/logs/{OPEN_QUESTIONS,DECISIONS,RISKS,RESOURCES_LOG,STATE}.md`, `docs/00-onboarding/GLOSSARY.md`
-- Commands that changed state: none destructive; `git status` / `git branch --show-current` / `date -Iseconds` (read-only checks)
-- Verification: re-read PLAN + REQUIREMENTS + TRACEABILITY row count; `git status` shows docs-only modifications on `develop`; no code/schema/dependency added; every guess tagged `[ASSUMED]`; no secrets/raw client files. NOT verified: user approval of baseline (pending); fresh-developer test runs at phase gate, not now.
-- Problems & fixes: user asked to code in the same instruction as baseline — conflicts with Rule 3 (plan→approve before code) + Rule 4 (phases in order) + Phase 2 stack ADR (Q-006/Q-010). Flagged to user per conflict rule; no code/branch started. Website-ready claim unverified → Q-008.
-- User interaction: approval requested for baseline + Q-008/Q-009/Q-010 + commit question; "continue to Phase 2?" comes only after baseline approval.
-- Next: present baseline + gate conflict + ask approvals; on approval, commit docs, then start Phase 2 (stack ADR + design).
-- Commit `e68cee5` on `develop` (user-approved 2026-10-09 via question tool: baseline approved, commit as proposed, proposal stack confirmed for Phase 2, simulators for website/keys). `git log --oneline -n 5` → `e68cee5` on top of `54f4700`. No merges/tags/pushes. Fresh-developer test: clean clone of `develop` to `/tmp/opencode/freshclone-p1` — phase-1 + requirements trees present, status clean → pass. Wrote `03-phases/phase-1/PHASE-REPORT.md` (uncommitted — rides with next approved commit).
-- Phase-gate answer 2026-10-09: user chose "Continue to Phase 2" (via question tool). Phase 1 closed; beginning Phase 2 planning.
-- Commit `438fa74` on `develop` (user-approved: Phase 2 PLAN + Phase 1 report commit). Includes `PHASE-REPORT.md` (P1), `phase-2/PLAN.md`, DEVLOG, STATE. `git log` → `438fa74` atop `e68cee5`. No merges/tags/pushes.
-- Phase 2 approved: user approved Phase 2 PLAN via question tool (2026-10-09). Wrote `02-architecture/adr/ADR-001-stack.md` (accepted — proposal stack locked, monolith-first; closes Q-006/Q-010 decision, answers to be recorded in OPEN_QUESTIONS at next commit). Next: data-model + api + security/integrations/environments + screens, then hello-world slice.
-- Design baseline drafted 2026-10-09 (uncommitted): `02-architecture/data-model.md` (ERD + dictionary + states + property-scoped keys), `api.md` (conventions + per-module endpoints + website/terminal/channel integration), `security.md` (RBAC matrix + secrets + money/PII/RFID + audit), `integrations.md` (adapter pattern + sandbox-now/real-later + terminal protocol), `environments.md` (local/dev/staging/prod + pipeline + backup), `screens.md` (14 flows + build order); TRACEABILITY Design column filled per REQ group; README index + Q-006/Q-010 answers recorded. No code yet — hello-world slice comes after design commit + approval.
-- Commit `4e999f6` on `develop` (user-approved 2026-10-09: design baseline docs). 12 files, +339/−82. Secret scan clean (names only, no values). No merges/tags/pushes. Tree clean. Next: hello-world vertical slice on a feature branch (per approved Phase 2 PLAN) — needs Java/Maven + Node availability check first.
-
-## 2026-10-09T20:31:00+05:30 — Hello-world slice built + verified (UI → API → DB → test)
-- Phase/unit: 2 – slice        Branch: feature/2-slice-hello-world (from develop)
-- What: user-local toolchain (JDK Temurin 21.0.12.1 + Maven 3.9.9, user-approved); monorepo skeleton (`ERP_DEV/pom.xml`, `services/erp-app`, `infra/docker-compose.local.yml`, `.github/workflows/ci.yml`); Spring Boot slice — `GET /api/v1/health`, `GET /api/v1/room-categories` (paginated envelope) + `GET /{id}` (404 contract shape), Flyway V1 (`property` + `room_category` + seed: 1 property + Deluxe/Suite/Villa), static `index.html` slice UI (React replaces in Phase 3), JUnit contract tests, OpenAPI via springdoc (published copy `docs/02-architecture/openapi/erp-app.json`); DAY-ONE rewritten with verified commands; api.md slice-proof line.
-- Why: Phase 2 exit needs a running UI→API→DB→test→CI slice from a clean clone (phases.md). Stack-implied deps only (no new stack): spring-boot starters (web/validation/data-jpa/test), flyway-core, postgresql (runtime), springdoc-openapi 2.5.0, H2 (test scope only).
-- Resources used: none from resource folder in this unit (stack docs already extracted in Phase 0)
-- Files changed: `ERP_DEV/pom.xml` (new), `services/erp-app/**` (pom, 6 java files, 1 test, V1 SQL, properties ×2, index.html), `infra/docker-compose.local.yml` (new), `.github/workflows/ci.yml` (new), `docs/02-architecture/openapi/erp-app.json` (new), `docs/00-onboarding/DAY-ONE.md`, `docs/02-architecture/api.md`, logs/STATE
-- Commands that changed state: user-local installs (JDK + Maven tarballs → ~/.local, /tmp downloads); `git checkout -b feature/2-slice-hello-world develop`; `mvn -B verify` (first run pulled deps from Maven Central → ~/.m2); live-run via test-classpath + H2 (see DAY-ONE §5)
-- Verification: `mvn -B verify` → Tests run: 4, Failures: 0, Errors: 0 + jar built; live boot → `GET /health` = UP, `GET /room-categories?size=2` = seeded Deluxe+Suite envelope (total 3), `/` = 200, `/v3/api-docs` = 200 (3 paths). NOT verified: real-browser click-through, Postgres-runtime run (no Docker here), compose boot, GitHub CI run — all documented in DAY-ONE as pending a Docker host.
-- Problems & fixes: no java/mvn/node/docker on machine → user approved user-local install; truncated first downloads (short curl timeout) → re-downloaded fully; `mvn` URL 404 → used archive.apache.org 3.9.9; shell tool waits on background procs → live-run wrapped with `timeout + kill + wait` so the shell exits.
-- User interaction: toolchain install approved; branch created (told user); commit + merge approval requested at presentation.
-- Next: commit slice on feature branch → merge to develop (separate approval) → Phase 2 gate (PHASE-REPORT + fresh-dev test + continue to Phase 3?).
-- Fix `41407de` (user-approved): V1 migration was silently blocked by `.gitignore` `*.sql` → added `!**/src/main/resources/db/migration/*.sql` exception and committed V1. Lesson: `*.sql` ignores migrations too — exception recorded in gitignore.
-- Fresh-slice test 2026-10-09: clean clone of `feature/2-slice-hello-world` to `/tmp/opencode/freshclone-slice` → `mvn -B verify` → BUILD SUCCESS, Tests run: 4, Failures: 0, Errors: 0. Proves the committed tree (incl. V1 fix) builds green with no local leftovers.
-- Merge `de4544c` (user-approved 2026-10-09): `feature/2-slice-hello-world` → `develop` (`--no-ff`; includes `2080131` slice + `41407de` V1 fix + `d2074c8` logs). Post-merge `mvn -B verify` on `develop` → BUILD SUCCESS, 4/0/0. Wrote `03-phases/phase-2/PHASE-REPORT.md` (uncommitted — rides with next approved commit). No tags/pushes.
-- Phase-gate answer 2026-10-09: user chose "Continue to Phase 3". Phase 2 closed; beginning Phase 3.0 (foundation) planning.
-
-## 2026-10-09T21:05:00+05:30 — Unit 3.0 foundation built + verified (auth, RBAC, audit, config)
-- Phase/unit: 3.0 – foundation        Branch: feature/3.0-foundation (from develop, plan-approved)
-- Phase/unit: 3.0 – foundation        Branch: feature/3.0-foundation (from develop, plan-approved)
-- What: deps (spring-security, oauth2-resource-server, security-test — stack-implied, ADR-001); V2 migration (`app_user`, `role_permission` seeded matrix, `app_config` 14 assumed defaults, `audit_event`); entities + repos; `AuditLog` same-txn writer; Keycloak JWT resource server + deny-by-default + contract 401/403 + claims→authority mapping; `ConfigController` (reads any login, PATCH SUPERADMIN + audited); tests (RBAC matrix, claims mapping ×2, audit-on-write; updated slice tests to stub users); CI +gitleaks/dependency-review; module doc + traceability code/test columns.
-- Files changed: `services/erp-app/pom.xml`, `src/main/.../{auth,audit,config}/` (9 files), V2 SQL, `application.properties`, `src/test/...` (SecurityTest, JwtRolesMappingTest, updated RoomCategoryApiTest, test props), `.github/workflows/ci.yml`, `docs/04-modules/erp-08-admin-reporting.md`, `TRACEABILITY.md`
-- Commands that changed state: `git checkout -b feature/3.0-foundation develop`; `mvn -B verify` iterations
-- Verification: `mvn -B verify` → Tests run: 10, Failures: 0, Errors: 0, BUILD SUCCESS; live boot → `/health` UP public, anon `/room-categories` + `/config` → 401. NOT verified: real Keycloak realm run (no Docker here — stub-free runtime path documented in DAY-ONE as pending a Docker host); UI shell (needs Node — asked user, pending).
-- Problems & fixes: (1) generics invariance in converter lambda → explicit cast; (2) package-visible constant across packages → public; (3) `TIMESTAMPTZ` unknown to H2 → `TIMESTAMP WITH TIME ZONE` (both DBs); (4) test JwtDecoder stub never took effect (anonymous-safe 401s) → replaced stub-token mechanics with standard `@WithMockUser` + dedicated claims-mapping unit tests (lesson: test authorization with framework support; token verification belongs to Keycloak runtime); (5) missing spring-security-test dep → added.
-- User interaction: 3.0 PLAN approved; commit + Node-shell questions requested at presentation.
-- Next: commit 3.0 backend → UI shell decision (Node install vs defer to 3.7) → merge to develop (separate approval) → 3.1 Guest/CRM.
-- Commit `52024bf` (user-approved): 3.0 backend on `feature/3.0-foundation` (22 files, +763/−13). Node v22.12.0 + npm 10.9.0 installed user-local (`~/.local/node`, user-approved) for the UI shell.
-- UI shell 2026-10-09 (uncommitted): Vite React-TS scaffold in `ERP_DEV/web` (private, React 19); `src/api.ts` typed client (health + categories envelope + rupees); `src/App.tsx` 3.0 shell (nav skeleton + live status + category list); `vite.config.ts` dev proxy `/api → localhost:8080`; `web/.env.example` (VITE_API_URL blank = same origin); `index.html` title set. Verified: `npm install` + `npm run build` green; `vite preview` serves shell (200); backend live at same time (`/health` UP, anon `/room-categories` 401 — shell calls public endpoints until Keycloak login lands). NOT verified: browser click-through (no browser here); Keycloak login flow (realm pending).
-- Commit `fc7b3ed` (user-approved): UI shell on `feature/3.0-foundation` (22 files, +1725/−2). Tree clean (node_modules/dist ignored).
-- Merge `1a7af15` (user-approved 2026-10-09): `feature/3.0-foundation` → `develop` (`--no-ff`). Post-merge verify on `develop`: backend `mvn verify` 10/0/0 BUILD SUCCESS; web `npm run build` green. Unit 3.0 complete. No tags/pushes.
-
-## 2026-10-09T21:30:00+05:30 — Unit 3.1 Guest/CRM built + verified (CRUD, dedupe, search, merge)
-- Phase/unit: 3.1 – Guest/CRM        Branch: feature/3.1-guest-crm (from develop, plan-approved)
-- What: V3 migration (`guest` + full `UNIQUE(property_id, phone)` + `guest_communication` + 3 demo guests); entities + search repo; `GuestController` (create 201 / duplicate 409 / validation 400 / search / update + clash 409 / stays-hook `[]` / manager-only merge + audit); validation handler → contract 400 shape; 9 GuestApiTest; shell Guests screen (search + create); module doc as-built + TRACEABILITY REQ-ERP04 code/tests + data-model unique note.
-- Files changed: V3 SQL, `erp04/` (4 main files), `GlobalExceptionHandler` (+validation), `Guest.java` unique, `GuestApiTest`, `web/src/{App.tsx, api.ts}`, docs (erp-04, data-model, TRACEABILITY)
-- Commands that changed state: `git checkout -b feature/3.1-guest-crm develop`; `mvn -B verify` iterations; `npm run build`
-- Verification: `mvn -B verify` → Tests run: 19, Failures: 0, Errors: 0, BUILD SUCCESS; `npm run build` green; live boot → V1→V3 migrate clean, `/health` UP, anon `/guests` + `/stays` → 401. NOT verified: authed live guest calls (no Keycloak here — covered by MockMvc tests); browser click-through; member-link + history population (units 3.5/3.2).
-- Problems & fixes: (1) H2 rejects partial (WHERE) indexes → full unique constraint (same-phone re-registration 409s by design; merge covers same-person-different-phone); lesson: keep DDL identical on both DBs; (2) 4-arg ResponseStatusException ctor doesn't exist in Spring 6.1 → id in reason string.
-- User interaction: 3.1 PLAN approved; commit requested at presentation.
-- Next: commit 3.1 → merge to develop (separate approval) → 3.2 Booking engine (PLAN first).
-- Commit `b033e35` (user-approved): 3.1 on `feature/3.1-guest-crm` (15 files, +760/−16). Tree clean.
-- Merge `0e34622` (user-approved 2026-10-09): `feature/3.1-guest-crm` → `develop` (`--no-ff`). Post-merge `mvn verify` on `develop` → 19/0/0 BUILD SUCCESS. Unit 3.1 complete. No tags/pushes.
-
-## 2026-10-09T22:00:00+05:30 — Unit 3.2 Booking engine built + verified (availability, holds, pricing, race-proof)
-- Phase/unit: 3.2 – Booking engine        Branch: feature/3.2-booking-engine (from develop, plan-approved)
-- What: V4 migration (room/rate_plan/promo/reservation/reservation_hold + 30 rooms + weekend plans + WELCOME10 + max_nights) — seed rewritten portable after catching Postgres-only funcs; entities + overlap query + category lock; PricingService (per-night round-DOWN, plan-then-config, strict promos, price-lock, advance recorded); BookingService (idempotent book, hold 15m + 60s sweeper, confirm/modify/cancel + tiers, folio TODOs for 3.4); ReservationController (availability/dashboard endpoints); 12 new tests incl. parallel last-room race (exactly-one-winner) + expiry; shell booking screen; module doc + traceability + regenerated openapi (14 paths).
-- Files changed: V4 SQL, `erp02/` (10 main files), `ErpApplication` (+scheduling), `RoomCategoryRepository` (+lock), `Configs` helper, `BookingApiTest` + `BookingRaceTest`, `web/src/{App.tsx, api.ts}`, docs (erp-02, TRACEABILITY, openapi)
-- Commands that changed state: `git checkout -b feature/3.2-booking-engine develop`; `mvn -B verify` iterations; `npm run build`
-- Verification: `mvn -B verify` → Tests run: 31, Failures: 0, Errors: 0, BUILD SUCCESS; `npm run build` green; live boot → V1→V4 clean, `/health` UP, anon POST /reservations → 401, openapi 14 paths saved. NOT verified: authed live booking (no Keycloak — MockMvc covers); browser click-through; Postgres-cluster race (H2 + Postgres share the pessimistic design; Phase 5 load test confirms).
-- Problems & fixes: (1) Postgres-only seed funcs → explicit UUID rows (lesson: seeds must be portable from line one); (2) 4-arg ResponseStatusException ctor absent → id in reason; (3) H2 partial indexes (again) → full unique; (4) two of my own test bugs (mock-user leak into anonymous test → @WithAnonymousUser; config count 14→15 after V4).
-- User interaction: 3.2 PLAN approved; commit requested at presentation.
-- Next: commit 3.2 → merge to develop (separate approval) → 3.3 Front-office + housekeeping (PLAN first).
-- Commit `d4874af` (user-approved): 3.2 on `feature/3.2-booking-engine` (29 files, +2509/−26). Tree clean.
-- Merge 3.2 → develop (user-approved 2026-10-09, `--no-ff`). Post-merge `mvn verify` on `develop` → 31/0/0 BUILD SUCCESS. Unit 3.2 complete. No tags/pushes.
-
-## 2026-10-10T00:00:00+05:30 — Unit 3.4 Payment & billing built + verified (folio, gateway, refunds)
-- Phase/unit: 3.4 – Payment & billing        Branch: feature/3.4-payment-billing (from develop, plan-approved)
-- What: V6 migration (folio/folio_entry/payment/invoice/refund + gateway config); PaymentGateway interface + SandboxGateway (HMAC callbacks, failure injection); FolioService (derived balances, advance linking at check-in — caught the unlinked-advance gap while testing); PaymentService (idempotent initiate, webhook-first confirm, approve/process refunds with row lock, reconcile); InvoiceService (GST 12% half-up on subtotal, immutable); confirm advance gate + walk-in desk settle; cancel-fee folio posting; FolioBalance retired to a facade; shell billing screens (folio/pay/refund); module doc + traceability ERP07/XCUT-001.
-- Files changed: V6 SQL, `erp07/` (11 main files), `BookingService` (gate + folio fee), `StayService` (walk-in settle + folio link), `ReservationController` (override), `FolioBalance` (facade), `SecurityConfig` (webhook permit), 5 updated test files, `BillingApiTest` + `RefundRaceTest`, `web/src/{App.tsx, api.ts}`, docs (erp-07, TRACEABILITY, api.md gap note)
-- Commands that changed state: `git checkout -b feature/3.4-payment-billing develop`; `mvn -B verify` iterations; `npm run build`
-- Verification: `mvn -B verify` → Tests run: 44, Failures: 0, Errors: 0, BUILD SUCCESS; `npm run build` green; live boot → V1→V6 clean, `/health` UP, anon initiate/recon → 401. Springdoc lag NOT fixed (packages-to-scan + DEBUG tried, reverted; recorded, pre-UAT must-fix). NOT verified: real provider (sandbox only); browser click-through.
-- Problems & fixes: (1) CHAR(3) vs VARCHAR validation → VARCHAR; (2) AuditLog 8-vs-9-arg calls → added objectType; (3) package-visible orOwned → public; (4) old-test fallout from the new gate (config count, checkout-with-balance → settle-first, confirms need payment) — all updated faithfully, none weakened; (5) advance-folio link gap (folio ignored paid advances) → linkBookingPayments at check-in + invoice test proving 700000 outstanding / 820000 total.
-- User interaction: 3.4 PLAN approved; commit requested at presentation.
-- Next: commit 3.4 → merge to develop (separate approval) → 3.5 Membership & loyalty (PLAN first).
-- Commit `edded7b` (user-approved): 3.4 on `feature/3.4-payment-billing` (37 files, +2008/−46). Tree clean.
-- Merge 3.4 → develop (user-approved 2026-10-10, `--no-ff`). Post-merge `mvn verify` on `develop` → 44/0/0 BUILD SUCCESS. Unit 3.4 complete. No tags/pushes.
-
-## 2026-10-10T01:00:00+05:30 — Unit 3.5 Membership & loyalty built + verified
-- Phase/unit: 3.5 – Membership & loyalty        Branch: feature/3.5-membership (from develop, plan-approved)
-- What: V7 migration (member/ledger/tier_rule + tier seed); LoyaltyService (enroll, earn hook on capture, redeem with 50% cap, adjustments, renew, expiry job, spend upgrades); earn race FIXED for real (payment-row lock in confirmByRef + violation-as-replay in earn — concurrent callbacks post exactly once); MemberController (enroll/dashboard/ledger/redeem/adjust/renew); member chip on guest profiles (REQ-ERP04-004); shell Members screens; module doc + traceability ERP05.
-- Files changed: V7 SQL, `erp05/` (8 main files), `PaymentService` (earn hook + confirm lock), `GuestController` (member chip), `LoyaltyLedger` (+ref getters), `Payment` (+linkFolio), `PaymentRepository` (+lock + findByBooking), `MemberApiTest` + `EarnRaceTest`, `web/src/{App.tsx, api.ts}`, docs (erp-05, TRACEABILITY)
-- Commands that changed state: `git checkout -b feature/3.5-membership develop`; `mvn -B verify` iterations; `npm run build`
-- Verification: `mvn -B verify` → Tests run: 50, Failures: 0, Errors: 0, BUILD SUCCESS; `npm run build` green; live boot → V1→V7 clean, `/health` UP, anon member read → 401. NOT verified: browser click-through; finance sign-off on points-expiry-with-status (flagged for UAT); RFID card link (4.2).
-- Problems & fixes: (1) concurrent captures double-posted folio entries + earn rows → payment-row lock (serializes callbacks) + violation-as-replay (defense in depth) — the race test earned its keep; (2) my test math assumed weekday rates on calendar-picked dates → parse responses dynamically; (3) expiring-member test depended on other tests' data → self-enrolling.
-- User interaction: 3.5 PLAN approved; commit requested at presentation.
-- Next: commit 3.5 → merge to develop (separate approval) → 3.6 Website CMS (PLAN first) — or 3.7 admin/reporting; website integration pending Q-008.
-- Commit `0ad2a26` (user-approved): 3.5 on `feature/3.5-membership` (22 files, +1275/−15). Tree clean.
-- Merge 3.5 → develop (user-approved 2026-10-10, `--no-ff`). Post-merge `mvn verify` on `develop` → 50/0/0 BUILD SUCCESS. Unit 3.5 complete. No tags/pushes.
-
-## 2026-10-10T02:00:00+05:30 — UI friendly workspace (sidebar, dashboard, preview mode)
-- Phase/unit: 3.x – UI polish (user asked before moving on)        Branch: feature/ui-friendly-erp
-- What: resort-themed workspace (`index.css` brand theme + responsive sidebar); shared `ui.tsx` (Card/Stat/Badge/Alert/Field/Btn); 7 views (Dashboard with stat cards + room table, booking, front-office, guests, members, billing, housekeeping); Live/Preview toggle + `demo.ts` labeled sample data (local only, server untouched); login-hint panel (SSO wiring pending); fixed frontend GuestDto (memberId was missing); `vite preview` serves 200.
-- Verification: `npm run build` green (tsc + vite); `npm run lint` warnings only (data-load effects, fast-refresh note — non-blocking); preview serves the branded shell. Backend untouched (50/50 suite stands). NOT verified: real-browser click-through (no browser here — user reviews); Keycloak login (realm pending).
-- User rule 2026-10-10: NO customer/guest seed data anywhere. Applied on this branch: `V8__remove_demo_guests.sql` deletes the 3 V3 demo guests (forward-only — V3 untouched); all GuestApiTest cases rewritten to create their own data; preview sample guests removed from `web/src/demo.ts` (empty state shown). Verified: `mvn verify` 50/0/0 + `npm run build` green after removal. Kept (not customer data): room catalogue (30 rooms), rate/promo/tier/config reference rows, demo staff users, one preview-only member card clearly labeled as sample.
-- Commit `79c9a9b` (user-approved): UI workspace + seed removal (10 files, +652/−430). Local Postgres installed globally (system service) + `resort_erp` migrated V1→V8 for the user's pgAdmin review (25 tables, 30 rooms, 0 guests).
-- Merge `15cf66e` (user-approved 2026-10-10): `feature/ui-friendly-erp` → `develop` (`--no-ff`). Post-merge: backend 50/0/0 + web build green. No tags/pushes.
-
-## 2026-10-10T11:00:00+05:30 — Staff login via Keycloak SSO (self-hosted, live-proven)
-- Phase/unit: 3.x – auth (user chose self-hosted Keycloak, plan-approved)        Branch: feature/auth-keycloak-sso
-- What: realm-as-code (`infra/keycloak/realm-golden-hills.json`: realm `resort`, 7 roles, PKCE public client `erp-web`, 6 DEV-ONLY demo users); compose Keycloak on host 8081 (8080 is erp-app's) with auto-import; frontend `auth.ts` (init/login/logout/token/roles) + `apiFetch` token attach (all 17 calls rewired) + sidebar login state + login-hint refresh; backend needed NO code change (issuer already env-driven); CI realm-contract job; runbook `05-operations/keycloak.md`; DAY-ONE §5c; security.md as-built; TRACEABILITY REQ-ERP08-002.
-- Verification: realm JSON valid; `npm run build` green; `mvn verify` 50/0/0; LIVE against real Keycloak tokens — reception `GET /room-categories` 200, reception `PATCH /config` 403, anon 401, forged 401, SUPERADMIN patch 200. Browser click-through left to user (checklist in runbook).
-- Problems & fixes: (1) compose keycloak port clashed with erp-app 8080 → host 8081; (2) direct-grant "Account is not fully set up" → Keycloak 24 user profile requires email — added `@goldenhills.local` via Admin API + realm file (lesson logged in runbook); (3) `sg docker` needed (shell predates docker-group membership); (4) stale erp-app squatting on 8080 from an old timed-out shell → pkill + verify before live runs (lesson: always ps-check port 8080 first).
-- Backend deps: +keycloak-js@24.0.1 (plan-named, pinned).
-- Commit `fc51e1a` (user-approved 2026-10-10): auth on `feature/auth-keycloak-sso` (17 files, +485/−45). NOT merged (explicit user instruction — awaiting click-through + separate approval).
-
-## 2026-10-10T17:45:00+05:30 — Review fixes: friendly duplicate + visible booking ids
-- What (on `feature/auth-keycloak-sso`, uncommitted): `common/ApiException` (stable code + details map)
-  + handler branch; guest duplicate → `GUEST_EXISTS` with human text, id travels in
-  `details.existingGuestId`; frontend HttpError carries code/details; Guests screen shows "already
-  registered" + Show-existing button; Front office gains a bookings-on-date table (short ref, status,
-  Use fills check-in + copies full id); check-in success auto-fills the stay field; GUEST_EXISTS test.
-- Verification: `mvn verify` 50/0/0; `npm run build` green. NOT verified: user click-through (pending).
-- Next: commit fixes (on approval) → user re-verifies → merge only on approval.
-- Commit `c66e8e6` (user-approved): review fixes on `feature/auth-keycloak-sso` (7 files, +223/−16). NOT merged. Still uncommitted: DAY-ONE/runbook login-lesson docs + `run-local.sh` (held from the earlier verify pause — will ride with the next approved commit).
-
-## 2026-10-10T17:30:00+05:30 — Login-lesson fixes: status-aware errors + run-local.sh
-- What: `api.ts` HttpError (401 vs 5xx split) + Dashboard/Housekeeping branch LoginHint vs server Alert;
-  `ERP_DEV/run-local.sh` (postgres|h2, always sets issuer, fail-fast Keycloak check); DAY-ONE points at it.
-- Verification: `npm run build` green; script booted backend → health UP, no issuer warning, real-token
-  categories 200. Full suite untouched by these files (web-only + script); backend suite stands at 50/50.
-- Next: commit fixes → user re-tests Live booking → merge (only on approval).
-
-## 2026-10-10T17:15:00+05:30 — Lesson: backend without issuer rejects logins (user caught it)
-- What happened: user logged in fine (sidebar showed reception-staff) but Live screens showed only the
-  login hint — booking impossible. Read-only diagnosis: the running backend (PID 93398) had NO
-  `KEYCLOAK_ISSUER_URL` in its environment (verified via /proc environ + a valid-token probe returning
-  500 instead of data). Without the issuer, the JWT decoder rejects every authenticated call.
-- Why it happened (our fault, two layers): (1) start instructions offered several backend variants and
-  the issuer var was easy to drop — nothing forced it; (2) the UI shows "needs sign-in" for ANY fetch
-  failure, so a server 500 looked exactly like "not logged in" and sent the user down the wrong path.
-- Fixes to prevent recurrence (user-ordered documentation of the mistake itself is this entry):
-  1. UI must distinguish 401 (show login hint) from 5xx/network (show "server error — likely missing
-     issuer config, see runbook") — planned code fix, not yet implemented.
-  2. A single `run-local.sh` that always sets issuer + DB vars (no hand-typed env) — planned, not yet
-     implemented. Until then: runbook prerequisite check below is MANDATORY before any login test.
-- Standing rule added: before presenting any login-dependent test, verify the backend environment
-  (`/proc/<pid>/environ` or startup log) contains KEYCLOAK_ISSUER_URL, and probe one authed endpoint
-  with a fresh token. Never assume the running backend matches the docs.
-- User interaction: hosting choice (a) + plan approved; commit requested at presentation. EXPLICIT: no merge without separate approval.
-- Next: commit auth → user click-through (login as demo staff, all views live) → then merge (on approval) → 3.7 or 3.6.
-
-## 2026-10-09T23:15:00+05:30 — Unit 3.3 Front-office + housekeeping built + verified
-- Phase/unit: 3.3 – Front-office + Housekeeping        Branch: feature/3.3-front-office (from develop, plan-approved)
-- What: V5 migration (stay/room_transfer/housekeeping_task); StayService (gated check-in + auto-assign, settlement-gated check-out + auto task, transfer with folio stub, walk-in chain); room-level overlap guard + pessimistic lock + race test; HousekeepingService (forward-only advance, done→ready) + role-gated controller; dashboard/arrivals/occupancy; FolioBalance stub (3.4 fills, no API change); shell reception + board + walk-in screens; module docs + traceability ERP03/HSK-001.
-- Files changed: V5 SQL, `erp03/` (StayService, StayController, Stay, repos, FolioBalance), `hsk/` (entity, service, controller), `Room`/`Reservation` guards, `BookingService.ZONE` public, `FrontOfficeApiTest` + `StayRaceTest`, `web/src/{App.tsx, api.ts}`, docs (erp-03, housekeeping, data-model, TRACEABILITY, api.md gap note)
-- Commands that changed state: `git checkout -b feature/3.3-front-office develop`; `mvn -B verify` iterations; `npm run build`
-- Verification: `mvn -B verify` → Tests run: 40, Failures: 0, Errors: 0, BUILD SUCCESS; `npm run build` green; live boot → V1→V5 clean, `/health` UP, anon stay/board → 401. OpenAPI artifact LAGS (14 paths; new endpoints proven via MockMvc 200/409/422, never 404) — recorded in api.md + module docs, revisit 3.4. NOT verified: authed live flows (no Keycloak); browser click-through; real folio balances (stub returns 0 by design).
-- Problems & fixes: (1) guard-order bug (double check-in gave 422 not 409) → duplicate-stay check first; (2) shared-H2 cross-test interference → unique dates/rooms per test + containment assertions (lesson: never assert global counts in shared DB); (3) repeated near-miss deleting a DEVLOG header with a careless edit — restored immediately, verified via grep (lesson: anchor log edits on unique full lines, re-verify structure after every log edit).
-- User interaction: 3.3 PLAN approved; commit requested at presentation.
-- Next: commit 3.3 → merge to develop (separate approval) → 3.4 Payment & billing (PLAN first).
-- Commit `399b305` (user-approved): 3.3 on `feature/3.3-front-office` (27 files, +1451/−12). Tree clean.
-- Merge `ba51425` (user-approved 2026-10-09): `feature/3.3-front-office` → `develop` (`--no-ff`). Post-merge `mvn verify` on `develop` → 40/0/0 BUILD SUCCESS. Unit 3.3 complete. No tags/pushes.
-
-## 2026-10-10T18:27:16+05:30 — Auth leftovers committed; UI-dashboard PLAN approved
-- Phase/unit: auth + UI-dashboard planning        Branch: feature/auth-keycloak-sso
-- What: committed `cb512e8` `docs(auth): local run script, keycloak runbook, day-one login notes` (DAY-ONE +6, keycloak.md +11, DEVLOG +1, new `run-local.sh`; user-approved via question tool 2026-10-10). Wrote `docs/03-phases/phase-3/PLAN-ui-reception-dashboard.md` (UI-only, coming-soon cards, SF Pro stack + Google icons, gradient banner until photo lands) — user approved + "start coding".
-- Resources: `pexels-vince-32808733.jpg` supplied by user in resource folder (read-only; sha256 `5c7ac65d…41fe0cf78`, resort pool photo for dashboard banner; RESOURCES_LOG update rides with UI commit). No web fetching; Google Fonts icon CDN approved 2026-10-10.
-- User interaction: approved "merge auth, then UI" order (commit + merge approved).
-- Next: merge auth → develop (`--no-ff`), branch `feature/ui-reception-dashboard`, implement.
-
-## 2026-10-10T18:40:00+05:30 — UI reception dashboard built + verified (web only)
-- Phase/unit: 3.x UI-dashboard (PLAN-approved)        Branch: feature/ui-reception-dashboard (from develop @ b12e6bf)
-- What: reference-image dashboard — `dashboard.tsx` (Sidebar/Topbar/DashboardView/RoomsView), App shell rewrite (image nav; Members stacked under Guests since the image has no Members entry), `api.ts` enrichment (`reservationById`, `enrichReservations`, per-row "—" degradation), `ui.tsx` (Icon/Soon/Kpi/Donut), SF Pro stack + Material Symbols CDN in `index.html`, banner photo asset, demo rooms extended (no guest names per standing rule), `erp-03` doc as-built + departures-endpoint correction, RESOURCES_LOG + Q-011.
-- Files changed: `web/{index.html,src/{App.tsx,dashboard.tsx(new),api.ts,ui.tsx,demo.ts,index.css,assets/banner.jpg}}`, docs (PLAN-ui, erp-03, RESOURCES_LOG, OPEN_QUESTIONS, DEVLOG, STATE)
-- Commands that changed state: `git checkout -b feature/ui-reception-dashboard develop`; `npm run build` iterations; `vite preview` (temp :4173, stopped)
-- Verification: `npm run build` green (tsc + vite; banner bundled 1.7MB); preview curl `/` 200 + banner asset 200 + Material link + new title in served HTML; backend suite untouched (no backend change — 50/0/0 carried from develop). NOT verified: browser visual click-through (no browser here — user reviews); live-data rows need Keycloak sign-in (running).
-- Problems & fixes: (1) `tsc noUnusedLocals` on unused cats state → removed; (2) no guest-name seeds allowed in Preview (standing rule) → preview tables show structure/empty states, never invented names; (3) `GET /departures` assumed by old module doc — does not exist, corrected in doc + coming-soon cards.
-- User interaction: PLAN approved + start coding; banner photo supplied; Google icons CDN approved.
-- Next: present + ask to commit (merge separate).
-- Commit `3a720eb` (user-approved): UI dashboard on `feature/ui-reception-dashboard` (14 files, +855/−149). Tree clean except untracked `.vscode/` (never committed). No merge/push.
-
-## 2026-10-10T19:05:00+05:30 — Unit 3.6 front-office lists built + verified
-- Phase/unit: 3.6 (PLAN-approved)        Branch: feature/frontoffice-lists (from develop @ 31c675e)
-- What: `GET /departures` (folio-driven Ready/Pending Payment), `GET /in-house`, `GET /alerts` (open tasks + pending payments with ages + overstays); `Payment.getCreatedAt` (no migration); `FrontOfficeListsApiTest` tests-first (6 tests); dashboard Departures/In-house/Alerts cards + Departures KPI + Billing folio-jump wired (`api.ts`, `dashboard.tsx`, `App.tsx`); docs (PLAN-3.6, erp-03, TRACEABILITY REQ-ERP03-001/006).
-- Files changed: `erp03/StayController` (+3 endpoints + DTOs), `erp07/Payment` (+getter), `FrontOfficeListsApiTest` (new), `web/src/{api.ts,dashboard.tsx,App.tsx}`, docs + logs
-- Commands that changed state: `git checkout -b feature/frontoffice-lists develop`; `mvn -B verify` iterations; `./run-local.sh postgres` restart (PID 145220)
-- Verification: new tests RED first (5×404) then 6/6 green; full suite 56/0/0 BUILD SUCCESS; `npm run build` green; live boot → UP, 3 endpoints 401-anon + present in `/v3/api-docs`. NOT verified: authed live rows (Keycloak token — MockMvc covers); browser visual (no browser here).
-- Problems & fixes: (1) my first phones (0501/0502) collided with StayRaceTest → switched to free 09xx; (2) my Deluxe check-ins exhausted the global ready pool → BillingApiTest 409 → switched to untouched Suite pool. Lesson recorded in module doc: shared-H2 footprint = unique phones + virgin category pool.
-- User interaction: PLAN-3.6 approved; Slice B declined; merge-UI-then-branch order approved.
-- Next: present + ask to commit (merge separate).
-- Commit `bb5968f` (user-approved): 3.6 on `feature/frontoffice-lists` (11 files, +555/−25). Tree clean except untracked `.vscode/`. No merge/push.
-- Merge `5eab9de` (user-approved 2026-10-10, EOD instruction): `feature/frontoffice-lists` → `develop` (`--no-ff`). Post-merge on `develop`: `mvn verify` 56/0/0 BUILD SUCCESS; `npm run build` green. Unit 3.6 complete. No tags/pushes.
-- EOD audit: `git ls-files` shows no tracked artefacts/secrets/env (dist/target/node_modules ignored); `banner.jpg` is the only binary, user-supplied + hash-logged. Root `.vscode/` untracked (only `ERP_DEV/.vscode` is gitignored — left alone, never staged).
-- Servers left running: backend PID 145797 (`run-local.sh postgres`, 3.6 code), web dev on :5173 (3.6 code) — host may reap idle processes; restart via DAY-ONE §5 / run-local.sh. User's pending item: browser review of live Departures/In-house/Alerts cards (fresh tab, Live + login).
-
-## 2026-10-11T09:35:00+05:30 — Fix: table overflow into neighbouring panels
-- Phase/unit: fix (user-reported, screenshot)        Branch: fix/dashboard-table-overflow (from develop @ ca6f4df)
-- What: Recent Bookings STATUS badge clipped under the In-House panel — grid children + nowrap tables bled across panels. Fix everywhere, not just the spot: `.panel`/`.card` get `overflow: hidden`, new `.tbl-wrap` scrolls wide tables inside their own card; wrapped all 8 tables (dashboard arrivals/departures/bookings/in-house + front bookings/guests/folio/housekeeping). No backend change.
-- Files changed: `web/src/{index.css, dashboard.tsx, App.tsx}`
-- Commands that changed state: `git checkout -b fix/dashboard-table-overflow develop`
-- Verification: `npm run build` green. NOT verified: browser visual (no browser here — user confirms).
-- Next: present + ask to commit (merge separate).
-- Commit `ca47186` (user-approved): fix on `fix/dashboard-table-overflow` (5 files). Tree clean except untracked `.vscode/`. No merge/push.
-
-## 2026-10-12T08:55:00+05:30 — Fix: weekend-test calendar bomb
-- Phase/unit: fix (post-merge gate red)        Branch: fix/weekend-test-dates (from develop)
-- What: `BookingApiTest.bookWeekendPricing` 400 — fixed 2026-10-10 Saturday check-in is now in the past ("checkin cannot be in the past"). Pre-existing bomb, unrelated to the overflow merge. Fix: WEEKDAY/WEEKEND windows roll to next Mon/Sat dynamically.
-- Files changed: `services/erp-app/src/test/.../BookingApiTest.java` (test only)
-- Verification: full `mvn verify` 56/0/0 BUILD SUCCESS.
-- Next: commit + merge (EOD-style fast track, user present).
-- Commit `cfb72a5` + merge `e21222c` (user-approved flow): suite green on merged `develop`.
-- Merge `42f95e2` (user-approved "do 1 first"): `fix/dashboard-table-overflow` → `develop`; post-merge gate caught a pre-existing calendar bomb (fixed above). Overflow fix complete.
-
-## Key facts learned (for Phase 1)
-- SOW: 9 CORE modules ERP-01…ERP-09 + 5 optional add-ons ERP-10…ERP-14 (need client confirmation);
-  facilities depth TBD in requirements analysis; tax/posting treatment TBD; RFID 1 terminal + 100 cards;
-  9 implementation phases; exclusions list (§30).
-- Landing checklist: every item unanswered; catalogue + logo "received" but no copy in the folder.
-- Tech-stack proposal (Java 21/Spring Boot, React+TS, Postgres, Kafka, Redis, K8s, Keycloak) is a
-  *proposal* — stack is decided by ADR in Phase 2, not assumed now.
-- Playbook §4 (trunk-based, no `develop`) conflicts with skill git-flow-lite (`main` + `develop`).
-  Per source-of-truth order the SOW wins on scope; on process the skill wins unless the user says
-  otherwise → logged as Q-001.
-- Playbook cites `QuantumClk_Freelance_Consultancy_Agreement` — not in the folder → Q-002.
-
-## 2026-10-12T18:13:19+05:30 — Session: run the server (user request)
-- Phase/unit: Phase 3 Core Development (branch feature/desk-confirm-flow)        Branch: feature/desk-confirm-flow
-- What: user asked "run the server". Started full local stack: Keycloak container (infra-keycloak-1, :8081, image quay.io/keycloak/keycloak:24.0), backend via ./run-local.sh postgres (:8080), web via npm run dev (:5173).
-- Commands that changed state: sg docker -c "docker compose -f infra/docker-compose.local.yml up -d keycloak"; nohup ./run-local.sh postgres > /tmp/opencode/backend.log 2>&1 &; (web) nohup npm run dev -- --host 127.0.0.1 --port 5173 > /tmp/opencode/web.log 2>&1 &
-- Verification: curl Keycloak openid-configuration → 200; curl localhost:8080/api/v1/health → {"status":"UP","service":"erp-app"}; curl 127.0.0.1:5173/ → 200. Backend log: Started ErpApplication, Flyway schema v8 up to date, Tomcat on :8080. System Postgres on 5432 used (compose postgres NOT started, per DAY-ONE note).
-- Uncommitted work left untouched: ERP_DEV/web/src/dashboard.tsx, ERP_DEV/web/src/index.css (modified); ERP_DEV/docs/03-phases/phase-3/PLAN-3.7-desk-confirm-flow.md + .vscode/ (untracked). No commit (needs explicit approval per Rule 7).
-- Next: user verifies in browser (fresh tab, Live + login); then next unit TBD.
-
-## 2026-10-12T18:13:19+05:30 — Fix diagnosis: "Invalid parameter: redirect_uri" on staff login
-- What: user hit Keycloak "Invalid parameter: redirect_uri" at login. Cause: realm client `erp-web` allows only `http://localhost:5173/*` (infra/keycloak/realm-golden-hills.json lines 50-55), but the previous turn started vite with `--host 127.0.0.1` and pointed the user at `http://127.0.0.1:5173/` — that origin's redirect_uri is rejected by Keycloak.
-- Verification: curl both http://localhost:5173/ and http://127.0.0.1:5173/ → 200 (same vite server); realm JSON confirms only localhost:5173 in redirectUris/webOrigins. No code change made.
-- Resolution given: open http://localhost:5173/ instead. Offered durable fix (add 127.0.0.1 URIs to realm JSON + live client) pending user approval.
-
-## 2026-10-17T15:04:35+05:30 — Unit 3.7 desk confirm flow built + live-proven
-- Phase/unit: 3.7 (PLAN-3.7 approved 2026-10-17 via question tool: "Approve — implement now")        Branch: feature/desk-confirm-flow (from develop @ ad0dc72; no commits yet)
-- What: Recent Bookings rows now act — `hold` rows: "Collect advance ₹X" (sandbox initiate+confirm with stable idempotency key `advance-{reservationId}` → double-click/reload replays, never double-charges) → "✓ Advance captured" + Confirm → Confirm (backend advance gate; 422 text shown verbatim). `expired` rows: terminal muted "expired — rebook" link to Reservations (no rebook automation). `api.ts`: `confirmReservation()`, `initiatePayment` gains `idempotencyKey`, `confirmPayment` returns captured payment, `EnrichedReservation.advanceDuePaise`. Table fit (guest-name ellipsis + highlighted headers, carried over from the paused fix/highlight-table-headers changes) rides in the same commit. The plan's cell-padding tweak was consciously SKIPPED to honour the user's same-day "do not change the UI" brief.
-- Files touched (uncommitted): `web/src/{api.ts,dashboard.tsx}` + `web/src/index.css` (table fit); `docs/04-modules/erp-02-booking-reservation.md` (3.7 change-history entry).
-- Commands that changed state: `npm run build` (green); live Postgres smoke `/tmp/opencode/smoke-37.sh` against the running stack (backend :8080, Keycloak :8081).
-- Verification: `npm run build` green; backend untouched (suite stands 56/0/0 from develop). LIVE smoke: hold `ad0378b8-81c3-4ed5-a5a4-22171f6b248e` (2 nights Deluxe, advance ₹1,500 = 150000 paise) → initiate key `advance-ad0378b8…` → replay `{replayed:true, sameRef:true}` → payment captured → reservation `confirmed`; negative: confirm before advance → 422 "advance not collected: due 150000, captured 0" (the exact string the UI surfaces); cancel path OK. Smoke rows deleted after; DB back to baseline (1 guest, 2 expired reservations = user's; audit rows remain by design — append-only).
-- NOT verified: user browser click-through of the new buttons — pending.
-- Next: present + ask to commit (merge separate).
-- Commit `c44f2e5` (user-approved 2026-10-17): 3.7 on `feature/desk-confirm-flow` (7 files, +192/−18; includes PLAN-3.7). Tree clean except untracked `.vscode/` + PLAN-3.8. No push.
-- Log record `cc6a166` (2026-10-17): DEVLOG + STATE updates for the 3.7 commit, committed on the feature branch (checkout to develop was blocked by uncommitted log edits).
-- Merge `b2a70e8` (user-approved 2026-10-17): `feature/desk-confirm-flow` → `develop` (`--no-ff`). Post-merge on develop: `mvn -B verify` 56/0/0 BUILD SUCCESS; `npm run build` green. Unit 3.7 complete. No tags/pushes.
-- Stale branch: user chose "Drop" for `fix/hide-table-scrollbar` (8ab2e26+77e9a0b — scrollbar-hide CSS superseded by 3.7 table fit). Branch left in place; deletion still needs explicit approval (will ask again).
-
-## 2026-10-17T15:04:35+05:30 — User dashboard-improvement brief → read-only audit + PLAN-3.8
-- Phase/unit: 3.8 planning (no source code)        Branch: feature/desk-confirm-flow (planning only)
-- What: user delivered an A–L dashboard improvement brief with a hard "do not change the existing UI design" rule (stat cards, arrivals, departures, room-status donut, alerts, recent bookings, in-house, top search, bell, Manage Rooms, sidebar, date/time + session identity). Read-only audit (explore subagent, file:line evidence): most panels already live on real data; real gaps = UTC business-date bug (frontend `toISOString` vs backend Asia/Kolkata), arrivals = confirmed-overlap window (not checkin=today), ≤50 enrichment calls per dashboard load (N+1), 8-char short-ref search silently fails, no debounce/stale guard, blank-until-loaded, redundant per-row refetch in Recent Bookings. Backend-less features (Reserved room status, notifications, service requests/maintenance) stay documented as limitations, not faked.
-- Wrote `docs/03-phases/phase-3/PLAN-3.8-dashboard-completeness.md` (7 thin slices: business-date helper, arrivals semantics + tests, load/401 UX hardening, search debounce+prefix, enrichment batching, View-all prefill, docs/limitations). Awaiting user approval; implementation branch `feature/dashboard-completeness` from develop after 3.7 merges.
-- Next: present 3.7 for commit + PLAN-3.8 for approval (same presentation).
-- User approved PLAN-3.8 at the same presentation (2026-10-17, question tool: "Approve — start after 3.7"). Implementation starts once 3.7 lands on develop.
-
-## 2026-10-17T15:17:11+05:30 — Unit 3.8 dashboard completeness — slices 1–3 done (in progress)
-- Phase/unit: 3.8 (PLAN approved 2026-10-17)        Branch: feature/dashboard-completeness (from develop @ b2a70e8)
-- Slice 1: `businessToday()` in api.ts (en-CA format, Asia/Kolkata — the zone the backend gates on); replaces all 4 `toISOString().slice(0,10)` business dates (dashboard.tsx ×3, App.tsx ×1). Edge check: 2026-10-16T20:00Z → 2026-10-17 (IST).
-- Slice 2: arrivals semantics — new `ReservationRepository.arrivingOn` (confirmed AND checkin_date = date); used by `/front-office/dashboard` arrivals + `/arrivals`; overlap query retained for GET /reservations (bookings-on-date). Tests-first: `FrontOfficeApiTest.arrivalsExcludeOverlappingNotArrivingToday` RED (old code listed the mid-stay booking as an arrival — assertion log kept) → GREEN, FrontOfficeApiTest 9/9.
-- Slice 3: dashboard load/401 UX — explicit `loading` state + "Loading dashboard…" panel (no blank screen); 401 via `isAuthError()` (message-regex removed); failure path shows the real error panel, never zero metrics.
-- Verification: `npm run build` green (slices 1+3); single-class backend test green (slice 2). Full suite on the branch runs at slice 7 before presentation.
-- Incident: first RED run hit an external-drive I/O error while compiling tests (target/ partially wiped, sources intact); re-ran after `sync` — success, no data loss. Drive reliability worth watching.
-- Next: slices 4 (search debounce + short-ref prefix + tests), 5 (server-side arrivals enrichment), 6 (View-all prefill), 7 (docs + full `mvn -B verify` + web build + present).
-
-## 2026-10-18T20:33:53+05:30 — Discovery: 3.8 slices 4–6 arrived from a later session; verified + records synced
-- Context: session resumed 2026-10-18. Working tree (branch `feature/dashboard-completeness`) contains uncommitted work made 2026-10-18 20:16–20:26 by a later session: PLAN-3.8 slices 4–6 — short-ref search (`GET /reservations/search?ref=`, sanitized prefix, portable `LOWER(CAST(id AS String)) LIKE`, junk → empty page), arrivals batch enrichment (`ArrivalDto` in the dashboard DTO, one guest query; per-row `enrichReservations` tail removed), search debounce (300 ms + seq stale guard + Enter-immediate + honest sign-out message), View-all prefill (`Jump.bookingStatus` → check desk filtered today list), recent-bookings reuse of list DTOs; erp-02/erp-03 docs + TRACEABILITY updated. That session did NOT update DEVLOG/STATE and did NOT commit; it restarted the backend (PID 17815, 20:24) with the new code.
-- Verification (this session): `mvn -B verify` → 58/0/0 BUILD SUCCESS; `npm run build` green (540 ms); live auth smoke — `GET /api/v1/reservations/search?ref=a611c4bc` → total 1 (the correct booking), `ref=!!` → total 0; `/front-office/dashboard` arrivals now enriched objects (empty today — consistent with the guestless baseline); `/v3/api-docs` lists `reservations/search`. Docs' "58/0/0 + live smoke" claims confirmed. No source edits made by me in this pass.
-- Records: DEVLOG + STATE synced to reality in this entry. PLAN-3.8 still untracked. Nothing committed.
-- Record hygiene found during the doc scan (to correct with new lines, not edits): CHANGELOG still reads "Phase 0 bootstrap in progress" (never advanced past bootstrap); RISKS statuses stale (R-002/R-003 answered, R-009 gate honored — all still "open"); erp-03 header still says departures/alerts endpoints missing (superseded by its own 3.6 update line).
-- Next: present 3.8 for commit (all 14 files + PLAN-3.8), then hygiene corrections, then next unit on approval.
-
-## 2026-10-18T21:17:43+05:30 — Brief item I closed: honest bell tooltip; stack restarted; still awaiting commit approval
-- Phase/unit: 3.8 slice 7 tail        Branch: feature/dashboard-completeness @ b2a70e8 (uncommitted)
-- What: bell tooltip claimed "no alerts API yet" — false since 3.6 (`/alerts` is live and rendered in the Alerts card). Fixed to the honest text: "no notification system yet; live alerts are on the dashboard" (brief item I: document, never fabricate). `dashboard.tsx` tooltip only.
-- Verification: `npm run build` green; dev server serves the new string. Full-stack restarted (this host kills background processes between turns): Postgres :5432, Keycloak :8081, backend :8080 PID 20321 (3.8 code), web :5173 PID 20612 — all verified UP.
-- Records: DEVLOG + STATE updated (this entry).
-- Next: present 3.8 for commit (15 files + PLAN-3.8), then hygiene corrections on approval, then next unit.
-
-## 2026-10-20T12:16:00+05:30 - Module 2 Restaurant ERP plan produced for approval (no code)
-- Phase/unit: Module 2 planning (pre-work; Phase 3 3.8 remains uncommitted)        Branch: feature/dashboard-completeness
-- What: user confirmed the hierarchy - Module 1 = resort ERP, Module 2 = Restaurant ERP, R-01 to R-08 = its submodules - and confirmed billzova-web is owned/internal with permission. Wrote `docs/03-phases/phase-4/MODULE-2-RESTAURANT-ERP-PLAN.md` (reuse assessment, scope, architecture, submodule plan, integration, roadmap, tests, risks, governance, approval) and generated the 30-page PDF via make-pdf. Recorded CR-001 (proposed), Q-012 (client confirmation), R-010 to R-012, README link and STATE.
-- Why: user asked "what should we build next" and then requested the best plan in a beautiful PDF for approval before any build. Module 2 implements SOW ERP-11 as a separately flaggable add-on; it does not rename CORE ERP-02 Booking or displace any CORE module.
-- Resources used: `D:\dev\billzova-web` (user-authorised internal technical reference, read-only; no LICENSE file found, so asset-level provenance checks remain required); `docs/01-requirements/source-extracts/sow-extract.md` (ERP-11 scope authority). Nothing from the resource folder was modified.
-- Files changed: `docs/03-phases/phase-4/MODULE-2-RESTAURANT-ERP-PLAN.md` (new), `.pdf` (new), `docs/01-requirements/CHANGE_REQUESTS.md`, `docs/logs/OPEN_QUESTIONS.md`, `docs/logs/RISKS.md`, `docs/logs/DEVLOG.md`, `docs/logs/STATE.md`, `docs/README.md`. No application code, schema, config, dependency or commit.
-- Commands that changed state: make-pdf generate (three passes; additions, re-pagination and the arithmetic fix). Verification only: pypdf page/text checks, PyMuPDF page renders, browse screenshots of the intermediate HTML.
-- Verification: PDF 30 pages - 4,514 words - 742 KB - title metadata correct - 1 mermaid state diagram rendered - visual spot-checks of cover, TOC, hierarchy, state machine, roadmap and approval pages. Existing 3.8 work untouched; `git status` still shows the 3.8 changes plus the new phase-4 docs.
-- Problems & fixes: first PDF ended with a near-empty page 30 (approval note only); added an "On approval" action list and document history, regenerated; final page is substantive. Arithmetic checks caught an MVP total that did not match the work-package table (24-34; corrected to 28-40 after including the minimum R-08 settings); corrected the plan, CR-001, Q-012 and STATE and regenerated the PDF. Intermediate HTML is generated by the tool and was removed after verification so only the source `.md` and `.pdf` are delivered.
-- User interaction: presented the plan/PDF for approval; asked for approval of the plan + CR-001 + Q-012. No commit requested or made.
-- Next: on approval - record CR-001/Q-012, schedule Gate 1 design package, keep Module 2 behind `module.restaurant.enabled=false`; on 3.8 approval - commit the existing 3.8 work separately. Module 2 build remains gated after Phase 3 exit.
-## 2026-10-20T13:45:07+05:30 — Cross-platform launcher `run-local.mjs` (Windows + Fedora)
-- Phase/unit: developer tooling (no backend/web behaviour change)        Branch: feature/cross-platform-run (from develop @ b2a70e8)
-- What: user asked for one run method that works on both Windows and Fedora without deleting the existing Fedora helpers. Added `ERP_DEV/run-local.mjs` (Node 22, stdlib only): `node run-local.mjs [postgres|h2] [--web] [--print]`.
-  - Sets DB + Keycloak issuer vars every run (lesson 2026-10-10 preserved), Postgres defaults identical to `run-local.sh`; `h2` = in-memory test mode.
-  - OS handling: Java via JAVA_HOME/PATH, Fedora fallback `~/.local/java/*/bin/java`; Maven via MAVEN_HOME/PATH, Fedora fallback `~/.local/maven/bin/mvn`, `mvn.cmd` on Windows; classpath cached in `os.tmpdir()/erp-local/cp.txt`; classpath separator from `path.delimiter` (`;`/`:`); Keycloak preflight warns with a per-OS start command (`docker compose` vs `sg docker`).
-- Verification (Fedora): `--print` resolves JDK-21 + Maven correctly for postgres/h2/--web; live parity run `node run-local.mjs postgres --web` (old PIDs 5736/5902 killed first) → backend :8080 PID 6540 started in 8.8 s, web :5173 PID 6570, health UP, Vite proxy 200. Windows path written to spec but not executed here (no Windows host) — flagged honestly.
-- Docs: DAY-ONE §5 now leads with the Node command (prereqs, flags, per-OS Docker line) and keeps `./run-local.sh` as the Fedora convenience; keycloak.md notes the Windows command without `sg docker`. `run-local.sh` unchanged.
-- Commit sequence: 3.8 committed first as `90ab9a6` on `feature/dashboard-completeness` (15 files, per user approval "both, in order"); this launcher commit is separate. Module 2 records (CR-001/Q-012/R-010…R-012/plan PDF) remain uncommitted pending user approval.
-- Next: present launcher commit; then pending user actions — 3.8 click-through, 3.8 merge, Module 2 plan approval/records, delete stale `fix/hide-table-scrollbar`.
-
-## 2026-10-20T13:50:54+05:30 — Unit 3.8 merged to develop; Module 2 records committed; suite green on merged result
-- Merge `f121009` (user-approved 2026-10-20): `feature/dashboard-completeness` → `develop` (`--no-ff`), bringing 3.8 (`90ab9a6`, 15 files) + Module 2 records (`915716f`, 5 docs).
-- Module 2 PDF: stays untracked per repo policy (`*.pdf` in ERP_DEV/.gitignore; no PDFs are tracked). The plan source `.md` is committed; regenerate the PDF locally via the make-pdf flow when needed.
-- Post-merge verification on develop: `mvn -B verify` BUILD SUCCESS — 58 tests, 0 failures, 0 errors (27.3 s); `npm run build` green (278 ms, 302 kB JS / 90.9 kB gzip).
-- Records synced: this branch now carries develop (merge commit on `feature/cross-platform-run`), DEVLOG merged chronologically, STATE rewritten. Feature branches left in place (`feature/dashboard-completeness`, `feature/cross-platform-run`); `fix/hide-table-scrollbar` deletion still pending explicit approval.
-- Next: ask approval to merge `feature/cross-platform-run` (launcher) → develop; 3.8 browser click-through still owed; Module 2 build stays gated after Phase 3 exit.
-
-## 2026-10-20T13:53:37+05:30 — Launcher merged to develop; develop tip verified (58/0/0)
-- Merge `bdd7252` (user-approved 2026-10-20): `feature/cross-platform-run` → `develop` (`--no-ff`) — launcher `run-local.mjs`, DAY-ONE §5, keycloak.md Windows line; the branch already carried the develop sync (`b552828`), so 3.8 + Module 2 records were reconciled before the merge.
-- Verification on the merged develop tip: `mvn -B verify` BUILD SUCCESS — 58 tests, 0 failures, 0 errors; `npm run build` green (322 ms).
-- These log records ride a follow-up docs commit on this branch (second, trivial merge) to keep develop's DEVLOG/STATE truthful without a direct-to-develop commit.
-- Remaining user actions: 3.8 browser click-through; Module 2 plan approval (CR-001/Q-012); delete `fix/hide-table-scrollbar`; pick the next unit.
-
-## 2026-10-20T18:19:14+05:30 — Unit 3.9 observability/ops console: audit + plan (no code)
-- Phase/unit: 3.9 planning (internal developer tooling; no SOW feature)        Branch: develop (planning only; no branch created)
-- What: user requested the Billzova production observability and secure remote operations platform, adapted to this repository under the ERP rules, with a plan and approval before implementation. Read-only audit confirmed: single Spring Boot 3.2.5 modular monolith (`services/erp-app`), Keycloak SSO + deny-by-default JWT roles, append-only `audit_event` with no read API, generic `app_config`, two `@Scheduled` jobs with no run history, plain-text logs with no request/trace IDs, no Actuator/Micrometer/OTel, React 19 SPA with no Sentry/router, Compose only for Postgres/Redis/Kafka/Keycloak, no observability stack, no Dockerfile/K8s, and no CI/CD deployment pipeline. Billzova exists only as the separate `billzova-web` frontend reference (Q-013); playbook §9 names Jaeger/ELK while the instruction names Tempo/Loki (Q-014).
-- Plan: `docs/03-phases/phase-3/PLAN-3.9-observability-ops-console.md` — full module A–L gap analysis, adapted architecture, roles/permissions, audit model, migrations V9+, API phases, frontend ops shell, telemetry pipeline, dependencies, risks, and phase acceptance. Approval covers Phase 1 only (foundation, access security, read-only status/flags/audit skeleton).
-- Files changed: plan (new), `docs/logs/OPEN_QUESTIONS.md` (Q-013/Q-014 appended), this DEVLOG entry, STATE. No application code, dependency, schema, branch or commit.
-- Next: present audit + plan; wait for explicit approval (target repo, observability stack, dependencies, Phase 1).
-
-## 2026-10-20T18:24:00+05:30 — Unit 3.9 Phase 1 approved; implementation started
-- Phase/unit: 3.9 observability/ops console — Phase 1 foundation        Branch: feature/3.9-observability-ops-console (from develop @ `bdd7252`)
-- Approval: user approved the Phase 1 plan and answered Q-013/Q-014 via the approval prompt — target = this ERP repository; baseline = OpenTelemetry + Prometheus + Grafana + Tempo + Loki; ops roles/permissions + listed dependencies approved; **Phase 1 only** (later phases need separate gates).
-- Scope: V9 ops permissions/flags; DB-backed permission resolver; read-only ops status/integrations/flags/audit API + bounded audit; request-ID filter and JSON/redacted logs; Actuator + Micrometer/OTel config; ops UI shell (Overview/Flags/Audit); tests; run/ops docs.
-- Guardrails: no production credentials/K8s/deployment pipeline exist, so those remain documented gaps; no version upgrades; no commit until user approval.
-- Next: backend foundation (pom, V9, security), tests, then UI/docs, full verify.
-
-## 2026-10-20T18:53:49+05:30 — Unit 3.9 Phase 1 implemented and verified (uncommitted)
-- Phase/unit: 3.9 observability/ops console — Phase 1        Branch: feature/3.9-observability-ops-console (base develop @ `a09d7c5` = bdd7252 + records commits); no commit on the branch yet.
-- Backend: added Actuator/Prometheus/Micrometer-OTel/OTLP + `logstash-logback-encoder` deps; `V9__ops_permissions_and_flags.sql` (5 `OPS_*` roles, read permissions, three module flags off); DB-backed `@opsAuth` resolver; read-only `/api/v1/ops/{status,integrations,flags,audit}` with bounded/redacted audit reads and 60s dedupe; request-ID filter; JSON console/file logging with redaction; loopback management port `9091` exposing only `health,info`. Request IDs are validated `[A-Za-z0-9._:-]{8,64}`, echoed in headers and error bodies.
-- Management fix: health on `:9091` initially returned 401 because the API security chain covered actuator. Added `ManagementSecurityConfig` (`@Order(HIGHEST_PRECEDENCE)`, `EndpointRequest.toAnyEndpoint()`, permitAll, only when management port differs); `ManagementHealthTest` locks it in. Main `:8080/actuator/health` remains 401 and `/api/v1/ops/status` remains 401 anonymously.
-- Frontend: typed ops client (`X-Request-Id`, `HttpError.requestId`), OpsView with Overview (incl. integration health)/Flags/Audit and honest Phase 2/4 tabs, sidebar gating for `OPS_*`/`SUPERADMIN`, optional Sentry init (11.x `dataCollection`, no DSN = no-op), Vitest/RTL setup.
-- Keycloak: added `OPS_VIEWER`, `OPS_DEVELOPER`, `OPS_OPERATOR`, `OPS_ADMIN`, `OPS_APPROVER` to realm JSON (12 roles total); existing realms need clean-slate recreate/manual roles. No demo ops user.
-- Verification: `mvn -B -f services/erp-app/pom.xml verify` → BUILD SUCCESS, **71 tests, 0 failures/errors**; `npm --prefix web test` → 4/4; `npm --prefix web run lint` → exit 0 (pre-existing warnings only); `npm --prefix web run build` → green, 313.26 kB JS / 93.96 kB gzip. Runtime smoke on local Postgres: V9 applied, management health `UP`, main health/ops 401 anonymously, JSON log written, zero span-export errors with tracing off. Logs ignored via `/logs/` and `/services/erp-app/logs/`.
-- Fix during verification: Vitest 5 + jsdom 30 needed Node ≥22.22.2 (host 22.12.0) and failed in undici/zstd; pinned `jsdom@^27.4.0` (Node ^22.12) — no app-code change.
-- Docs: `02-architecture/observability.md`, `04-modules/ops-console.md`, `05-operations/ops-console.md`; updated `docs/README.md`, `02-architecture/security.md`, `02-architecture/api.md`, `05-operations/keycloak.md`, `00-onboarding/DAY-ONE.md`.
-- Honest gaps: no Prometheus/Loki/Tempo/Grafana stack, production URLs/credentials, Sentry DSN, Dockerfile/K8s/CI-CD pipeline, audit retention job; no browser/Windows click-through. Later phases remain gated.
-- Next: present Phase 1 for commit approval; do not commit/merge until user approves.
-
-## 2026-10-20T19:09:38+05:30 — Phase 1 live test run (user demo, before commit)
-- User asked for a live test before commit. Started Keycloak (existing `infra-keycloak-1` container/realm), then `node run-local.mjs postgres --web`: backend :8080, management :9091, Vite web :5173.
-- Live checks with a real Keycloak token (`admin-staff`, SUPERADMIN): `/api/v1/ops/status` 200 (`state=OK`, DB UP, telemetry `NOT_CONFIGURED`), `/ops/flags` 200, `/ops/audit` 200 and audit rows written; anonymous 401; `reception-staff` 403; management health 200 `{"status":"UP"}`; Vite `/api` proxy 200. Existing realm has no `OPS_*` roles (not re-imported), so demo uses `admin-staff`/SUPERADMIN.
-- Fix found during demo: ops audit `actor` showed the Keycloak UUID because `Authentication.getName()` returns `sub`. `OpsAuditService` now prefers `preferred_username` for JWT principals, falling back to `sub` then `getName()`; recompiled and restarted. New audit rows show `admin-staff`; older rows keep the UUID (append-only, not rewritten).
-- Servers left running for the user at `http://localhost:5173` (login `admin-staff` / `change-me-dev-only`). No commit.
-- Next: user live review; then commit approval. Stop servers on request.
-
-## 2026-10-20T19:30:10+05:30 — User accepted live demo; standing ops-integration rule documented; Phase 1 commit approved
-- User live review: "ok good … we will develop this along the project and so when you implement anything remember to connect it to this and make a document of this … and commit it."
-- Documented a standing rule: every future module/endpoint/job/integration/UI feature must connect to the observability/ops baseline in the same work unit (logs + request ID, audit, health/status, flags, permissions, tests, docs; honest `NOT_CONFIGURED` only). Checklist: `02-architecture/observability.md` → "Standing rule — connect every new feature to the ops baseline"; cross-linked from `04-modules/ops-console.md`, `docs/README.md`; recorded as D-009.
-- Commit approval: user explicitly approved committing the Phase 1 work and this document update. Pre-commit verification: backend `71/71` tests, BUILD SUCCESS; `git diff --check` clean.
-- Next: commit (feature + docs), record the hash, leave servers running for continued review; no push/merge.
-
-## 2026-10-20T19:31:49+05:30 — Phase 1 committed as `45c8e88`
-- Commit `45c8e88` on `feature/3.9-observability-ops-console`: `feat(ops): add Phase 1 observability and secure ops console` — 57 files, 4,093 insertions / 35 deletions (code, tests, V9, Keycloak roles, env templates, docs, standing rule).
-- Pre-commit verification: backend 71/71 tests, BUILD SUCCESS; frontend 4/4, lint/build green (recorded above); live demo with real Keycloak token: status/flags/audit 200, anon 401, reception 403, management health UP.
-- No push/merge. Servers remain running for the user (`:8080`, `:9091`, `:5173`, Keycloak `:8081`). Root `.vscode/` remains untracked and out of scope.
-- Next: keep the standing integration rule in every future work unit; await the next unit/Phase 2 planning decision. This record will be committed as a docs follow-up.
-
-## 2026-10-21T14:47:16+05:30 — Unit 3.10 reception demo fixture + live E2E run
-- User asked to test with data input, verify storage/dashboard processing for reception, prepare a testing plan and add demo data. Plan drafted at `03-phases/phase-3/PLAN-3.10-reception-e2e-demo-data.md` and approved; user chose to preserve existing `ashish`, two expired reservations and `DEL-101`.
-- Backed up local Postgres to `/tmp/opencode/resort_erp_pre_reception_demo_20261021.dump`. Added local-only `scripts/dev/reception-demo.sh` + load/reset/verify SQL (fixed UUIDs; `ALLOW_DEMO_SEED=1`; loopback DB guard; no Flyway/auto-seed). Decision D-010 records the narrow exception to the 2026-10-10 no-guest-seed rule.
-- Reproducibility fix before commit: `.gitignore` now allows `scripts/dev/*.sql` (all other SQL stays ignored), so the approved fixture SQL is committed with its wrapper; no secrets or non-fixture data are involved.
-- Loaded fixture: 6 `Demo` guests, 6 reservations (3 in-house, 1 arrival, 1 hold, 1 future confirmed), 3 stays/folios, 4 captured payments, 3 dirty rooms/open tasks. Baseline API: 1 arrival, 2 departures (Ready + Pending Payment), 3 in-house, 3 alerts.
-- Executed live API E2E with real Keycloak tokens: **17/17 PASS** — search/create duplicate guard, booking idempotency replay, confirm-without-advance 422, sandbox capture, check-in with folio linkage, transfer SUI-201→SUI-202, checkout guard/pay/checkout, settled checkout, walk-in, ref search, hsk board/admin transitions, reception 403s, alerts, ops audit. Evidence: `03-phases/phase-3/RECEPTION-E2E-TEST-REPORT.md`.
-- Storage proof: `reservation`/`reservation_hold`/`stay`/`room`/`folio`/`folio_entry`/`payment`/`housekeeping_task`/`audit_event` all reflected each action; post-run 10 guests/10 res/5 stays/5 folios/11 entries/8 payments/7 tasks/67 audit. Test rows removed, fixture reset+reloaded; final 7 guests/8 res/3 stays/3 folios/4 payments/3 tasks.
-- Findings: P1 business audit actor still Keycloak UUID (3.9 fixed ops reads only); P2 refund card visible to reception but 403, guest stay history empty, no hsk transition UI; P3 hard-coded walk-in UI, `DEL-101` occupied without stay. No source code changed. Commit approval pending.
-
-## 2026-10-21T16:20:00+05:30 — Reception dashboard column rebalance + Recent Bookings width correction (uncommitted)
-- Phase/unit: reception dashboard UI correction (no backend/SOW change)        Branch: feature/3.9-observability-ops-console
-- What: the dashboard had a large empty band below the two columns and Recent Bookings sat above the right rail content. Regrouped into left = Today's Arrivals → Today's Departures → Recent Bookings → In-House Guests; right = Room Status → Alerts → Manage Rooms promo. Removed the now-unused `.dash-grid--bottom`; responsive `display:contents` ordering keeps the same sequence at `≤1350px`.
-- Fix found during final inspection: the `checked-in` status badge wrapped at the hyphen because its 78px content did not fit a 77.6px cell. Recent columns changed from `18/13/14.5/14.5/13/27%` to `17.5/13/14.25/14.25/14/27%`. At 1366: 99px status cell, 83px badge, height 20px, one client rect; rows 59–60px.
-- Verification: 1366 dashboard page height 1345px (was 1598px), table 710px, no horizontal overflow; 1440/1024/390 no page/table horizontal overflow (earlier pass). Frontend 4/4, lint pre-existing warnings only, build green before 3.11. Files: `web/src/dashboard.tsx`, `web/src/index.css`; no API call or model changed. User reviewed the result and moved on to the Guests redesign; no commit approved.
-- Next: include this correction in the pending commit review; do not commit separately without approval.
-
-## 2026-10-21T16:38:00+05:30 — Unit 3.11 Guests reception workspace implemented and verified (uncommitted)
-- Phase/unit: 3.11 Guests redesigned reception workspace (ERP-04 + membership actions from ERP-05)        Branch: feature/3.9-observability-ops-console
-- Approval/plan: user supplied the redesign brief and approved “Approve — implement now”; plan at `03-phases/phase-3/PLAN-3.11-guests-reception-workspace.md`. Scope kept UI-only: no backend, schema, auth, API contract, dependency or router changes.
-- What: new `web/src/guests.tsx` — search-first master/detail screen (300ms debounce, Enter, clear, 20-row pages, stale-response guard); selectable rows with name/phone/status/member chip; profile with real identity/preferences and membership; enrolment via `selected.id`; retained redemption behind a disclosure; role messaging; Add New Guest modal with validation, duplicate `GUEST_EXISTS` recovery, created-guest auto-open; global-search single-match auto-open; honest preview/no-auth/empty/error states. `App.tsx` removed the old three-card Guests view and `MembersView`; `api.ts` passes `page/size` to `searchGuests`; Guests CSS appended to `index.css`.
-- Data limits kept honest: guest DTO has no email/address; `GET /guests/{id}/stays` still returns an empty hook; reservations have no guest filter. No history or invented figures were added.
-- Verification: `npm test -- --run` → **12/12** (8 Guests tests incl. create/global jump, 4 existing); `npm run lint` → exit 0 with pre-existing warnings only; `npm run build` → 308 modules, green (325.38kB JS / 23.26kB CSS); `git diff --check` clean.
-- Live (real Keycloak/Postgres): initial 7 guest rows; selected `Demo Diya Shah`; duplicate phone `+91-9000000102` showed the existing-guest recovery and opened the profile; enrolment returned Silver `GHM-2026-A9C790` and refreshed the profile; successful create POST 201 for `QA Workspace Guest` (+91-9000000199) auto-opened the profile; topbar “Demo Diya Shah” jump auto-opened one match. No browser console errors. Screenshots at 1366/1024/390; 390 modal is a bottom sheet (8px inset), no horizontal overflow at any tested size; Escape closes the modal.
-- Cleanup: Demo Diya Shah’s test membership was removed by `reception-demo.sh load` (fixture verification passed: 6 Demo guests, 6 reservations, 3 open tasks). The locally created `QA Workspace Guest` row remains from the successful-create test (no membership/reservations); deletion awaits user approval.
-- Docs: ERP-03/04/05 change histories, this log, STATE, and the 3.11 plan. On 2026-10-21 the user approved a three-commit sequence (3.10 fixture, dashboard correction, 3.11 Guests); this is the 3.11 commit. No merge or push. Next: user click-through; the local `QA Workspace Guest` stays until the user asks for removal.
-
-## 2026-10-21T16:50:21+05:30 — Three approved commits created; GitHub remote added
-- User approved the recommended three-commit sequence (3.10 fixture/docs, dashboard correction, 3.11 Guests) and separately instructed: “https://github.com/AshishBevinakatti/QCl_repo.git add this to this repo now”. Added it as `origin` (fetch + push); no push, fetch, merge or tag performed.
-- Commits on `feature/3.9-observability-ops-console`: `9285648` `test(erp-03): add local reception demo fixture and E2E evidence`; `6555387` `fix(erp-03): rebalance reception dashboard layout`; `f8f719c` `feat(erp-04): add search-first guests reception workspace`.
-- Fixture fix included in `9285648`: `.gitignore` now permits `scripts/dev/*.sql`, so the three fixture SQL files are tracked with the wrapper; all other SQL stays ignored. No secrets or non-fixture data added.
-- Pre-commit verification: web tests 12/12, lint exit 0 with pre-existing warnings, build 308 modules green, `git diff --check` clean. Demo fixture reset after the enrolment test; `QA Workspace Guest` kept because the user said they will say when to remove it.
-- No merge/push. This log/STATE record is the approved docs follow-up commit; root `.vscode/` remains untracked and excluded.
-- Next: user click-through; decide QA-guest removal; push only on explicit instruction naming the remote/branch.
-
-## 2026-10-21T18:07:45+05:30 — Unit 3.12 UI/UX design system implemented and verified (uncommitted)
-- Phase/unit: 3.12 Billzova-aligned UI/UX design system        Branch: `feature/3.12-ui-design-system` (stacked on `feature/3.9-observability-ops-console`; 3.11 committed but unmerged)
-- Approval/plan: user approved `03-phases/phase-3/PLAN-3.12-ui-design-system.md` on 2026-10-21 with dark-green collapsible sidebar, Inter + Lucide (no Tailwind), retained/restyled dashboard photos, all screens and light/dark themes. ADR: `02-architecture/adr/ADR-002-ui-design-system.md`. Reference: user-supplied `/run/media/ash_63/DATA/dev/billzova-web` (visual structure only; no Billzova content/logo/purple palette).
-- Foundation: added `@fontsource-variable/inter` + `lucide-react`; replaced the Material Symbols CDN with a local Lucide mapping behind `Icon`; added `theme.ts` and a pre-render `gh-theme` boot script; split CSS into `tokens/base/layout/components/screens` imported by `index.css`; added `PageHeader`, `EmptyState`, Kpi tone API and tokenised `Donut`.
-- Shell/screens: dark-green 264/76px collapsible sidebar with persistent state, mobile drawer (Escape, backdrop, focus to close and back to trigger), static "Resort operations" header, Ctrl/Cmd+K search, API pill, theme toggle and notification placeholder. All views now have consistent `PageHeader`s; dashboard, Reservations, Guests, Rooms, Front office, Billing, Housekeeping, Ops and the three honest placeholders use shared cards, tables, forms, badges, alerts, empty states and responsive grids. Guest modal becomes a 560px bottom sheet. Hardcoded JSX presentation colours replaced with chart/status tokens.
-- Functionality safety: no backend, schema, API, auth, route, handler, debounce/stale-guard or preview-honesty changes. Fix found during live verification: switching Preview → Live kept the previous view state, so signed-out Live could show stale demo counts; `page-stack` is now keyed by mode, so views remount and the existing login hints appear. This restores the 3.6/3.8 acceptance criteria.
-- Verification: `npm run build` green (2,227 modules; 345.89kB JS / 104.42kB gzip; CSS 38.87kB / 8.12kB); `npm test` **18/18** (12 existing + 3 theme + 3 design primitives); `npm run lint` exit 0 with pre-existing warnings only; `git diff --check` pending. Browser/CDP verification in light and dark at 1440/1366/1024/768/390: every nav view, drawer open/close/focus, sidebar collapse + reload persistence, theme persistence, guest modal, no horizontal overflow (`scrollWidth <= clientWidth`), no uncaught console errors. Live signed-out correctly shows login hints; API 401s are expected.
-- Docs: new `02-architecture/ui-design-system.md`; README index; ERP-03/04/05 change histories; `screens.md` pointer; RESOURCES_LOG + DECISIONS D-011 from the plan slice. No screenshots committed (temporary evidence in `/tmp/opencode`).
-- Limits: no full drawer focus trap; theme follows stored preference (no OS/cross-tab sync); external Keycloak pages unstyled; backend guest-history/email gaps remain. QA Workspace Guest remains until the user asks for removal.
-- Next: user click-through in both themes; commit approval. No merge/push; 3.11 remains unmerged beneath this branch.
-
-## 2026-10-21T18:18:49+05:30 — 3.12 verification close-out (correction to 18:07 entry)
-- `git diff --check` re-run after the final docs edits: clean. Build CSS is 38.88kB (the earlier 38.87kB was a typo).
-- `STATE.md` overwritten with the final 3.12 state; browser localStorage reset to light theme with the sidebar expanded for handoff. No source changes after the green build/test/lint run.
-- Still pending: user click-through in both themes and explicit commit approval. No commit/merge/push performed.
-
-## 2026-10-21T18:24:05+05:30 — Unit 3.12 committed
-- Commit: `fb286e9` — `feat(ui): apply Golden Hills design system` on `feature/3.12-ui-design-system` (30 files, +3816/−713).
-- Approved by the user in the commit-approval question on 2026-10-21. Staged explicit 3.12 code/test/doc paths only; root `.vscode/` remains untracked.
-- No push, merge or tag. 3.11 remains unmerged beneath this branch; merge approval is separate.
-
-## 2026-10-22T19:15:47+05:30 — Unit 3.13 Guest 360 profile implemented and verified (uncommitted)
-- Phase/unit: 3.13 Guest 360 profile (ERP-04 + read-only reuse of ERP-02/03/05/07)        Branch: `feature/3.13-guest-360-profile` (stacked on `feature/3.12-ui-design-system` at `59c2f35`; 3.11/3.12 remain unmerged). Plan: `03-phases/phase-3/PLAN-3.13-guest-360-profile.md`.
-- Approval/scope: user supplied the Guest 360 implementation brief on 2026-10-22 and instructed implementation after inspection. No new booking/payment/refund/check-in logic; profile actions deep-link to existing Front Office/Billing workflows. No new table for UI convenience.
-- Backend schema: `V10__guest_email.sql` adds nullable `guest.email VARCHAR(320)` and a non-unique `(property_id, email)` lookup index. Forward-only, no backfill, no destructive change, no reset. Flyway validated/applied version 10 on H2 and the existing Postgres database; all 8 live guest rows were preserved.
-- Backend API/service: bounded `GET /api/v1/guests/{id}/profile` via `GuestProfileDto`/`GuestProfileService`; latest-20 history; active stay and next `hold`/`confirmed` reservation; batched category/room reads; membership + points; canonical `FolioService.outstanding`; invoice; bounded pending/failed payment indicators; derived alerts/state; parsed/labelled preferences. `Guest` email support + validation; `/guests/{id}/stays` left as a compatibility stub. Added minimal getters (`Stay.checkinAt/checkoutAt`, `Member.validFrom`, `Invoice.issuedAt`, `Folio.createdAt`) and bounded repository queries.
-- Security: guest create/update restricted server-side to `RECEPTION`/`MANAGER`/`SUPERADMIN` (membership merge remains manager-only); all authenticated reads follow the existing guest-read scope. Email edit/clear is audited. `null` PATCH means unchanged; empty string clears the optional field.
-- Frontend: `web/src/guests.tsx` now renders identity header, operational summary and four tabs (Overview, Reservations & stays, Billing & payments, Requests & notes); optional email in create/edit; membership enrol/redeem retained; role-gated edit/create; profile load/refresh/error/empty states; alerts; honest unsupported notes/service-request/verification states; Front Office/Billing navigation. `App.tsx` wires the existing workflows. 3.12 tokens, Inter/Lucide, rupee/date formatting and responsive rules preserved; no horizontal page scroll.
-- Verification: backend full suite **78/78 tests, 0 failures/errors, 17 classes** (`GuestApiTest` 11 + new `GuestProfileApiTest` 5); `npm test` **26/26** (16 Guests tests + 10 existing); `npm run build` green (2,227 modules; 374.31 kB JS / 110.55 kB gzip; 50.90 kB CSS / 9.74 kB gzip); `npm run lint` exit 0 with only pre-existing warnings in unrelated shell files; `git diff --check` clean.
-- Live verification (real Keycloak/Postgres, reception token unless noted): in-house `Demo Aarav Mehta` (room DEL-106/Deluxe, canonical charges 5,000 / payments 1,500 / outstanding 3,500, high departure-balance alert), upcoming `Demo Ananya Verma` (advance due/paid 9,000), member/no-active-stay `Demo Rohan Iyer` (Silver, 0 points), departed `Demo Meera Nair` and a no-booking guest. Billing tab/folio link/history/tabs rendered. Email set to `meera.qa@example.com` then cleared through the UI; final API value `null`; audit rows recorded. Membership token: profile 200, guest PATCH/POST 403. Unknown profile 404. The profile endpoint is present in runtime OpenAPI (49 paths).
-- Responsive/browser: CDP/Brave at 1440/1366/1024/768/390; `documentElement.scrollWidth <= innerWidth` at every checked size; no uncaught console errors; screenshots in `/tmp/opencode/guest-*.png` (temporary evidence, not committed).
-- Data state/cleanup: 8 guests remain; no reset. `QA Workspace Guest` remains from the approved 3.11 create test until the user asks for removal. `Demo Meera Nair` email was restored to `null`; no memberships/reservations were fabricated. Three guest audit rows for the test edit/no-op are append-only.
-- Docs: 3.13 plan, ERP-04 module doc, api/data-model/screens/security, traceability, D-012 and Q-015; this DEVLOG + STATE. `RESOURCES_LOG` unchanged because no new resource-folder input was read for this unit.
-- Open gaps: no address/DOB/nationality/ID-number/verification model; no notes/service-request persistence or UI; no communication-history reader; no merge UI; published OpenAPI snapshot still 14 paths; all profile reads remain authenticated-staff scope (Q-015). No screenshots committed.
-- Next: present the unit for review and ask explicit commit approval. No commit/merge/push has been performed.
-
-## 2026-10-28T10:50:51+05:30 — Session: run the local stack (user request)
-- Phase/unit: Phase 3 Core Development, branch `feature/3.13-guest-360-profile` (uncommitted 3.13 work left untouched; no source changes made). A stack started ~10:39 by an earlier orchestration was already partly up; it was restarted cleanly.
-- What: user asked "run the server". Verified/restarted backend + web and resolved a `:5173` port collision.
-- Problem found: `127.0.0.1:5173` was held by an unrelated `billzova-web` dev server (pid 9451, started 10:44), while the ERP Vite bound only `[::1]:5173` — so `http://localhost:5173` could open the wrong app, and Keycloak accepts only `http://localhost:5173/*`. User approved stopping billzova (2026-10-28, this session).
-- Commands that changed state: `kill 9451 7558 9553` (billzova Vite + two ERP Vite instances; the 10:39 backend was a child of that orchestrator and shut down with it); `setsid nohup ./run-local.sh postgres >> /tmp/opencode/app-local.log 2>&1 &`; `setsid nohup npm run dev -- --host :: --port 5173 --strictPort > /tmp/opencode/erp-web.log 2>&1 &`. Keycloak container `infra-keycloak-1` was already up since 10:39 — no docker command needed.
-- Verification: backend `GET :8080/api/v1/health` → `{"service":"erp-app","status":"UP"}`; DB `jdbc:postgresql://localhost:5432/resort_erp` (PostgreSQL 18.6), Flyway version 10 "Schema public is up to date"; Vite serves title "Golden Hills Resort ERP" on both `127.0.0.1:5173` and `[::1]:5173`; proxied `http://localhost:5173/api/v1/health` → UP; Keycloak discovery → 200. PIDs: backend 10323, Vite 10265, Keycloak 6713.
-- Note: `billzova-web` (separate project at `/run/media/ash_63/DATA/dev/billzova-web`) is stopped; restart it in its own directory when needed. No repo code/test/doc changes besides this DEVLOG entry and the STATE servers line. 3.13 remains uncommitted — no commit/merge/push.
-
-## 2026-10-29T18:54:33+05:30 — Discovery-call gap-analysis report (PDF + Markdown) produced
-- Phase/unit: Phase 1 re-baseline input / documentation        Branch: `feature/3.13-guest-360-profile` (3.13 code/tests remain uncommitted; no source changes made for this report).
-- Approval/scope: user asked for "a clean simple to understand pdf report" of the consolidated discovery-call gap analysis. Work was limited to reading resource-folder inputs, writing derived docs/extracts and generating a PDF; no client facts were invented, no commit/merge/push.
-- Resources used (all read-only under `/run/media/ash_63/DATA/ERP_Resouce`): `Golden_Hills_Discovery_Call_Summary_2026-10-28.md` (sha256 `733068bc…66b49a9`), `WhatsApp Audio 2026-10-28 at 6.17.06 PM - transcript.txt` (`34c653a0…e864481`), `transcript_segments.jsonl` (`9472ec4e…28069efe`), `transcribe_progress.log` (`e2b979cd…e35652d`), `WhatsApp Audio 2026-10-28 at 6.17.06 PM.mp4` (`cfee57ed…2e57068`), and the newly found derived `Resort_ERP_Software_Requirements_Specification.pdf` (`a5600e41…1015d3`). The SOW, landing checklist and current build docs were reused from the earlier baseline.
-- What: produced a 9-page A4 PDF, `docs/01-requirements/reports/Golden_Hills_ERP_Gap_Analysis_2026-10-29.pdf` (91,359 bytes), plus an editable Markdown companion (300 lines). Sections: executive summary; client facts with confidence; SOW coverage; six gaps; P0 questions; P1/P2/P3 inputs; conflicts; impact/path; internal decisions; document control and sources. Added a topic-indexed `docs/01-requirements/source-extracts/discovery-call-extract.md` (158 lines) with timestamps, confidence and a 16-row contradiction register.
-- SRS handling: the 13-page SRS was not part of the earlier analysis. It claims 100% grounding in the same audio and proposes GST 12/5/0, cancellation >48h/24–48h/<24h, January go-live, Ozone RFID and no Tally/Zoho. It is not client-signed and conflicts with the transcript on go-live and other specifics. The report labels it a draft interpretation, adds it to the sources/conflicts tables, and logs Q-016 for the user/client to confirm its status. It was not used to upgrade any low-confidence transcript fact.
-- Verification: `pdfinfo` → 9 pages, A4 595.276 × 841.89 pts, 91,351 bytes; all 9 pages rendered at 95 dpi with `pdftoppm` and visually inspected. Fixed three layout defects found during review (orphaned table header, a one-bullet orphan page, a closing-quote orphan page) and corrected two factual slips (module count now 5 core + ERP-08 partial + 8 unbuilt; “promotion courts” normalised to “promotion codes”). `pdftotext` spot-checks confirm the corrected text; visible text uses embedded Liberation Sans (ReportLab also leaves an unused Helvetica resource). No tables split without headers; no overflow or orphan headings remain.
-- Files changed: `docs/01-requirements/reports/Golden_Hills_ERP_Gap_Analysis_2026-10-29.pdf`, `docs/01-requirements/reports/Golden_Hills_ERP_Gap_Analysis_2026-10-29.md`, `docs/01-requirements/source-extracts/discovery-call-extract.md`, `docs/README.md` (reports index row), `docs/logs/RESOURCES_LOG.md` (6 new rows), `docs/logs/OPEN_QUESTIONS.md` (Q-016), `docs/logs/DEVLOG.md`, `docs/logs/STATE.md`. Generator kept outside the repo at `/tmp/opencode/make_gap_report.py` (temporary; not committed).
-- Report hashes: PDF `0383ffe8e198573bf2a5d4bd00bc9d395dc9f981df8bf5b689b7aa844bacfad0`; Markdown `18cab52c86fc658b0e14f9eeacdc355de2a341ce230ed1f9194bbcbbd0748c55`; extract `3a44d006665cba998d11bf790cdbe2f1f6d0381fe1718c56bcc16b95e8853835`.
-- Commands that changed state: `python3 /tmp/opencode/make_gap_report.py` (wrote the PDF), `pdftoppm`/`pdftotext` (read-only render/text checks). No migrations, installs, resets or git operations.
-- Problems & fixes: the first render was 12 pages with an orphaned confidence-table header on p2, a one-bullet p6 and a quote-only p12. Reworked section flow, tightened the P0/P1 tables, moved the summary callout before the confidence table, and added continuation labels; final is 9 pages. The new SRS was discovered during the final resource check, so the report was revised to flag it rather than silently ignore it.
-- User interaction: user requested the PDF; no commit approval was requested or given. 3.13 remains uncommitted.
-- Next: present the PDF and ask whether to (a) commit the report/docs, (b) produce a client-facing P0 questionnaire, and (c) proceed with the v2 re-baseline docs; 3.13 commit approval remains a separate decision.
-
-## 2026-11-03T11:07:40+05:30 — Session: local stack started again (user request)
-- Phase/unit: Phase 3 Core Development, branch `feature/3.13-guest-360-profile` (3.13 code/tests/docs remain uncommitted; no source changes made).
-- What: user asked "run the server". Found the whole stack down (backend :8080, web :5173, Keycloak :8081 unreachable); native PostgreSQL was already up and `infra-keycloak-1` was stopped (`Exited (143)`, 6 days ago).
-- Commands that changed state: `docker start infra-keycloak-1`; `setsid nohup ./run-local.sh postgres >> /tmp/opencode/app-local.log 2>&1 &` from `ERP_DEV/`; `setsid nohup npm run dev -- --host :: --port 5173 --strictPort > /tmp/opencode/erp-web.log 2>&1 &` from `web/`. No migrations, installs, resets or git operations.
-- Verification: backend `GET :8080/api/v1/health` → `{"status":"UP","service":"erp-app"}` (PID 24715); management `:9091/actuator/health` → `{"status":"UP"}`; Vite serves :5173 → 200; Vite proxy `/api/v1/health` → UP; Keycloak realm discovery → 200. Flyway version 10 validated, schema up to date, PostgreSQL 18.6.
-- Note: no commit/merge/push. 3.13 commit approval and the gap-report commits remain pending decisions.
-
-## 2026-11-12T14:30:21+05:30 — Commit approval for 3.13 and Blueprint consultation
-- Phase/unit: Phase 3 Core Development, branch `feature/3.13-guest-360-profile`.
-- What: user approved committing work unit 3.13 ("yes commit it"). Ran full verification: backend `GuestApiTest` + `GuestProfileApiTest` (16/16 pass, 0 failures/errors, build SUCCESS); web test suite (`vitest run`, 26/26 tests pass in 4 test files); `git diff --check` clean.
-- Blueprint review: per user instruction ("read the two md file also in /home/ash_63/Downloads"), consulted `QuantumCLK_Resort_ERP_Architecture_and_Phase_1_Blueprint.md` (and identical copy with `(1)`), sha256 `314f7c8e93a25b64a123ae399f1a49420e90f732ab9c51ea87bdf053ca02c6ca`. Document specifies single-resort deployment, domain-driven microservices, guest portal/auth via Keycloak, inquiry intake, lead management with atomic claim, 5-minute SLA escalation, Sales Executive role inside the existing ERP, and notification adapters. Logged in `RESOURCES_LOG.md`.
-- Next architecture answers confirmed by user: true microservice architecture, mock notification adapters for dev before provider onboarding, landing page guest auth + inquiry form, same ERP webapp for Sales Executive.
-- Next: execute atomic commits for 3.13 and documentation, then prepare work unit branch for the lead microservice.
-
-## 2026-11-12T15:31:37+05:30 — Unit 3.14: Lead Management & Guest Portal Microservice (End-to-End Implementation)
-- Phase/unit: Phase 3 Core Development, Unit 3.14 Lead Management & Guest Portal Microservice.
-- Branch: `feature/3.14-lead-portal-microservice` (branched from `feature/3.13-guest-360-profile`).
-- What: implemented the entire visitor inquiry to sales conversion pipeline:
-  1. `services/lead-service`: Spring Boot 3.2.5 microservice on port 8082, dedicated `leads_mgmt` PostgreSQL schema, Flyway `V1__init_lead_schema.sql` (portal_guest, lead, lead_activity).
-  2. Public Portal Auth: `PortalAuthController` (`/api/v1/portal/auth/register`, `/login`) with BCrypt passwords and Nimbus JWT tokens.
-  3. Booking Inquiries: `PortalInquiryController` (`/api/v1/portal/inquiries`) generating references (e.g. `GHR-XXXXXX`).
-  4. Communication Engine: instant Mock WhatsApp alert on inquiry submission; durable `SlaEscalationScheduler` (checks every 10s) placing an automated Mock Voice Telephony call when a lead remains unattended > 5 minutes.
-  5. Landing Page (`Design-1`): Next.js components `portal-client.ts`, `portal-forms.tsx`, and `plan-ahead/page.tsx` with luxury Bodoni Moda / Manrope styling.
-  6. ERP Web Workspace: `web/src/leads.tsx` (KPI summary cards, SLA timers, atomic claim, call note logging, convert to official ERP guest via `createGuest` + `convertLeadToGuest`), navigation tab in `dashboard.tsx`, Vite proxy in `vite.config.ts`.
-- Verification:
-  - Backend `lead-service`: 5/5 tests pass (`PortalAuthTest` 3, `LeadWorkflowTest` 1, `SlaVoiceEscalationTest` 1); entire Maven reactor `mvn test-compile` SUCCESS.
-  - Landing page `Design-1`: `npm run typecheck` passes with 0 errors; `npm run build` succeeds and renders static route `/plan-ahead`.
-  - ERP web: `vitest run` passes 29/29 tests across 5 test suites (`leads.test.tsx` 3/3); `npm run build` builds production bundle cleanly (2,228 modules).
-- Next: present implementation summary to user for review and commit approval.
-
-## 2026-11-13T13:47:00+05:30 — Unit 3.14 Slice 1: Keycloak Integration, Dual Security Filter Chains & Dead Code Cleanup
-- Phase/unit: Phase 3 Core Development, Unit 3.14 Lead Management Microservice (Slice 1).
-- Branch: `feature/3.14-lead-portal-microservice`.
-- What: secured `lead-service` sales endpoints with Keycloak OAuth2 Resource Server and pruned standalone auth code:
-  1. `services/lead-service/pom.xml`: added `spring-boot-starter-oauth2-resource-server`.
-  2. `SecurityConfig.java`: split into dual security filter chains:
-     - `@Order(1) portalFilterChain`: public access for landing guest auth/inquiries intake (`/api/v1/portal/**`).
-     - `@Order(2) salesFilterChain`: Keycloak OAuth2 Resource Server for `/api/v1/sales/**` requiring any of `SALES_EXEC`, `SALES_SUPERVISOR`, `MANAGER`, `SUPERADMIN`. Included role mapper extracting roles from `roles` or `realm_access.roles`.
-  3. `SalesLeadController.java` & `SalesDtos.java`: removed client-provided `actor` from request bodies; securely injected actor from JWT (`preferred_username`, email, or subject).
-  4. Flyway `V3__drop_staff_user.sql`: dropped deprecated `staff_user` table; kept `V2__staff_user.sql` untouched for Flyway history integrity.
-  5. Deleted dead standalone staff code: `StaffAuthService.java`, `StaffDtos.java`, `StaffUser.java`, `StaffRole.java`, `StaffUserRepository.java`, and staff token generator in `JwtTokenService.java`.
-  6. Keycloak `realm-golden-hills.json`: added realm roles `SALES_EXEC` and `SALES_SUPERVISOR`, and demo users `sales-staff` and `sales-supervisor-staff`.
-  7. Configuration: enforced `${JWT_SECRET}` without default fallback in `application.yml`; added `JWT_SECRET`, `CORS_ORIGINS`, and `ERP_APP_URL` to `ERP_DEV/.env.example`.
-- Verification:
-  - `mvn test -pl services/lead-service`: 10/10 tests pass (including new `SalesSecurityTest`: 401 without token, 403 for `HOUSEKEEPING`, 200 for `SALES_EXEC`, and token username extraction on claim).
-  - Web test suite: 29/29 tests pass (`vitest run`).
-- Next: manual testing with user, followed by Slice 2 (server-side atomic conversion).
-
-## 2026-11-13T16:00:00+05:30 — Unit 3.14 Slice 1b: WhatsApp Cloud API lead alerts
-- Phase/unit: Phase 3 Core Development, Unit 3.14 (Slice 1b, inserted before Slice 2 at user request).
-- What: replaced the log-only WhatsApp adapter with a transactional outbox (`whatsapp_notification`, Flyway V4), provider switch `mock|meta` (Meta Cloud API template sender via RestClient, 5 s/10 s timeouts), Keycloak-backed staff directory (`phone_number`, `whatsapp_on_duty` attributes; client `lead-service` with `view-users`), signed webhook `/api/v1/webhooks/whatsapp` with forward-only status tracking. Details in PLAN-3.14 §Slice 1b.
-- Verification: `mvn -pl services/lead-service test` 27/27 pass. Not yet run: live Postgres boot of V4, Keycloak re-import of the realm, real Meta send (needs approved template + credentials).
-- Next: user recreates Keycloak container (realm import) and restarts lead-service for a local mock smoke test; Meta account steps; then plan Slice 2.
-
-## 2026-11-13T16:32:43+05:30 — Unit 3.15: Role-based staff workspaces + staff sign-in
-- Phase/unit: Phase 3, Unit 3.15 (ERP-08 RBAC). Plan: `docs/03-phases/phase-3/PLAN-3.15-role-workspaces.md`, approved by user 2026-11-13 with decisions: permissions end-to-end; Sales view-only guests; Keycloak-hosted sign-in + dev loginHint tiles; dev-only preview personas.
-- Branch: still `feature/3.14-lead-portal-microservice` (3.14 work is uncommitted, so no new branch was cut; see STATE).
-- erp-app: `auth/Permissions` (bean `perm`), `auth/MeController` (`GET /api/v1/me`), V11 permission seeds `[ASSUMED]` (Q-017), every controller endpoint annotated with `@perm.has/hasAny`; `ops/OpsAuthorization` removed.
-- web: `access.ts`, `SignIn.tsx` (+ AccessDenied), `auth.login(loginHint?)`, `api.me()`; App loads `/me`, lands per department, renders "Restricted section" for blocked views; Sidebar/Topbar filtered by permission; Live/Preview toggle + persona switcher dev builds only. Fixed stale `GuestDto` mock in `leads.test.tsx` (blocked `npm run build`).
-- Verification: erp-app 112 tests, 109 pass; `PermissionMatrixTest` 34/34. The 3 failures (`BookingApiTest.modifyRequotes`, `BillingApiTest.*`) are pre-existing: they book fixed dates 2026-11-09 that are now in the past ("checkin cannot be in the past"). Web: vitest 41/41, `npm run build` OK, lint 0 errors; production bundle contains no dev tiles. Not yet run: live Keycloak sign-in per department.
-- Next: user live check per department; fix the date-bound booking tests; commit review (Rule 7).
-
-## 2026-11-13T17:00:00+05:30 — 3.14 Slice 1b: preparing real Meta WhatsApp (user-approved plan)
-- User decisions: Meta test number; Keycloak changes live via kcadm (no wipe); cloudflared tunnel for the webhook.
-- Done: lead-service `spring.config.import` of git-ignored `ERP_DEV/.env`; `.env` created with DB/JWT + Keycloak client secret + empty WHATSAPP_* placeholders (provider still `mock`); Keycloak `lead-service` client/view-users/ADMIN_EDIT verified (already present from a realm re-import); service-account lookup lists 2 on-duty demo users (fake numbers); cloudflared 2026.11.0 installed to `~/.local/bin`, quick tunnel to :8082 running; webhook through tunnel answers 403 (no verify token yet) / 401 (unsigned POST) as designed.
-- Note: the DATA drive mounts every file 0777, so `.env` is readable by all local users; it is git-ignored.
-- Waiting on user: Meta app + template approval + values in `.env`, real phone on `sales-staff`, webhook registration in Meta.
-
-
-## 2026-11-13T17:00:10+05:30 — Sign-in screen UI polish (Unit 3.15 follow-up)
-- User request: "improve the ui of login screen of the erp". Layout/visual only; no behaviour, text or auth flow change.
-- web: `SignIn.tsx` now uses a split layout: the existing `assets/banner.jpg` photo with a short caption on the left, and the sign-in card on the right. `screens.css` adds `.signin-split` / `.signin-photo*`, a card shadow, a larger primary button and a gold accent on the GH mark. Below 860px the photo is hidden and the card stays centred. Loading screens in App.tsx still use plain `.signin` and are unchanged.
-- Verification: `vitest run src/access.test.tsx` 12/12, `tsc -b` clean, oxlint clean. Not verified visually: Brave remote debugging was unavailable for a screenshot.
-- Not committed (Rule 7).
-
-## 2026-11-13T21:38:00+05:30 — Phase 3 & Landing Page Consolidated Push to ashish/backend_phase_1
-- Phase/unit: Phase 3 Core Development (Units 3.14, 3.15) & Public Landing Page integration.
-- Branch: `ashish/backend_phase_1`.
-- User approval: explicit instruction "yes i confirm and make a ashish/backend_phase_1 branch and push it" on 2026-11-13.
-- What:
-  1. Created root `.gitignore` to prevent editor files (`.vscode/`), local env files, and build outputs from polluting the repository.
-  2. Imported connected Next.js public landing page (`Design-1`) into `landing-page/` (with luxury Bodoni Moda styling, `/plan-ahead` booking inquiry form, and `portal-client.ts` wired to `lead-service`).
-  3. Committed Unit 3.14: `services/lead-service` Spring Boot microservice, Flyway V1-V4 migrations, Keycloak OAuth2 Resource Server dual filter chains, SLA escalation scheduler, mock WhatsApp/voice adapters.
-  4. Committed Unit 3.15: RBAC workspace permissions (`Permissions.java`, `MeController.java`, Flyway V11), department landing, split-layout sign-in screen, and UI role filtering.
-  5. Pushed branch `ashish/backend_phase_1` to `origin` (`https://github.com/AshishBevinakatti/QCl_repo.git`).
-
-## 2026-11-14T01:20:00+05:30 — ERP_DEV web frontend redesign (unslop pass)
-- User request: "redesign the whole erp_dev frontend ... while preserving all the backend logics and connections". Presentation only.
-- Working tree note: `web/src/auth.ts`, `web/src/demo.ts`, `web/src/guests.test.tsx` and everything under `landing-page/` were already modified and uncommitted before this unit began (the user's local dummy-data and Keycloak-probe work). They are not part of this redesign and were not edited by it.
-- Rule 1 note: the resource drive `/run/media/ash_63/DATA/ERP_Resouce` is not mounted on this machine, so no branding asset was read from it. The brand was taken from in-repo project material instead — `landing-page/src/app/tokens.css` (forest `#104028`, brass `#b88828`, cream `#f7f2ec`, ink `#18241d`) — so the public site and the staff workspace now share one palette. Logged in OPEN_QUESTIONS.md.
-- Direction: calm, exact, hospitable; the world is the reception desk (ledger paper, estate forest ink, brass). One moment — the key rack. One signature — a room number is always a brass key tag.
-- Changed (presentation): `styles/tokens.css`, `base.css`, `components.css`, `layout.css`, `screens.css` rewritten on one warm neutral ramp with a single brass accent; `ui.tsx` (`Kpi`+`Donut` replaced by `Stat`, `KeyTag`, `ShareBar`; `statusLabel` added; one icon set at 18px/1.5 stroke, `cleaning_services` no longer a sparkle); `dashboard.tsx`, `App.tsx`, `leads.tsx`, `guests.tsx`, `SignIn.tsx`, `ops/OpsView.tsx` for copy, markup and layout.
-- Two behaviour changes the user approved before work started:
-  1. Front office and Billing are list-first — staff pick a booking row and act on it instead of pasting a uuid between cards. Uses only endpoints already called (`listReservations`, `listCategories`, `enrichSummaries`, `folioByStay`); the id field is kept below the list as a fallback.
-  2. The dashboard's greeting photo band, marketing tagline and promo tile are gone; the room board ("key rack") is the dashboard's one bright object, built from `dashboard().rooms`.
-- Root cause fixed: the Sales leads screen was styled by a second, foreign palette — `screens.css` referenced `--color-surface`, `--color-border`, `--color-text-muted` etc., none of which exist in `tokens.css`, so every rule fell through to a hardcoded Tailwind grey. `.kpi-grid` was never defined at all, which is why its four stat cards stacked full-width. Both removed.
-- One display-logic fix outside the style layer: `api.ts rupees()` rendered a credit as `₹-3,000`; the sign now precedes the symbol (`-₹3,000`). No call site or contract changed.
-- NOT touched: `auth.ts`, `access.ts`, `observability.ts`, `theme.ts`, `demo.ts`, every `services/` module, and every fetch, permission gate, idempotency key and error path in `api.ts`.
-- Verification: `tsc -b` clean; `vitest run` 43/43 across 6 files; `vite build` succeeds; `oxlint` 9 warnings, all pre-existing (fast-refresh + set-state-in-effect in data loaders), 0 errors. Rendered at 1440x980 in light and dark and at 390px, via Playwright against the dev server in Preview mode.
-- Four test assertions updated to the new copy (they pinned old strings): `access.test.tsx` 'Sales Leads'→'Sales leads', 'Billing & Payments'→'Billing & payments', placeholder /Search guest/→/Search/; `leads.test.tsx` /Claim & Attend/→/^Claim$/, 'Convert to ERP Guest Record'→'Create guest record'.
-- Not verified: the Ops console could not be rendered (no preview persona carries `ops` permission), so it is covered by `OpsView.test.tsx` only. Live mode was not exercised — no backend or database on this machine.
-- Not committed (Rule 7).
-
-## 2026-11-14T01:45:00+05:30 — ERP web: adopt the public site's palette and type, fix theme contrast bugs
-- User request: "use the colour pallet and fonts used in the landing page website, and the switch between dark to light theme has few bugs like the font colour issues fix that too."
-- Palette: `web/src/styles/tokens.css` now derives the light ramp from the public site's own tokens — cream `#f7f2ec` (page), chalk `#fffaf3` (raised), limestone `#e8e1d7`, garden `#e0e2d3` (brand soft), forest `#104028`, brass `#b88828`, ink `#18241d`. The dark theme is the night shift of the same hues. This supersedes the earlier approximation and answers part of Q-018.
-- Type: General Sans is now self-hosted in the ERP as well (`web/public/fonts/general-sans/`, weights 400/500/600 as woff2+woff, 172 KB; `web/src/styles/general-sans.css` imported first from `index.css`). `--font-display` is General Sans and applies to h1-h4, the sidebar wordmark and the sign-in art; Inter keeps all body text, labels, tables and figures, where it is the better face at small sizes. Verified in-browser: all three faces report `loaded`, no failed `/fonts/` requests, and `dist/fonts/general-sans/` ships in the production build.
-- Theme bug 1 (the reported font-colour issue, light mode): `--muted` `#6c7569` failed WCAG AA at 11-13px on raised surfaces — 18 distinct failures measured between 3.63:1 and 4.32:1 against a 4.5:1 requirement (`.keytag-state`, `.guest-phone`, `.stay-dates`, `.act-time`, `.sub`, `kbd`, `dt`, folio and summary labels). Dark mode's muted already passed, which is why it only showed in one theme. `--muted` is now `#556150` and `--muted-strong` `#3f4a3e` — the site's hue, one step darker, chosen so it clears 4.5:1 on limestone, the darkest light surface muted text sits on. Re-measured: 0 failures in either theme.
-- Theme bug 2 (dark mode): the selected segment in the leads filter and the ops tabs was `--surface-raised` on a `--surface-soft` track — 1.03:1 in dark, 1.12:1 in light. It only read in light because of a light-only drop shadow. Both now use `inset 0 0 0 1px var(--line-strong)`, so the selection reads in both themes.
-- Theme bug 3: first visit ignored the device preference and always started light, so a staff member on a dark OS had to toggle every new browser. `theme.ts` gains `preferredTheme()` and `initialTheme()` (stored choice first, then `prefers-color-scheme`), and the pre-paint script in `index.html` does the same, so there is still no flash. An explicit choice continues to win.
-- Method: contrast was measured, not eyeballed — a Playwright pass computed the ratio for every rendered text node across 8 screens in both themes. One element it flagged at ~1.1:1 (`.mode-toggle button.active`) was a false positive from naive alpha compositing; sampling the rendered pixels shows it at 8.63:1 light and 11.87:1 dark.
-- Verification: `tsc -b` clean; `vitest run` 45/45 across 6 files (2 new tests cover the device-preference fallback and that a stored choice overrides it); `vite build` succeeds; `oxlint` 0 errors.
-- Still presentation only. No backend, API, auth or permission change in this entry.
-- Not committed (Rule 7).
-
-## 2026-11-14T02:10:00+05:30 — ERP staff sign-in redesigned as a quiet card
-- User request: "now we'll redesign the login portal" → chose the **ERP staff sign-in** (not the public guest portal) and the **quiet card, no photo** direction.
-- `web/src/SignIn.tsx` is now one centred card on the workspace's own paper. The split photo panel is gone, which removes the last import of `assets/banner.jpg` — that 1.76 MB file no longer ships: `dist/` went from listing `banner-*.jpg` to nothing, so the production bundle drops 1.76 MB. The file stays in `src/assets` as the client-supplied resource logged under Q-011; it is simply unused.
-- Composition: the same brand block the sidebar carries (brass GH mark + "Golden Hills / Resort ERP" in General Sans), then `h1` "Sign in", a one-line statement of what is behind the door, the unreachable-service alert when it applies, the primary action, and the dev shortcuts.
-- Copy: the primary button was "Sign in", which echoed the `h1` and did not say that it leaves the app. It is now "Continue to single sign-on", and the note under it carries the reason that matters — "Your password is only ever typed on the Golden Hills sign-on page" — which is the PKCE property the component's docblock already described.
-- The seven dev role tiles were about 60% of the card's height, so they now sit behind a `<details>` ("Preview as a role") with a CSS disclosure marker, while "Explore with sample data" stays one click away. Verified that a role tile opened from the fold still enters the workspace.
-- CSS: `.signin-split`, `.signin-photo`, `.signin-photo-txt` and their media query are deleted, along with the now-unused `--photo-scrim` token in both themes. `.signin` / `.signin-card` are shared with the loading and account-error states in `App.tsx`, which now match the sign-in instead of being a bare centred paragraph.
-- One test assertion updated: `access.test.tsx` pinned the button name 'Sign in' → 'Continue to single sign-on'.
-- Verification: `tsc -b` clean; `vitest run` 45/45 across 6 files; `vite build` succeeds and no longer emits the banner asset; `oxlint` 0 errors. Rendered at 1440x980 and 390px in both themes, with the service genuinely unreachable (no Keycloak on this machine), so the error state in the screenshots is the real one.
-- Presentation only. `auth.ts`, `login()`, `authReachable()` and the PKCE flow are untouched; the dev personas behave exactly as before.
-- Not committed (Rule 7).
-
-### Noted while scoping, not acted on — public guest portal (`landing-page/src/app/plan-ahead/login-portal.tsx`)
-The guest portal at `/login` was reviewed to answer the question and then set aside. Three things there are worth a decision, and none are cosmetic:
-1. **The "Continue with Google" and "Continue with Apple" buttons do not perform OAuth.** They build a local session object in the click handler (`name: "Google Guest"` / `"Apple Guest"`, a `demo-jwt-token-` + timestamp) and report "Signed in with Google account." A guest pressing them is signed in as a fabricated user. This should either be wired to a real identity provider or removed.
-2. **Internal infrastructure is printed to the public**: the hero footer renders `Connected to Golden Hills ERP Backend (:8082) · SSL Protected`, and a "Quick Demo Fill: Guest Demo / Privilege VIP" control ships in the same view.
-3. **Unverifiable trust claims**: `🛡️ Protected by Golden Hills Hospitality Security Protocol · SSL Encrypted`, plus "SSL Protected" a second time in the hero. "Hospitality Security Protocol" does not name anything real.
-Logged here so they are not lost; no files under `landing-page/` were changed.
-
-## 2026-11-14T02:40:00+05:30 — ERP staff sign-in recomposed to match the public guest portal
-- User request: "do the erp login page similar to landing page login, just dont add the google and apple option there". This replaces the quiet-card direction taken in the previous entry; the user saw both and chose the split.
-- `web/src/SignIn.tsx` is now the guest portal's composition: property on the left, door on the right. Hero carries the real light wordmark, a brass kicker, a display headline, a short description and the three things the workspace actually covers; the form panel carries the brand block, "Sign in", the action and the dev shortcuts.
-- **No credential fields, by design.** The guest portal's email/password, mobile-OTP and booking-lookup tabs were deliberately not copied. Staff authenticate through Keycloak with PKCE, so the password is only ever typed on the identity provider's page — that is what provides lockout, reset and MFA. A local form here would be decorative at best and would undo SSO at worst. The panel keeps "Continue to single sign-on", which says that it leaves the app. Google and Apple were omitted as asked (and on the guest portal they do not perform OAuth at all — see the note in the previous entry).
-- Honest substitutions for the parts of the guest portal that were not truthful here: its footer prints `Connected to Golden Hills ERP Backend (:8082) · SSL Protected`; ours reports the one fact we actually compute, `authReachable()`, as "Single sign-on is reachable / is not answering" with a live dot. Its "180 Privilege Club vouchers" style perks became three lines that each name a shipped screen. Its uppercase tracked kicker became sentence case, per the type rules set for this workspace.
-- Assets: `src/assets/logo-light.png` copied from `landing-page/public/assets/resort/logo/provisional-catalogue-page-11-light-logo.png` (117 KB). The filename says *provisional*, which is worth confirming under Q-018. `banner.jpg` is in use again as the hero, so the 1.76 MB cost returns and now sits on the first-paint path — it should be resized and re-encoded before go-live (noted in Q-019).
-- Photograph handling: `banner.jpg` is a bright daylight scene, not the dusk scene the guest portal uses, so the portal's even forest scrim turned it murky olive. The scrim is now bottom-weighted — a light tint at the very top for the white wordmark, a clear window across the upper third so the sky keeps its own colour, then deepening from 48% down for the copy — plus `filter: contrast(1.04) brightness(0.88)` to calm rather than recolour. The headline uses `text-wrap: balance` so the last line is not an orphaned word.
-- Contrast was measured against the rendered photograph, not the gradient maths, by sampling element screenshots: kicker 4.62:1, headline 12.54:1, description 7.68:1, covers 8.87:1, status 7.19:1 — all pass at their required level in both themes. The first attempt had the kicker at 2.36:1 because the clear window sat exactly behind it; the gradient stops were moved rather than giving up the brass.
-- Responsive: below 960px the hero becomes a 260px band with the logo, kicker and headline only — description, covers and footer drop out rather than being shrunk — and the door sits beneath it. Verified at 390px in both themes.
-- Verification: `tsc -b` clean; `vitest run` 45/45 across 6 files; `vite build` succeeds; `oxlint` 0 errors. A whole-app contrast sweep across 8 screens in both themes still reports no failures.
-- Presentation only. `auth.ts`, `login()`, `authReachable()` and the PKCE flow are untouched; the dev personas behave exactly as before.
-- Not committed (Rule 7).
+# Development Log (append-only)
+
+History before 2026-11-15 is in `archive/hotel-draft:ERP_DEV/docs/logs/DEVLOG.md`.
+
+## 2026-11-15 — Audit of phase1_plan.md v1.0 and fresh start
+- Ashish asked for an audit of his `phase1_plan.md`. The findings (custom OTP brute-force risk, plain-text OTP, account enumeration, the hard-coded JWT fallback secret in the archived `JwtTokenService`, double-booking, IDOR on proofs, claim race, plain-text Aadhaar, revenue double count, main-branch cleanup risk) were given in chat and in the session plan file.
+- Q: login choice → A (Ashish): keep custom OTP *(later reversed, see below)*. Q: old modules → A: archive on a separate branch and clean main. Q: payment check → A: keep observatory. Q: booking store → A: lead-service + DB guard.
+- Ashish then decided to restart: everything archived on a unique branch, a fresh Phase 1 with new docs, the landing page unchanged, the backend rebuilt with the same portal API, the web app rebuilt, merged through a branch. Same tech stack (asked separately).
+- Q: push archive? → A: yes. Q: where to commit the WIP? → A: "pull first, then fresh branch only".
+- Commands: `git branch archive/hotel-draft 825f3fe`; `git tag -a archive-hotel-draft-2026-11-15`; `git fetch` (origin/main = 825f3fe); `git pull --ff-only` (already up to date); `git push origin archive/hotel-draft archive-hotel-draft-2026-11-15`; checked with `git ls-remote` (825f3fe). `git switch -c feature/phase1-fresh-start`.
+- Commit `a40defe` (approved): landing view-on-map icon fix + phase1_plan.md v1.0 + .gitignore for the symlinked node_modules and LibreOffice lock files.
+- Q: remove list → A: approved as listed. `git rm` of 322 files; commit `5d220ab` (approved).
+
+## 2026-11-15 — Milestone 1 (docs + skeleton) started
+- Ashish's conditions: docs and skeleton only, no app code; review the SOW and requirements first; don't delete local files or `.env`; update CI; show everything before committing or pushing; if the resource drive is missing, say what to mount and wait.
+- The resource folder is not at the rule path `/run/media/ash_63/DATA/ERP_Resouce`. It was found at `/run/media/ash_63/DATA/Intership wrok/ERP_Resouce` (same name, 21 files) and used read-only (Q-001).
+- Read: Phase 1 Blueprint (all of it), SOW sections §3–§12, §22–§26, discovery call summary, the questionnaire (blank form), and greps of the call transcript. Extracts with matching sha256 were restored from the archive.
+- Conflicts between plan v1.0 and the Blueprint were shown to Ashish (staff login, booking/payment, service shape, roles, missing lead features).
+- Q: staff login → A: **Keycloak for employee authentication and account management; follow the Blueprint** (detailed onboarding/login/logout/deactivation spec given). Q: booking/payment → A: **follow the Blueprint** (none in Phase 1). Q: backend shape → A: **Blueprint microservices**. Q: extra Blueprint features → A: **"we will add new feature later"**.
+- Checks run: `npm run typecheck` in landing-page → exit 0. `npm run lint` → 4 errors / 7 warnings already present (Q-004). `npm run build` → fails locally only because `landing-page/node_modules` is a symlink outside the project root (Turbopack refuses it); not reproducible in CI with `npm ci`.
+- SRS reviewed after the first draft. Added: SMS excluded (Q-007), event enquiry form (Q-008), 8 h shift (Q-019), client designations for the sales role (Q-027), who manages employees (new Q-029), delete reserved for Owner/MD (AUTHENTICATION §7).
+- Docs written (uncommitted, for review): see STATE.md item 2.
+
+## 2026-11-15T11:23:40+05:30 — Resource path rule updated (answers Q-001)
+- Ashish: "/run/media/ash_63/DATA/Intership wrok/ERP_Resouce: update the rule and read the resources from here, and commit it".
+- Updated the path in `AGENTS.md`, `opencode.json` (permission allow-list), `.opencode/skills/erp-prp/SKILL.md`, `references/docs-and-records.md`, `references/phases.md`. The source-extract headers still show the old path, because they record where each file was read at the time; the sha256 values are unchanged.
+- Ashish approved the commit of Milestone 1 docs + CI + rule update in the same message. Push not approved.
+- Commit `e9841f5` docs(core): phase 1 baseline (40 files, approved by Ashish). Not pushed.
+
+## 2026-11-15T11:27:15+05:30 — Push attempt and increment 1 decisions
+- Ashish: "go ahead". `git push -u origin feature/phase1-fresh-start` was **rejected** by GitHub: the stored personal access token has no `workflow` scope, which a change to `.github/workflows/ci.yml` needs. Nothing was pushed. Ashish must update the token (classic: `workflow` scope; fine-grained: Workflows read/write).
+- Q-020 → upgrade the same products; Q-029 → ADMIN only; Q-003 → Keycloak pass-through (A). See D-112…D-114.
+- Increment 1 plan written: `docs/03-phases/phase-1/inc1-PLAN.md` (waiting for approval).
+
+## 2026-11-15T11:30:28+05:30 — Increment 1 approved
+- Ashish approved `inc1-PLAN.md` as written; approved checking versions on official release pages (spring.io, keycloak.org, GitHub releases, npm) for this increment; approved Q-023 dependencies (Testcontainers PostgreSQL, testcontainers-keycloak, Mailpit image, keycloak-js); approved committing the doc updates.
+- Commit `eb2c8ba` docs(core): record inc 1 decisions and increment 1 plan (approved). Branch `feature/phase1-inc1-identity` created from it.
+
+## 2026-11-15T11:32:44+05:30 — Versions checked (approved web lookups)
+- URLs: https://api.spring.io/projects/spring-boot/generations, https://api.spring.io/projects/spring-cloud/generations, https://api.github.com/repos/{spring-projects/spring-boot, spring-cloud/spring-cloud-release, keycloak/keycloak, axllent/mailpit, redis/redis, testcontainers/testcontainers-java, dasniko/testcontainers-keycloak}/releases, https://registry.npmjs.org/{react,vite,typescript,vitest,keycloak-js,oxlint,@testing-library/react}/latest, https://hub.docker.com/v2/repositories/library/postgres/tags. GET requests only; no project data sent.
+- Finding: every Spring Boot 3.x line lost open-source support on 2026-06-30 (3.5.x). Q to Ashish: Boot 4.1.2 or 3.5.16 → A: **4.1.2**. Q: accept the rest of the table → A: **accept all** (incl. TypeScript 7, Redis 8 licence noted). D-115.
+- Corrected ADR-001: Boot 3.2 open-source support ended 2024-12-31 (it said Nov 2024).
+
+## 2026-11-15T11:44:30+05:30 — Increment 1, slice S1 (infra + realm)
+- Added `infra/docker-compose.yml` (PostgreSQL 18.7 on host port 5433, because a system PostgreSQL service already uses 5432 on this machine and was left untouched; Keycloak 26.8.2; Redis 8.10.3; Mailpit 1.33.1; all bound to 127.0.0.1; secrets required through `${VAR:?}`), `infra/postgres/init/01-service-databases.sh` (DB + least-privilege login for keycloak and access_db), `infra/keycloak/gh-staff-realm.json` (generated; placeholders only), `ERP_DEV/.env.example`, CI job `realm-check`.
+- Verification ran on a throwaway compose project `erp-s1-check` with random secrets in the session scratchpad (not in git, not in `ERP_DEV/.env`). Removed afterwards with `down -v`.
+- Problems found and fixed:
+  1. `openssl` isn't installed → secrets generated with Python; `.env.example` hint changed.
+  2. Service-account token had no `sub` (missing `basic` scope) → Admin API 401 → `basic` added.
+  3. Still 401: Keycloak 26.x needs the `kc-admin-api` scope (Admin API audience) → added to access-service only.
+  4. Keycloak warns "Full scope allowed" is deprecated → turned off on all clients, with explicit scope mappings.
+  5. Service account can't `GET /roles/{name}` (needs view-realm) → by design; role lookup via `/users/{id}/role-mappings/realm/available` (KEYCLOAK-SETUP §5.3).
+- Final live check: 15/15 PASS (discovery; password grant refused; PKCE enforced; client secret placeholder resolved; SA creates a user and maps a role; SA can't create a client or read roles; invite email "Update Your Account" received in Mailpit; token aud=erp-api, SALES_EXECUTIVE + 3 permissions, 300 s lifespan; realm security settings). Also: access_svc refused on the keycloak DB ("User does not have CONNECT privilege"); Redis without a password → NOAUTH. CI realm-check rules 14/14 locally.
+- Not yet checked: brute-force lockout behaviour and following the invite link (S5, needs a browser login); CI on GitHub (push still blocked by the token scope).
+- Ashish's `ERP_DEV/.env` wasn't edited. It needs the new variable names from `.env.example` before `docker compose` can run.
+- Commit `8d5f9bc` feat(infra): local stack and gh-staff Keycloak realm (approved by Ashish).
+
+## 2026-11-15T11:55:38+05:30 — Increment 1, slice S2 (access-service skeleton)
+- Q: Maven isn't installed → A (Ashish): **Maven Wrapper**. Downloaded Apache Maven 3.10.0 from Maven Central into `~/.local/share/maven` (user folder, no sudo; sha512 checked), generated the wrapper 3.3.4 (only-script) in access-service, and pinned `distributionSha256Sum` after checking the zip against the official sha512. Starter names read from the official spring-boot-dependencies 4.1.2 BOM.
+- Built: `pom.xml` (Boot 4.1.2, Java 21 target; local JDK is 25), `SecurityConfig` (JWKS via the realm certs URL, lazy; validators: timestamp ±60 s, issuer, aud=erp-api; ROLE_/PERM_ mapping; JSON 401/403), `CorrelationIdFilter` (accepts only [A-Za-z0-9-]{1,64}), `ErrorHandler`, `MeController`, `Employee` entity/repository, Flyway V1 (employee with CHECK constraints, append-only audit_event via trigger, idempotency_key), ECS JSON logs.
+- Tests: `./mvnw verify` → **11/11 pass** (MeEndpointTest 9, AuditAppendOnlyTest 2) on Testcontainers PostgreSQL 18.7. First run: 7 errors because the test decoder didn't replace the production one (bean override order) → test decoder made `@Primary`.
+- Live run against the compose stack (throwaway secrets): health UP; no token → 401 JSON with correlationId; real Keycloak service-account token (aud=realm-management) → 401; flyway_schema_history = "1 employee audit idempotency"; log has 0 lines mentioning password/secret. Not shown: whether that 401 came from the audience or the signature check (proved in S4 with a real employee token); request-time logs with correlationId (no request logging yet).
+- Mistakes during the check: (1) the folder path with a space broke an unquoted variable → rerun with an array; (2) `pkill -f` matched its own shell and killed it → used a stricter pgrep + kill. No effect on files.
+- CI: the service job now runs `./mvnw -B verify` in the service folder.
+- AUTHENTICATION §9 updated: audit_event has `actor_label` and `reason`, and append-only is enforced by a trigger.
+- Commit `bd8d799` feat(auth): access-service skeleton (approved by Ashish).
+
+## 2026-11-15T12:04:57+05:30 — Increment 1, slice S3 (api-gateway) + S2 file-mode fix
+- Found after committing S2 (`bd8d799`): `mvnw` was committed as 100644. The repo is on an NTFS (fuseblk) drive with `core.fileMode=false`, so git never sees +x and CI would fail. Fixed with `git update-index --chmod=+x` for both mvnw files and `infra/postgres/init/01-service-databases.sh`. `.gitattributes`: `*.cmd` CRLF, `*.sh` and `mvnw` LF. Included in the S3 commit.
+- Gateway: Spring Cloud 2025.1.4 BOM read from Maven Central (Gateway 5.0.4; WebFlux and WebMVC server starters). Chose WebFlux for the Redis rate limiter. **Boot 4.1.2 + Spring Cloud 2025.1.4 start fine** (the D-115 open point is closed).
+- Built: SecurityConfig (same token rules as access-service; validator duplicated, marked `shortcut:`), CorrelationIdWebFilter (runs before security so 401s carry the id), JSON 401/403, CORS (5173 + 3000 only), KeyResolver (employee `sub`, else peer IP), default filters RequestSize + RequestRateLimiter, route `/api/v1/me` + `/api/v1/admin/**` → access-service.
+- Tests: first run 7/10. Three test-side mistakes (stub `path()` drops the leading slash; Spring now names 413 CONTENT_TOO_LARGE). After the fix: **10/10** (GatewayRoutingTest 9, RateLimitTest 1) with real Redis 8.10.3 in Testcontainers.
+- Live (compose stack + both jars): gateway health UP; no token → 401 + X-Correlation-Id; real Keycloak token with the wrong audience → 401; CORS preflight 5173 → 200, evil.example → 403; 0 Redis errors with the password-protected Redis.
+- Known limit noted: the rate limiter fails open when Redis is down (R-011).
+- Commit `88176a5` feat(core): api-gateway + S2 file-mode fix (approved by Ashish).
+
+## 2026-11-15T12:22:28+05:30 — Increment 1, slice S4 (web shell + first real login)
+- Versions from the npm registry: @vitejs/plugin-react 6.3.0 (needs Vite ^8), jsdom 31.0.1, @types/react(-dom) 19.3.0; Vitest 5.1 accepts Vite 8. Only packages the archived app also used; Sentry, icons and fonts were left out.
+- `npm install` reused the old ignored `ERP_DEV/web/node_modules` from the archive (removed 49 / changed 38 packages in it). Generated content, restorable with `npm ci`. Reported to Ashish.
+- Built: `auth.ts` (keycloak-js, PKCE S256, no forced login so the ERP shows its own sign-in page, tokens in memory), `api.ts` (Bearer token; 401 → one refresh + retry → sign-in; 403 → ForbiddenError; server error message surfaced), `App.tsx` (SignIn without a password field, Dashboard from /me, "ERP record not set up", Sign out), CSP meta, `.env.example`. AUTHENTICATION §5 updated: own sign-in page instead of `login-required`.
+- Checks: lint 0 problems; **10/10 tests**; build OK after fixing `vite.config.ts` (Vitest's defineConfig is needed for the `test` key with TS 7).
+- Live: the Brave DevTools browser was not available (no remote-debugging port), so the browser's OIDC flow was scripted with the same requests. Two script problems fixed: (1) it matched the wrong form action; (2) Python's cookie jar won't send Keycloak's Secure cookies over http://localhost (browsers do), so the script mimics that. A dev-only test user `s4.admin` was created in the throwaway realm via the master admin (password set by the script only; ERP code never sets passwords).
+- Result **15/15**: wrong password refused; correct login → code; code + PKCE → tokens; gateway → access-service /me with a real token returns the linked profile, ADMIN role and permissions, modules, CORS header; refresh OK; rotation rejects the old refresh token; end-session logout redirects back; refresh fails after logout; Keycloak asks for the password again; a replayed code is refused **and** Keycloak revokes the session it created (seen first as an unexpected 400; confirmed from Keycloak events).
+- Closed from S2: the live 401 for a wrong-audience token came from the audience rule, since real erp-api tokens are now accepted.
+- Not checked: keycloak-js running in a real browser (redirect handling inside React). Covered by unit tests with a fake session; needs a manual click-through, or Brave started with remote debugging.
+- Cleanup: jars, vite and the throwaway stack stopped (`down -v`); test password file deleted.
+- Commit `4a8ef19` feat(web): staff ERP shell (approved by Ashish).
+
+## 2026-11-15T14:36:25+05:30 — Increment 1, slice S5 (employee onboarding)
+- Chose a plain Testcontainers GenericContainer for Keycloak instead of testcontainers-keycloak 4.4.0 (approved, but it would add keycloak-admin-client/RESTEasy/Jackson 2 to the test classpath). The test imports the **real** `infra/keycloak/gh-staff-realm.json`.
+- Design change: dropped the `erp_employee_id` attribute on Keycloak users (Keycloak 26's user profile drops unmanaged attributes unless the realm allows them). Adoption on a 409 now requires the same username **and** email and no other linked employee. AUTHENTICATION §4/F2 and REQ-IAM-003 updated.
+- Built (access-service): KeycloakAdmin interface + KeycloakAdminClient (client-credentials token cache; Unavailable / Conflict / EmailFailed), EmployeeService (idempotency key claimed in the same transaction as the insert; provisioning under a SKIP LOCKED row lock; status derived from Keycloak), EmployeeController (POST/GET/GET id/retry; MANAGER can't manage, D-113), AccountJobs (sync every 5 min, idempotency clean-up, bootstrap ADMIN with a deterministic key), AuditLog. Web: Employees screen (list, add, retry), hash routing.
+- Bugs found by tests: (1) Jackson 3 rejects a missing primitive `boolean` → `whatsappOptIn` is now optional (Boolean, default false); (2) a class named `*IT` isn't run by surefire → renamed EmployeeOnboardingTest; (3) a test helper named `status` shadowed MockMvc's.
+- Tests: access-service **18/18** (incl. real Keycloak + Mailpit + PostgreSQL); web **14/14**, lint 0, build OK.
+- Live (throwaway stack): bootstrap ADMIN invited on start → email in Mailpit → link opens Keycloak's set-password page → short password refused → password set → login → list sync INVITED→ACTIVE → /me ADMIN → owner creates a Sales Executive via the gateway (201; same key returns the same employee; invite email sent) → 5 wrong passwords lock even the right one. **10/10.** Audit trail SYSTEM_BOOTSTRAP/SYSTEM_SYNC/owner recorded; 0 occurrences of the password, client secret or a JWT in either service log.
+- Not done (S6): deactivate/reactivate, resend invite, role change, last-admin/self guards.
+- Commit `524d862` feat(auth): employee onboarding (approved by Ashish).
+
+## 2026-11-15T14:44:41+05:30 — Increment 1, slice S6 (account management)
+- Built (access-service): KeycloakAdmin setEnabled/logout/replaceJobRole; AccountService (setActive, resendInvite, changeRole; Keycloak first, then DB; 502 when Keycloak is down with nothing changed; guards: reason required, self, last admin under `pg_advisory_xact_lock`, row busy → 409; resend limited to 3/hour from the audit trail); endpoints PATCH status, POST resend-invite, PUT role (roles.assign); GET /api/v1/admin/audit (audit.read). Web: row actions with a reason prompt, role selector (roles.assign only), Audit log page.
+- Bug caught in review before testing: a failed resend would have rolled back its own INVITE_EMAIL_FAILED status (exception inside the transaction). The transaction now returns the outcome and the error is thrown after commit; a test proves the status is kept.
+- Tests: access-service **26/26** (real Keycloak stack shared through the KeycloakStack base class; fake-Keycloak guard/failure tests); web **18/18** (one old expectation changed: a linked invite-failed row now offers "Resend invite", not "Retry"), lint 0, build OK.
+- Live (throwaway stack, real sessions): **16/16**. Deactivation rejects the refresh token at once and blocks login ("account disabled"). **R-004 measured:** an access token issued before deactivation still worked until its 5-minute expiry, as documented. Reactivation → ACTIVE; role change → old refresh token rejected, new login carries MANAGER, can list but not deactivate; owner self-deactivation → 409; audit shows the actions with reasons. Logs: 0 occurrences of the client secret or a JWT.
+- Commit `73360dc` feat(auth): account management (approved by Ashish).
+
+## 2026-11-15T14:53:16+05:30 — Increment 1, slice S7 (close)
+- Fresh-developer test: `git clone --branch feature/phase1-inc1-identity` into the scratchpad (a normal Linux filesystem, so file modes are real): mvnw files executable ✅, no .env ✅. Followed DAY-ONE literally: landing-page npm ci + typecheck + **build** ✅ (closes R-010); `.env` from .env.example with generated secrets + BOOTSTRAP_ADMIN_*; compose up (default project golden-hills-erp; checked beforehand that no such volume existed) → 4 healthy; `./mvnw spring-boot:run` for both services; web npm ci + dev; bootstrap email → set password → sign in → /me ADMIN ✅. In the clone: web lint/18 tests/build ✅, access-service verify 26 ✅, api-gateway verify 10 ✅. No DAY-ONE gaps found; prerequisites text updated (JDK 21+, no Maven install needed).
+- Cleanup mistake (again): `pgrep -f` with a pattern that was also in my own command killed the calling shell (same as S2). Servers were then stopped by listening port; stack `down -v` and clone removed. Memory note sharpened.
+- Secret checks: no credential columns in the schema; no tracked env files; repo scan found only landing-page skills-lock content hashes. gitleaks is not installed locally (CI only).
+- TRACEABILITY: REQ-IAM-001 and -008 evidence filled in, so all 14 IAM requirements now have evidence. inc1-PLAN definition of done ticked (except CI on GitHub). Report: docs/03-phases/phase-1/inc1-REPORT.md.
+- 2026-11-15T15:02:04+05:30: The session was interrupted after this entry was written, and the evidence logs were lost with the scratchpad clone. **Re-verified before committing:** new clean clone → DAY-ONE (compose up 4 healthy, both services via `./mvnw spring-boot:run`, bootstrap email → set password → sign in → /me ADMIN) ✅; in the clone access-service `./mvnw -B verify` 26/26 BUILD SUCCESS, api-gateway 10/10 BUILD SUCCESS, web lint 0 / 18 tests / build ✅. Stack `down -v`, clone removed.
+- Mistake during the restart: a `cd` into the already-deleted clone failed, and the next commands ran in the real repo. That briefly started access-service (failed) and api-gateway (health DOWN) from the repo with Ashish's `ERP_DEV/.env` sourced into that shell (read only, not modified). Both were stopped by port; `git status` showed no change from it. From now on every scripted `cd` uses `|| exit 1`.
+- 2026-11-15T15:06:17+05:30: Ashish approved the S7 commit and a local `--no-ff` merge of feature/phase1-inc1-identity into feature/phase1-fresh-start.
+- 2026-11-15T15:06:30+05:30: Commit `17e9d9d` (S7, approved). Merged locally with `--no-ff` into feature/phase1-fresh-start → `adf4417` (approved). The merged tree is identical to 17e9d9d, whose code equals 73360dc, which was tested in the clean clone (26/10/18). Not pushed.
+
+## 2026-11-15T18:55:08+05:30 — Login failure diagnosed and fixed: realm `frontendUrl` pointed at a tunnel
+- Ashish reported the Keycloak page **"We are sorry… Restart login cookie not found"** at `https://nebraska-cole-signal-rotation.trycloudflare.com/realms/gh-staff/login-actions/authenticate`. Investigation only; no source code changed.
+- **Root cause:** the `gh-staff` realm had the persisted attribute `frontendUrl = https://nebraska-cole-signal-rotation.trycloudflare.com` (Keycloak DB, `realm_attribute`; it is **not** in `infra/keycloak/gh-staff-realm.json`). A realm `frontendUrl` overrides the request host for every generated URL, including the login form's `action`. The login page was therefore served from `http://localhost:8081` but posted to the tunnel, so the `KC_RESTART`/`AUTH_SESSION_ID` cookies (host-only, set for localhost) were not sent → Keycloak answers "Restart login cookie not found". Keycloak events confirm it: `LOGIN_ERROR … error="cookie_not_found"`, client `erp-web`, 12:51 (×4) and 13:12 UTC.
+- **Evidence:** (1) `psql` on the Keycloak DB showed the attribute; (2) a `curl` to `http://localhost:8081/.../auth` returned a form whose action was the tunnel URL, reproducible; (3) a tunnel-origin probe (form + POST on the same origin) returned "Invalid username or password", proving the cookies themselves worked; (4) reloading the stale tab dropped `session_code` and restarted the auth session, as expected for an expired session. Keycloak had also been restarted at 12:36 UTC, which invalidates in-memory auth sessions; the older failures at 12:51 were that second cause.
+- **Fix (runtime config only):**
+  1. Removed `attributes.frontendUrl` from realm `gh-staff` through the Admin API (`PUT /admin/realms/gh-staff`, 204). Verified: the auth page now generates `action="http://localhost:8081/realms/gh-staff/login-actions/authenticate"`.
+  2. `ERP_DEV/.env` `KEYCLOAK_URL` and `ERP_DEV/web/.env` `VITE_KEYCLOAK_URL`: tunnel → `http://localhost:8081` (both files are git-ignored). Reason: the tunnel host is ephemeral and mixes origins with the `http://localhost:5173` redirect URI and the local API; the issuer must match what the browser uses.
+  3. Restarted `api-gateway` and `access-service` with the corrected env, and started the web dev server (only the gateway was running; 8091 and 5173 were down).
+- **Verified:** gateway `/actuator/health` 200, access-service 200, web 200; `/api/v1/me` without a token → 401 JSON with `X-Correlation-Id`; in Brave, "Sign in" from `http://localhost:5173` now redirects to `http://localhost:8081` and the form posts to the **same** origin; a deliberate wrong password shows **"Invalid username or password."**, not the cookie error. A real login still needs Ashish's password (the ERP stores none).
+- **Not verified:** a successful end-to-end login with a real employee password (needs Ashish), and the API call that follows it (`/me` token issuer must be `http://localhost:8081/realms/gh-staff`).
+- **Left alone, needs a decision:** the uncommitted `docker-compose.yml` change (`KC_HOSTNAME` removed, `KC_HOSTNAME_STRICT=false`, `KC_PROXY_HEADERS=xforwarded`) was not the cause and was not reverted; with a dynamic hostname any host works, but each host produces its own issuer, so config must stay on one origin. Also uncommitted and undecided: the employee hard-delete feature (see STATE).
+- Doc added: KEYCLOAK-SETUP §1 now states that `frontendUrl` must stay unset locally, with the two curl checks.
+
+## 2026-11-15T19:19:46+05:30 — Invite link on a phone: HTTPS via a stable ngrok hostname (single origin)
+- **Goal (Ashish):** the emailed Keycloak invite link must open on a phone, and the ERP must be usable from any mobile. The link showed `ERR_CONNECTION_REFUSED` because it pointed at `localhost:8081`.
+- **Wrong first hypothesis, disproved:** the firewall. `firewall-cmd --get-active-zones` shows `wlo1` in zone **FedoraWorkstation**, which already opens **1025-65535/tcp**. No sudo rule was needed; nothing was changed there.
+- **Real blocker:** browsers expose `crypto.subtle` only in a **secure context**. `keycloak-js` needs it for PKCE `S256`. At `http://192.168.29.131:5173`, Brave reported `isSecureContext=false`, `crypto.subtle=undefined`, console *"Web Crypto API is not available"*, and the Sign in button did nothing. Plain HTTP on a LAN IP can **never** work for this app; disabling PKCE was rejected (AUTHENTICATION §5).
+- **Decision (Ashish, asked with the question tool):** public HTTPS on the **ngrok free dev domain** — stable, free, one hostname. Cloudflare quick tunnel (ephemeral), own domain, and LAN HTTPS with a self-signed cert were offered and not chosen.
+- **ngrok:** installed `~/.local/bin/ngrok` 3.39.13 from the official tarball; authtoken written to `~/.config/ngrok/ngrok.yml` (outside git, never in a log). The agent does **not** auto-use the free dev domain — two restarts produced `9dba-…` then `9cec-…`, so the assigned domain was taken from the dashboard and passed explicitly: `ngrok http 5173 --url=https://weaponless-bertie-hyperorganically.ngrok-free.dev`. That hostname is stable across restarts.
+- **One origin for app + Keycloak + API** (no CORS, no cross-site cookies): `web/vite.config.ts` now proxies `/realms` and `/resources` → `:8081`, `/api` → `:8082`, adds `allowedHosts: [".ngrok-free.dev"]` (Vite otherwise answers `403 Blocked request. This host … is not allowed`) and `hmr.clientPort: 443`.
+- **Config changed (git-ignored `.env` unless stated):** `KC_PUBLIC_URL`/`KEYCLOAK_URL` = the ngrok origin; new `KEYCLOAK_ADMIN_URL=http://localhost:8081` so provisioning calls stay internal; `KEYCLOAK_BIND=0.0.0.0` (LAN access kept, harmless); `CORS_ALLOWED_ORIGINS` = the ngrok origin + localhost; `web/.env` `VITE_API_URL`/`VITE_KEYCLOAK_URL` = the ngrok origin. `infra/docker-compose.yml` pins `KC_HOSTNAME=${KC_PUBLIC_URL}` (uncommitted, together with Ashish's earlier `KC_HOSTNAME_STRICT`/`KC_PROXY_HEADERS` change).
+- **Code (uncommitted):** `application.yml` gained `erp.keycloak.admin-url` (defaults to `url`); `KeycloakAdminClient` injects it for Admin API calls while the issuer stays public. `web/vite.config.ts` as above. `erp-web` client redirect/web/post-logout URIs: `https://weaponless-…ngrok-free.dev/*` added, the dead tunnel and the unusable LAN origins removed.
+- **Verified (commands run just now):** `issuer = https://weaponless-bertie-hyperorganically.ngrok-free.dev/realms/gh-staff`; SPA through the tunnel `200 text/html`; `/api/v1/me` through the tunnel `401` (gateway reached); theme files `/resources/...` all `200`; in Brave, the tunnel URL → "Visit Site" → app → **Sign in** → Keycloak on the **same** HTTPS origin (PKCE challenge present, `isSecureContext=true`) → wrong password shows **"Invalid username or password."** (no cookie error). ngrok's interstitial sets a cookie and calls `location.reload()`, so an invite link keeps its `?key=…` query.
+- **Not verified:** a successful login and the `/me` call behind it (needs Ashish's password), and the actual invite email after a resend (rate limit: 3/hour; the old slots had expired by 13:49 UTC).
+- **Operational notes:** the tunnel lives only while `ngrok http 5173 --url=… ` runs; if that process dies the URL stops working but the hostname stays the same. Free plan: 20k requests/1 GB per month, one browser interstitial per domain per 7 days. The ERP is now reachable from the public internet with dev credentials — acceptable for testing, must not be treated as staging.
+
+## 2026-11-15T19:40:09+05:30 — Follow-up: the invite email now returns to the app; test proves it
+- **Gap found while wiring the phone flow:** the setup email's last page ("Continue") had no return address, because `execute-actions-email` was called without `redirect_uri` — Keycloak then falls back to nothing useful and the employee is stranded after setting the password. `erp.web.origin` was already injected into `KeycloakAdminClient` for exactly this but never used.
+- **Change:** `sendSetupEmail` now passes `redirect_uri=<erp.web.origin>/` (trailing slash added). `ERP_WEB_ORIGIN` in the git-ignored `.env` is now the public HTTPS origin, so the last page leads back into the ERP. The value must stay inside the `erp-web` client's registered redirect URIs (`<origin>/*`).
+- **Bug found by the test harness and fixed:** `erp.keycloak.admin-url` defaulted to `${KEYCLOAK_URL:http://localhost:8081}`, not to `erp.keycloak.url`. In tests, `erp.keycloak.url` is overridden by Testcontainers, but a stray `KEYCLOAK_URL`/`KEYCLOAK_ADMIN_URL` from a sourced `.env` won, so the app provisioned into the **live** Keycloak (employee stayed `PENDING_PROVISIONING`, HTTP 202, and the assertion on the container's Keycloak returned null). Default is now `${erp.keycloak.url}`. Test commands from now on run **without** a sourced `.env` (the test resources supply `KC_ACCESS_SERVICE_CLIENT_SECRET`).
+  - Side effect cleaned up: the bad run created user `ravi.kumar` (`ravi.kumar@example.test`) in the **live** `gh-staff` realm. Deleted via the Admin API (204); the live realm has no `ravi*` user.
+- **Verified:** `./mvnw -q -Dtest=EmployeeOnboardingTest test` → surefire `Tests run: 3, Failures: 0, Errors: 0` (57 s). That test drives the real Keycloak 26.8.2 + Mailpit and asserts the setup mail is delivered, so Keycloak **accepts** the new `redirect_uri` and still sends the email. `npm run build` (tsc + vite) passes with the new proxy config.
+- **Still not verified:** a real login with an employee password on a phone, and the invite link from a real Gmail message (next steps in STATE).
+
+## 2026-11-15T19:53:43+05:30 — Start screen: two role cards (Sales Admin / Sales Executive)
+- **Request (Ashish):** after opening the ERP, show role cards to pick before signing in. Exactly **two**: **Sales Admin** and **Sales Executive**. If the account's real role is not the tapped card, the **account role wins with no error** (his choice from the two options offered).
+- **What changed:** `web/src/App.tsx` — `SignIn` renders `WORKSPACES` (ADMIN → "Sales Admin", SALES_EXECUTIVE → "Sales Executive") as two buttons, each calling the same `session.login()`. A hint line says "Your account decides what opens — the card only starts the sign-in." `ROLE_LABELS` maps the realm roles to those words and is now also used in the dashboard header, so the header and the cards speak the same language. `styles.css` gained `.role-picker`, `.role-choice` (hover/focus border) and `.signin .hint`; the existing `.role-cards`/`.role-card` are the **Add-employee** form's radio cards and were left alone.
+- **Why a card cannot grant anything:** it is a UI entry point only. The token's roles drive `/api/v1/me` (`modules`, `permissions`) and the gateway/access-service check every request (AUTHENTICATION §5). Tapping "Sales Admin" and signing in as a Sales Executive simply opens the Sales Executive workspace. No role is sent through the redirect, so there is nothing to spoof.
+- **Only two cards although the realm has three roles:** MANAGER exists in Keycloak (REQ-IAM-008) but is not offered on the start screen. Nothing breaks: a Manager signing in from either card gets whatever `/me` allows; they can be added to `WORKSPACES` later.
+- **Test fixes:** `App.test.tsx` asserted a single "Sign in" button — rewritten to assert exactly the two card titles and that a card triggers one sign-in; the dashboard test now also checks the friendly role label. `api.test.ts` hard-coded `http://localhost:8082/api/v1/me`, which broke once `web/.env` (git-ignored) pointed `VITE_API_URL` at the tunnel — it now asserts against `config.apiUrl`, so it no longer depends on a local env file.
+- **Verified:** `npm test` 20/20, `npm run build` (tsc + vite) ok, `npm run lint` (oxlint) clean. In Brave through the tunnel: the start screen shows both cards, and clicking **Sales Admin** navigates to `https://weaponless-…/realms/gh-staff/protocol/openid-connect/auth?...` with the PKCE challenge and `redirect_uri=https://weaponless-…/` — same origin, no interstitial on the second visit.
+
+## 2026-11-16T07:27:30+05:30 — Analysis only: landing-page guest login vs D-114
+- **Session start:** `erp-prp` copied to `.claude/skills/erp-prp/` so Claude Code can load it (resource path given for both Linux and Windows `D:\Intership wrok\ERP_Resouce`; the question tool name changed). The `.opencode/` copy is unchanged. Not committed.
+- **Question to Ashish:** the pasted guest-login description (lead-service :8093, BCrypt in `lead_db`, own JWT) conflicts with D-114 (guest-service :8092 → Keycloak `gh-guests`). Options: keep D-114 / replace / just document. **Answer: "just analyze".** No decision taken; D-114 stays as recorded.
+- **Read (no edits):** `landing-page/src/app/portal-client.ts`, `plan-ahead/login-portal.tsx`, `plan-ahead/plan-stay-portal.tsx`, `plan-ahead/portal-forms.tsx`, `booking-card.tsx`, `login/page.tsx`, `plan-ahead/page.tsx`; `ERP_DEV/docs/02-architecture/api.md` §2.
+- **Findings:** the request/response shapes match the frozen contract in api.md §2. Only email+password register/login call the backend; Mobile OTP, booking-reference lookup, Google, Apple and forgot-password are `setTimeout` simulations that create a local session with a fake token. When the network fails, login and register in `login-portal.tsx`/`plan-stay-portal.tsx` create a fake session, and `plan-stay-portal.tsx` shows a fake inquiry reference on **any** error (not only network errors). The token and profile are in `localStorage` (`ghr_portal_user`). The 6-character minimum is only checked in the browser. "Quick Demo Fill" buttons fill in hard-coded credentials. Neither guest-service nor lead-service has code yet (READMEs only), so in the current stack every guest login is the offline simulation. Full list in the session reply; no open-question entry added yet (awaiting Ashish).
+
+## 2026-11-16T13:37:00+05:30 — Full ERP stack started and verified
+- **Request (Ashish):** "run the server".
+- **Stack started:**
+  1. Docker Desktop engine started; compose infra containers (`golden-hills-erp-postgres-1`, `golden-hills-erp-keycloak-1`, `golden-hills-erp-redis-1`, `golden-hills-erp-mailpit-1`) up and healthy.
+  2. `access-service` (:8091) compiled and started via Spring Boot.
+  3. `api-gateway` (:8082) compiled and started via Spring Boot.
+  4. `ERP_DEV/web` (:5173, `--host 0.0.0.0`) Vite React dev server running.
+  5. `landing-page` (:3000) Next.js Turbopack dev server running.
+  6. `ngrok http 5173 --url=weaponless-bertie-hyperorganically.ngrok-free.dev` running for mobile/HTTPS access.
+- **Verification:** All endpoints probed over HTTP and returned HTTP 200 OK:
+  - Landing Page (`http://localhost:3000`) → 200
+  - Staff ERP Web (`http://localhost:5173`) → 200
+  - Keycloak Realm `gh-staff` (`http://localhost:8081/realms/gh-staff`) → 200
+  - Gateway Health (`http://localhost:8082/actuator/health`) → 200
+  - Access Service Health (`http://localhost:8091/actuator/health`) → 200
+  - Mailpit UI (`http://localhost:8025`) → 200
+  - Public ngrok Tunnel (`https://weaponless-bertie-hyperorganically.ngrok-free.dev`) → 200
+
+## 2026-11-16T15:08:00+05:30 — Gold Membership plan approved; landing page synced; hard delete reverted
+- **Session start:** `erp-prp` loaded; STATE/DEVLOG/OPEN_QUESTIONS read; `git status` checked.
+- **Request (Ashish):** understand and execute the pasted "Field Sales Gold Membership Registration" master plan, pull the latest landing page first, remove no UI feature without asking, email only.
+- **Resources read (read-only):** `LM Mem ID.xlsx`, `Golden_Hills_Resort_Loyalty_Voucher_Numbers_5000.xlsx` (client ID series GRH-LM-####), pricing PDF (no membership fee). Logged in RESOURCES_LOG.
+- **Questions and answers (all via the question tool):** member ID format → client series; schedule → "go with the plan" (before leads); member login → Keycloak `gh-guests`, later refined to Authorization Code + PKCE with automatic sign-in after password setup ("customers must not enter their password twice"); verifiers → ADMIN + MANAGER; amenities → config (TBC); ledger → `membership-data.ts`, QR deferred; mock OTP/Booking tabs → "Coming soon", fake offline login removed; emails → one Keycloak-sent welcome email with member ID and set-password link, through Ashish's SMTP; public URLs → one ngrok domain split by path (landing `/`, ERP `/erp/`); member screens → connect Ritvik's new /profile and /membership screens to real data; Membership-ID tab stays preview; real members show 0 used; sample ID placeholder → `GRH-LM-0000`. Recorded as D-116…D-124; new open questions Q-030…Q-037.
+- **Plan approved** (plan mode, ExitPlanMode). It is copied into `docs/03-phases/phase-1/inc-membership-PLAN.md` in the next docs step.
+- **Landing page sync:** `git fetch origin` brought `origin/Ritvik-Frontend` from `b7aada9` to `2c164d9` (6 commits: guest profile portal, membership booklet usage, stay showcase, fixes). `git checkout origin/Ritvik-Frontend -- landing-page` (no merge: that branch is based on the archived history). The local `view-on-map.tsx` icon fix (lucide `Map` instead of `react-icons`) was kept. Now staged = `2c164d9` + that one file. `skills-lock.json` (agent skill list from that branch) was unstaged and left untracked.
+- **Hard delete reverted (D-125):** removed `DELETE /api/v1/admin/employees/{id}`, `AccountService.deleteEmployee`, `KeycloakAdmin(.Client).deleteUser`, the FakeKeycloak stub and the Employees "Delete" button. Those four backend files now equal `HEAD`.
+- **Verified:** web `npm test` 20/20, `npm run lint` clean, `npm run build` ok; access-service `mvn test` 26/26 (AccountManagement 4, AuditAppendOnly 2, EmployeeOnboarding 3, MeEndpoint 9, ProvisioningFailure 8), run without a sourced `.env`; landing-page `npm run typecheck` ok, `npm run build` ok.
+- **Next:** four commits proposed and approved by Ashish (mobile/HTTPS access; role cards + Employees UI; landing sync; logs), then branch `feature/phase1-membership` and slice S0b (one domain by path).
+
+## 2026-11-16T15:09:38+05:30 — Commits (approved by Ashish: "Yes, 4 commits as listed")
+- An unfinished `git merge origin/Ritvik-Frontend` (MERGE_HEAD b7aada9, started 2026-11-16 00:04) blocked path commits. Asked Ashish; answer: "i want the change of ritvik but he has updated the landing page". Re-fetched: newest is still 2c164d9 and landing-page/ equals it except view-on-map.tsx. Ran `git merge --quit` (index and files unchanged), then committed by explicit paths:
+  - `9a58edb` feat(auth,infra): mobile access over one HTTPS origin
+  - `4dee064` feat(web): role-card start screen and refreshed Employees screen
+  - `4772b89` chore(landing-page): sync Ritvik's landing page up to 2c164d9
+  - `f22f828` docs(logs): decisions D-116..D-125, Q-030..Q-037
+- Not pushed (push still needs the token `workflow` scope). `skills-lock.json` left untracked.
+- Branch `feature/phase1-membership` created from `feature/phase1-fresh-start` (f22f828).
+
+## 2026-11-16T15:16:43+05:30 — S0b: one public origin split by path (D-124) — built, verified locally, awaiting tunnel switch
+- **Plan copy:** `docs/03-phases/phase-1/inc-membership-PLAN.md` (approved plan + S6 amendment).
+- **Live realm read-only check** (`kcadm get clients -r gh-staff -q clientId=erp-web`): redirectUris `https://weaponless-…ngrok-free.dev/*`, webOrigins the same origin, public client, standard flow. `/*` already covers `/erp/*` → **no Keycloak change made.** Realms present: master, gh-staff.
+- **Changes:** `infra/proxy/Caddyfile` + compose service `proxy` (`caddy:2.11.7`, newest release ≥ 2 weeks old; 2.11.8/2.11.9 too new), `127.0.0.1:8088`; routes `/realms`,`/resources` → keycloak:8081, `/api` → host :8082, `/erp/` → host :5173, rest → host :3000. `web/vite.config.ts` `base: "/erp/"`; `web/src/auth.ts` silent-SSO and logout use `BASE_URL`. access-service `erp.web.url` (`ERP_WEB_URL`, default `http://localhost:5173/erp/`) is the staff setup-email `redirect_uri`. `landing-page/next.config.ts` `allowedDevOrigins: ["*.ngrok-free.dev", …DEV_PUBLIC_HOSTS]` (read Next 16 doc `allowedDevOrigins.md` first). `.env.example` documents `ERP_WEB_URL`; local `.env` got `ERP_WEB_URL=<public origin>/erp/` (one appended line). Docs: KEYCLOAK-SETUP §1.1 + env table, DAY-ONE, web/infra READMEs.
+- **Verified:** `caddy validate` → Valid configuration. web `npm test` 20/20, lint clean, build (assets under `/erp/assets/`). access-service `mvn test` 26/26. Proxy probes on `http://localhost:8088` with the public Host header: `/` 200, `/login` 200, `/membership` 200, `/erp` 308 → `/erp/`, `/erp/` 200 (`/erp/@vite/client`, `/erp/src/main.tsx`), `/erp/silent-check-sso.html` 200, `/realms/gh-staff` 200, issuer `https://weaponless-…/realms/gh-staff`, `/api/v1/me` 401 (gateway reached).
+- **Not done (blocked):** stopping the running access-service (PID tree 12880) to load `ERP_WEB_URL` and switching the running ngrok agent from :5173 to :8088 were refused by the tool's safety check; a second access-service start failed on the busy port, as expected. Ashish to restart both. Phone test pending.
+
+## 2026-11-16T15:40:40+05:30 — S0b committed; S1 membership core + S2 gateway routes built and verified
+- **S0b commit** (Ashish: "commit it and continue"): `97c5e0c` feat(infra,web): one public origin split by path. Before it, ngrok was confirmed on :8088 and access-service restarted at 15:19 (by Ashish); public `/` 200, `/erp/` 200, `/api/v1/me` 401.
+- **S1 (tests first):** `MembershipTest` (21 tests) written before the code. Then: `V2__gold_membership.sql` (counter row GRH-LM 101..5100, `resort_member` with partial unique email/mobile indexes and validity/decision checks, `member_payment` with card/QR/proof/rejection checks, no cascade deletes); package `membership` (`MembershipService`, `MembershipController` /api/v1/sales/memberships, `MembershipAdminController` /api/v1/admin/memberships, `ProofStorage` AES-256-GCM + magic bytes + 5 MB + SHA-256, `MemberView`); `AuditLog.record` overload with entity type (`MEMBER`); `FieldErrorsException` + 413 handler; `/me` adds module `memberships`; multipart limits 5 MB / 6 MB; config `erp.membership.*`.
+- **Deviation from the pasted plan (recorded):** no separate `member_audit_log` table; the existing append-only `audit_event` is used (UPDATE/DELETE blocked by trigger). Plain JDBC instead of JPA entities for the membership tables (explicit SQL for the counter and locks).
+- **Rules §11 applied:** payment screenshots are encrypted at rest; key `MEMBERSHIP_PROOF_KEY` generated with `openssl rand -base64 32` into the local `.env` (git-ignored); files under `data/` (git-ignored).
+- **S2 (part):** gateway body limit moved from a default filter to per-route filters: `membership-registration` (POST /api/v1/sales/memberships, `MAX_UPLOAD_SIZE` 6 MB) and `access-service` (1 MB, now also `/api/v1/sales/**`). Multi-issuer and portal routes wait for S3/S4.
+- **Keycloak:** realm JSON + **live realm** (kcadm, additive only): client roles `memberships.register|read_own|read_all|verify`, composites (SE: register, read_own; MANAGER/ADMIN: all four), and `erp-web` scope mappings (fullScopeAllowed=false — without them the roles never reach the token; first attempt at the scope step failed on a script error of mine, redone and verified). Documented in KEYCLOAK-SETUP §5.4.
+- **Verified:** access-service `mvn test` 47/47 (MembershipTest 21, MeEndpoint 9, ProvisioningFailure 8, AccountManagement 4, EmployeeOnboarding 3, AuditAppendOnly 2). api-gateway `mvn test` 13/13 (3 new). A second access-service copy on :8191 against the real dev DB: Flyway "Successfully applied 1 migration" (V2 gold membership), counter row `GRH-LM|101|5100`, health UP, new endpoints 401 without a token, proof key loaded; copy stopped afterwards. Live calls with real staff tokens not done yet (needs restarts and a fresh sign-in).
+- **Docs:** REQUIREMENTS (REQ-MEM-001…009), TRACEABILITY, api.md §3a, AUTHENTICATION §3 table, KEYCLOAK-SETUP §5.4, new `docs/04-modules/membership.md`, `.env.example` (`MEMBERSHIP_PROOF_KEY`, `MEMBERSHIP_PROOF_DIR`).
+
+- **Commit** (approved: "Yes, commit as proposed"): `4267d1b` feat(membership): Gold Membership registration, encrypted payment proofs, verification (S1+S2).
+
+## 2026-11-16T15:46:23+05:30 — S5: staff ERP Memberships screen built (tests first)
+- `web/src/Memberships.test.tsx` (10 tests) written first, then `web/src/Memberships.tsx`: tabs Register member / My members / Verification queue (by permission), provisional brass ID tag, Gold badge, Cash/Card/Scan QR pills with conditional fields, UPI QR from `VITE_UPI_QR_URL` (placeholder until Q-031), gallery + camera (`capture="environment"`) inputs with preview and Replace/Retake/Remove, in-browser shrink to ≤ 2000 px for photos > 1.5 MB, read-only executive card from `/me`, review drawer with zoomable screenshot, Verify & activate, Reject with required reason, self-enrolled note. `App.tsx`: module label + page (nothing removed). `api.ts`: FormData keeps the browser's multipart Content-Type; `image/*` responses return a Blob (2 new tests). `config.ts`: `upiQrUrl`. `styles.css`: membership styles + phone rules (≤ 640 px) for header, menu and main padding.
+- **Bug caught before testing live:** `index.html` CSP had `img-src 'self' data:`, which blocks the `blob:` preview and screenshot viewer → added `blob:`.
+- **Verified:** `npm test` 32/32 (was 20; +10 Memberships, +2 api), `tsc -b` clean, `npm run lint` clean (one oxlint warning fixed), `npm run build` ok. Not yet verified live: needs access-service and api-gateway restarted with the S1 code and a fresh staff sign-in.
+
+- **Commit** (approved: "Yes, commit; I'll test live next"): `4da643a` feat(web): Memberships screen (S5). Ashish will restart the services and test live; S3 starts now.
+
+## 2026-11-16T16:18:27+05:30 — S3 spike passed; session paused with a handoff
+- Keycloak extension `infra/keycloak-extensions/gh-member-activation` (activation authenticator, send-welcome realm resource, golden-hills email + login themes) and realm `infra/keycloak/gh-guests-realm.json`. `ActivationFlowIT` on real Keycloak 26.8.2 + Mailpit: **5/5 pass** — welcome email → Update password page directly → one submit → 302 to the landing page with a code → PKCE token (sub = member, email_verified, aud guest-api); link single-use; forged/replaced links refused; send endpoint 401/400/404 checks; guest-service limited to users; standard flows kept.
+- Found during the spike: (1) Keycloak 26.8 Admin API needs the `kc-admin-api` client scope (audience) → added to guest-service; without it 401. (2) Keycloak's Secure cookies over http are fine for browsers on localhost but not for java.net.CookieManager → test has its own jar. (3) A redirect to the required-action page comes before the Update-password page.
+- Compose: keycloak env `KC_GUEST_SERVICE_CLIENT_SECRET` (required) and `LANDING_PUBLIC_URL`; volume `./keycloak-providers` → `/opt/keycloak/providers`; jar built there (git-ignored). Path differs from the plan (`infra/keycloak/providers`) because `infra/keycloak` is the realm-import mount.
+- An interrupted command left `.env`/`.env.example` WITHOUT the two new variables — must be added before the next `compose up`.
+- Ashish asked for a full context handoff: `docs/03-phases/phase-1/inc-membership-HANDOFF.md`. S3 files are uncommitted (not approved yet).
+
+## 2026-11-16T16:57:51+05:30 — S3 code complete (not yet live, not committed)
+- **Resumed** ("continue the work"). Added the missing `KC_GUEST_SERVICE_CLIENT_SECRET`, `LANDING_PUBLIC_URL` and `GUEST_DB_PASSWORD` to the local `.env` (random secrets, one appended line each) and documented them in `.env.example`.
+- **guest-service** (new, `services/guest-service`, :8092, `guest_db`): `/internal/guests/provision`, `/internal/guests/{id}/resend` (gh-staff token + `guests.provision`), `/api/v1/portal/me` (gh-guests token, aud guest-api); two security chains by issuer (`IssuerDecoders`); `KeycloakGuestIdentity` (client credentials in gh-guests, find/create user without password, set membershipId, call the extension's send endpoint); V1 `guest_account` + append-only `audit_event`. Tests `GuestProvisioningTest` 9/9 (first run failed: bean overriding of the decoders didn't take — replaced by one `IssuerDecoders` bean the test overrides with @Primary).
+- **access-service**: `GuestAccounts` + `GuestServiceClient` (gh-staff client-credentials token); `verify` now calls `welcome` after the commit → `guest_user_id`, `account_status` INVITE_SENT/INVITE_FAILED, audit MEMBER_WELCOME_SENT/FAILED (never throws); `POST /api/v1/admin/memberships/{id}/resend-welcome` (409 NOT_ACTIVE); `displayDate` "16 Nov 2027" in IST; config `erp.guest-service.url`. MembershipTest 25 (+4). Full suite 51/51 (one earlier run had the two Keycloak-container suites time out at startup under Docker load; the realm imports fine in 40 s and the re-run passed).
+- **gh-staff realm JSON**: erp-api role `guests.provision` on the access-service service account + access-service client scope. Not yet in the live realm (KEYCLOAK-SETUP §5.5 has the command).
+- **web**: review drawer shows the customer account status and **Resend welcome email** (33/33, lint/tsc clean).
+- **infra**: `guest_db`/`guest_svc` in `infra/postgres/init`, `GUEST_DB_PASSWORD` in compose. **CI**: new gh-guests realm check (15 rules) + `keycloak-extension` job; both realm checks run locally: 14/14 and 15/15 ok.
+- **Docs**: new `identity/MEMBER-LOGIN.md`; KEYCLOAK-SETUP §5.5 + §13; api.md §3a resend + §3b guest-service; AUTHENTICATION pointer; DAY-ONE (extension build, guest_db, guest-service); ARCHITECTURE; membership.md; TRACEABILITY REQ-MEM-008; READMEs (guest-service, extension).
+- **Live steps pending Ashish's OK**: (1) kcadm `guests.provision` on live gh-staff; (2) create `guest_db`/`guest_svc` on the live Postgres volume; (3) recreate the Keycloak container to load the extension and import gh-guests; (4) start guest-service; (5) restart access-service.
+
+## 2026-11-16T17:09:15+05:30 — S3 committed and live (approved by Ashish)
+- **Commits** (approved "Yes, commit (2 commits)"): `f9be13b` feat(identity): gh-guests realm + gh-member-activation extension + CI; `6044e6b` feat(membership): guest-service + welcome email on verification + resend. Not pushed.
+- **Live steps** (approved: all four):
+  1. kcadm on live gh-staff: role `guests.provision` created, assigned to `service-account-access-service`, added to the access-service client scope. Verified: access-service's client-credentials token carries `erp-api: [guests.provision]` and aud `erp-api`.
+  2. Live Postgres: `CREATE ROLE guest_svc`, `CREATE DATABASE guest_db OWNER guest_svc`, `REVOKE ALL … FROM PUBLIC` (first attempt with a psql `\gset` guard created nothing; re-run plainly).
+  3. Extension jar rebuilt; `docker compose … up -d --no-deps keycloak` (no-deps so Postgres wasn't recreated). Keycloak healthy; log: provider gh-member-activation loaded (KC-SERVICES0047 internal-SPI warning, expected), "Realm 'gh-guests' imported", "Realm 'gh-staff' already exists. Import skipped". guest-web redirect URIs resolved to the public host + localhost:3000; gh-guests issuer = public host.
+  4. guest-service started (:8092, background, log `ERP_DEV/logs/guest-service.out`): health UP, Flyway V1 applied on guest_db; its client secret works (Admin API users 200); `/internal/guests/provision` without token 401, with access-service's real token → 400 validation (auth passed).
+- **Not done:** no real welcome email sent (it would go to a real address through Ashish's SMTP); access-service and api-gateway still need Ashish's restart to run the S1–S3 code; the landing page has no `/member/activate` yet (S6).
+
+## 2026-11-16T17:20:49+05:30 — S4 portal API built (tests first), not committed
+- access-service: `MembershipPortalTest` (6) written first; then `PortalMembershipController` (`GET /api/v1/portal/membership/me`, member by token `sub` = `guest_user_id`, no payment/proof/ids, executive mobile only with WhatsApp opt-in, first call sets `account_status = ACTIVE` + audit `MEMBER_PORTAL_FIRST_SIGN_IN` once) and a second security chain `portal` (@Order 1, gh-guests issuer, aud guest-api; `PortalDecoder` wrapper so tests can replace it). Config `erp.keycloak.guest-issuer`. Full suite **57/57**.
+- api-gateway: routes `/api/v1/portal/membership/**` → access-service and `/api/v1/portal/me` → guest-service (`GUEST_SERVICE_URL`); `/internal/**` not routed (test). **Bug found by the new routing test:** the gateway's staff JWT check also ran on the public `/api/v1/portal/**` paths whenever a bearer token was present, so real member tokens (and the landing page's existing "my inquiries" token) would get 401. Fixed with a separate portal security chain that doesn't read tokens (D-126); services validate. Gateway **15/15**.
+- Docs: api.md §3c, membership.md, TRACEABILITY REQ-MEM-009, ARCHITECTURE note, DECISIONS D-126.
+
+- **Commit** (approved "Yes, commit and start S6"): `dff8b5c` S4 member portal API + gateway portal chain.
+
+## 2026-11-16T17:38:18+05:30 — S6 landing page built (not committed)
+- Read Next 16 docs first (useSearchParams + Suspense, rewrites, env). Added `keycloak-js@26.2.5` (exact, same as web; Q-023).
+- New: `guest-auth.ts` (PKCE S256, memory tokens, silent SSO, Keycloak URL fallback rules), `public/silent-check-sso.html`, `/member/activate` (page + client component: token → `createLoginUrl` + `&activation_token=` → Keycloak; returns to `/membership?welcome=1`), `member-benefits.ts` (amenities, all "to be confirmed", Q-032), `member-extras.tsx` (/profile status, amenities, concierge; executive number only with WhatsApp opt-in).
+- Changed (nothing removed): `guest-session.ts` real session (member/guest) beside the sample one; `portal-client.ts` same-origin default `/api/v1/portal` + `getMyMembership`; `profile-sign-in.tsx` Email tab → Keycloak (ID tab unchanged preview); `profile-view.tsx`, `booklet-usage.tsx`, `membership-member-hero.tsx` real-member wording; sample IDs → `GRH-LM-0000`; `login-portal.tsx` and `plan-stay-portal.tsx` per D-123 (email-only → Keycloak, register → Keycloak registration, OTP/Booking tabs disabled "Coming soon", fake offline sign-ins removed, quick demo email only, forgot → Keycloak page; plan-ahead folio shows a real Gold Member's number, non-members unchanged Q-036); `next.config.ts` /api rewrite for localhost; styles; `.env.example`, README.
+- Not changed: the reservation form's "Offline Preview" fake reference (enquiries are increment 2) — to raise with Ashish.
+- **Verified:** `npm run typecheck` ok; eslint on changed files: no new findings (login-portal 4→3, plan-stay-portal 17→16 pre-existing problems; Q-004); `npm run build` ok (19 pages incl. /member/activate). Live smoke via proxy :8088 with the public Host: /member/activate, /silent-check-sso.html, /membership, /login, /plan-ahead 200; Keycloak gh-guests auth page for guest-web renders the golden-hills theme with login_hint; foreign redirect_uri 400; missing PKCE → redirect with `error=invalid_request … code_challenge_method`.
+- **Found:** Ritvik's local `landing-page/.env.local` sets `NEXT_PUBLIC_LEAD_API_URL=http://localhost:8082/api/v1/portal`, which phones on the public URL can't reach — Ashish to delete that line (not edited: local file).
+
+## 2026-11-16T17:44:28+05:30 — S6 committed; .env.local fixed; increment report drafted
+- **Commit** (approved "Yes, commit"): `7b8da30` feat(landing-page): member sign-in with Keycloak PKCE, welcome link, real Gold card (S6).
+- Ashish approved removing `NEXT_PUBLIC_LEAD_API_URL` from `landing-page/.env.local` (its only line; file now empty, git-ignored). The site now uses same-origin `/api/v1/portal`.
+- Ashish: leave the reservation form's "Offline Preview" fake reference for increment 2.
+- Drafted `docs/03-phases/phase-1/inc-membership-REPORT.md` (deliverables, test evidence, live S7 checklist, deviations, open items). S7 live test needs Ashish (service restarts, a real inbox, phone).
+
+## 2026-11-16T18:52:00+05:30 — Stack restarted, runner scripts added, push to GitHub approved
+- Cleanly restarted `access-service` (:8091), `api-gateway` (:8082), and `landing-page` (:3000) with fresh environment variables to run S1–S6 code. Added runner scripts `ERP_DEV/run-access-service.ps1`, `ERP_DEV/run-api-gateway.ps1`, and `run-landing-page.ps1`.
+- Restarted ngrok tunnel on :8088 (`https://weaponless-bertie-hyperorganically.ngrok-free.dev`). All endpoints verified 200 through proxy.
+- Ashish approved committing the increment report, runner scripts, and state logs, and pushing branch `feature/phase1-membership` to `origin`.
+
+## 2026-11-16T19:50+05:30 — Returning members sign in again (D-127…D-129)
+- **Report (Ashish):** after the welcome email the member was signed in, but after leaving the website could not sign in again. He pasted an analysis (in-page password box, 30-day sessions, ngrok IPv4) and asked to analyse and plan.
+- **Analysis (read-only):** sign-in with email + password already existed on the Golden Hills Keycloak page and is proven by `ActivationFlowIT` step 5. Confirmed causes: (1) at 19:26 Docker Desktop was stopped (Postgres, Keycloak, Caddy down; nothing listening) and ngrok `8088` can dial IPv6 `[::1]` while the proxy binds 127.0.0.1 (502); (2) the welcome-link session was not remember-me, so its cookie died with the browser, and Gmail opens links in its own browser. Not confirmed: "mobile blocks the silent-SSO iframe" (one origin, first-party cookies). The single-use link is by design.
+- **Question → answer:** password on our page (password grant) or on Keycloak's page, fixed? → "go with recommended and i want user data to be stored in thd db as well for more security". Plan approved (ExitPlanMode).
+- **Built:** activation step sets remember-me; login theme `keep-signed-in.js` + "Keep me signed in" label; realm remember-me idle 7 d → 30 d (JSON; live realm change pending approval); guest-service `V2__guest_sign_in.sql` + `/portal/me` records each sign-in once per Keycloak `sid` (audit `GUEST_SIGNED_IN`), creates rows for self-registered guests, refuses DISABLED (403); landing: "Sign in" wording + "enter the password you set from your welcome email", reachability check before the Keycloak redirect, keycloak-js re-initialises after an outage, "couldn't load your membership — Try again" on /membership and /profile, `getMe` call; `check-stack.ps1` (read-only OK/DOWN) and `run-guest-service.ps1`; CI realm checks +2.
+- **Verified:** extension + guest-service compile (tests need Docker, which is stopped: NOT run yet); landing typecheck, eslint (changed files) and build ✅; CI gh-guests checks 17/17 ✅ locally; `check-stack.ps1` runs (all DOWN, as the stack is stopped).
+- **Docs:** MEMBER-LOGIN §1 step 7 + new §8, api.md (`/portal/me`), membership.md, KEYCLOAK-SETUP §1.1 (ngrok IPv4, check-stack), REPORT §3 steps 10–12, HANDOFF, DAY-ONE §5b, TRACEABILITY, DECISIONS D-127…D-129, OPEN_QUESTIONS (Q-034 30 d; event retention).
+- **Pending:** Docker up → run `ActivationFlowIT` and guest-service tests; apply the remember-me idle change to the live realm with kcadm (ask) and rebuild the extension jar + restart Keycloak; restart guest-service (V2 migration); live checklist; ask before commit.
+
+## 2026-11-16T20:20+05:30 — Root cause: members couldn't sign in again (D-130)
+- **Report (Ashish, screenshot of /profile):** after signing out he can't sign in with his email and password; there is no password field.
+- **Evidence (read-only, Keycloak admin events for gh-guests):** ~30 `LOGIN_ERROR invalid_redirect_uri` for guest-web since 17:59, all with `redirect_uri = https://weaponless-…/silent-check-sso.html`; the only successful logins were welcome-link activations (18:10, 18:36, 20:02). No sign-in attempt ever reached the password form after a sign-out.
+- **Cause:** the guest-web redirect list I wrote in S3 omitted `/silent-check-sso.html` (and the CI check enforced that). keycloak-js `#checkSsoSilently` (lib/keycloak.js:1061) waits for the frame's message with no timeout, so `initAuth()` never resolved: the card never showed after a reload, and `signIn()` (which awaited `initAuth()`) never called `login()` — the button stayed on "Opening…". The welcome link only worked because keycloak-js reads the returned code from the URL without the frame. The 19:50 entry's explanation (cookies, Gmail in-app browser) was secondary; **this was the main cause.** My 19:50 change (`kc = null` after a failed init) would also have broken `login()`; reverted.
+- **Fix:** realm JSON + **live** guest-web (admin API PUT 204): two exact silent-check URIs; live realm `ssoSessionIdleTimeoutRememberMe` = 2592000 (D-127, PUT 204). `guest-auth.ts`: `initAuth` = race(init, 8 s → signed out); `signIn`/`register` wait at most 1.5 s for the start of init, then open Keycloak. CI check now requires the two silent-check URIs. New `ActivationFlowIT` test: prompt=none to `/silent-check-sso.html` → 302 `error=login_required`; `…htmlx` and other paths → 400.
+- **Live check:** public URL prompt=none → 302 to `/silent-check-sso.html?error=login_required` (was 400).
+
+## 2026-11-16T21:10+05:30 — Commits for D-127…D-130; Gold Member smart fields (D-131…D-134)
+- **Commits (approved "Yes, commit as proposed"):** 536ae3e fix(identity) silent-check redirect + remember-me; 3e7d126 feat(guest-service) sign-in record; c5c5122 chore(dev) scripts/docs. Not pushed.
+- **Request:** Ashish pasted a prompt for smart registration fields (Aadhaar + Verhoeff + masking, 18+ guard, structured address with pincode auto-fill, +91 mobile, title case, amount chips) "according to your project fields". Plan approved after 3 questions → answers: ID proof **Aadhaar or DL** (client's words, Discovery Call [22:56]); chips **from config**; pincode data **from India Post's CSV** in the resource folder.
+- **Departures from the prompt (recorded D-131…D-134):** generic `id_*` columns (Aadhaar or DL); **HMAC** instead of plain SHA-256 (an unkeyed hash of ~10^12 Aadhaar numbers is reversible); age CHECK on `created_at` (IST) instead of CURRENT_DATE; `registration_form` 1/2 so existing dev members survive the migration; no invented prices or pincode dictionary.
+- **Built:** `V3__member_smart_fields.sql`; `IdentityNumbers` (Verhoeff, normalise, mask, HMAC), `IndianStates`; `MembershipService` validation (18+ IST, ID, pincode/city/state/country, Indian mobile, title case), insert, duplicate check + 409 `ID_ALREADY_REGISTERED`, audit with masked ID only, `Clean.toString` without the full number (idempotency hash); `MemberView` + controller params; config `erp.membership.id-hash-key`. Web: `smartFields.ts`, form (age pill, +91 prefix + tick, ID pills + Aadhaar formatting/checksum/masked preview, street/pincode/city/state/country, chips, Register disabled until valid), drawer (masked ID, full address, "not recorded" for older members), CSS, `config.goldFeeChips`; `scripts/build-pincodes.mjs` (tested on a synthetic CSV only; no data file yet).
+- **Tests:** access-service **70/70** (was 57; +9 MembershipTest, +4 IdentityNumbersTest); web **44/44** (was 33), lint clean, build ok. Fixed on the way: SMALLINT read as Integer in a test; audit column is `after_json`; labels containing live pills needed `aria-label`s.
+- **Pending:** `MEMBERSHIP_ID_HASH_KEY` in the local `.env` (ask) and restart access-service (V3 migration); India Post CSV (Q-040); live phone check; ask before commit.
+
+## 2026-11-16T21:40+05:30 — Sales Executive menu = Memberships as "Dashboard" (D-135)
+- **Commits (approved):** ebf4952 feat(membership) smart fields backend; 059240d feat(web) smart form; d8e04e8 docs. Live: MEMBERSHIP_ID_HASH_KEY added to local .env (approved), access-service restarted, V3 applied (4 existing members = form 1).
+- **Request (screenshot of /erp/#memberships):** remove Dashboard and Leads for the Sales Executive; only Memberships, renamed Dashboard.
+- **Done:** `MeController.modules(roles, permissions)`: SALES_EXECUTIVE-only with `memberships.register` → `["memberships"]`. `App.tsx`: without a `dashboard` module the first module is home, called "Dashboard", and is shown for an empty or unknown hash. Tests: `MeEndpointTest` 10/10 (+1), web 45/45 (+1).
+
+## 2026-11-16T21:55:00+05:30 — Sales Admin Dashboard & Attended Leads Drill-down (D-136)
+- **Request (Ashish):** "in sale admin ,remove the dashboard and lead section and i want to see that data of each sales executive data like how many lead he has attended and data of the lead is should display after click the employee name in the dashboard"
+- **Plan:** written and approved (`sales_admin_lead_dashboard_plan.md`).
+- **Done:**
+  1. **lead-service (:8093) + lead_db:** Spring Boot 4.1.2 microservice with Flyway migration `V1__init_lead_schema.sql` creating `lead` table in `lead_db` and seeding 5 realistic leads attended by executive `rohan`. Implemented `Lead`, `LeadRepository`, `SalesDtos`, `SalesLeadController` (`GET /api/v1/sales/leads`, `GET /api/v1/sales/leads/summary`, `GET /api/v1/sales/leads/{id}`), `SecurityConfig` (Keycloak gh-staff token validation with erp-api audience). Test suite: 2/2 tests pass.
+  2. **API Gateway (:8082):** added route for `lead-service` (`/api/v1/sales/leads/**`, `/api/v1/portal/inquiries/**` -> `:8093`).
+  3. **access-service (:8091):** updated `MeController.modules` so `ADMIN` role excludes `leads` from top nav; updated `MeEndpointTest` (11/11 tests pass).
+  4. **web (:5173):** created `SalesAdminDashboard.tsx` featuring:
+     - Top KPI cards: Total Sales Executives, Total Leads Attended, In Progress, Converted.
+     - Sales Executives Roster Table: lists each executive, avatar, username, email, attended leads count, status breakdown (In Progress, Converted, Lost), and "View Leads →" action.
+     - Attended Leads Drill-Down: clicking any executive name displays their full attended leads list with reference ID, guest details, stay specs, status pills, attended timestamps, and interaction notes.
+     - Filters & Search: search by guest name/phone/reference, status filter pills (All, In Progress, Converted, Lost), and "← Back to All Executives" button.
+     - Updated `App.tsx` navigation and rendered `SalesAdminDashboard` on the home/dashboard view for Sales Admin.
+  5. **Infrastructure & Scripts:** updated `infra/postgres/init/01-service-databases.sh`, added `run-lead-service.ps1`, updated `check-stack.ps1`.
+- **Tests & Verification:**
+  - `web`: 50/50 vitest tests pass (+5 new tests in `SalesAdminDashboard.test.tsx` and `App.test.tsx`); `tsc -b && vite build` clean.
+  - `lead-service`: 2/2 tests pass; service started and healthy on `:8093`.
+  - `access-service`: 11/11 tests pass.
+  - `check-stack.ps1`: all 13 services OK and healthy behind proxy `:8088`.
+
+## 2026-11-16T23:45:00+05:30 — Sales Performance moved into Employees (D-137, D-138)
+- Ashish: remove the Sales Admin Dashboard and Leads completely; track each Sales Executive's attended / converted leads with analysis of who is doing better, reached from Employees. Plan approved. Q: placement → A: "Tab in Employees". Q: Manager too? → A: "yes admin" (Sales Admin only) + new rule: Sales Admin can only create Sales Executives (D-138).
+- Found during planning: lead-service `/api/v1/sales/leads/**` was `authenticated()` only, so a Sales Executive token could read every lead. Now `hasRole('ADMIN')` (filter chain + `@PreAuthorize`); lead-service maps `realm_access.roles` → `ROLE_x` like access-service.
+- Checks: `web` → `npx vitest run` 55/55, `npm run build` OK, `npm run lint` clean. `lead-service` → `./mvnw -o test -Dsurefire.useManifestOnlyJar=false` 8/8. `access-service` → `./mvnw -o test-compile` OK; tests not run (Docker Desktop off).
+- `erp-prp` skill named in AGENTS.md is not installed in this Windows session; told Ashish.
+- Not committed (ask first, Rule 7).
+
+## 2026-11-16T23:56:00+05:30 — Full stack & ngrok tunnel started
+- Ashish requested to run all servers.
+- Bootstrapped Docker Desktop backend, brought up Docker Compose infrastructure (PostgreSQL 18 :5433, Keycloak 26 :8081, Redis 8 :6379, Mailpit :1025/:8025, Caddy :8088).
+- Started Spring Boot microservices: `access-service` (:8091), `api-gateway` (:8082), `guest-service` (:8092), `lead-service` (:8093).
+- Started frontend applications: `landing-page` Next.js (:3000), `web` Staff ERP Vite (:5173 with `--host 0.0.0.0`).
+- Started ngrok tunnel pointing to `127.0.0.1:8088` (`https://weaponless-bertie-hyperorganically.ngrok-free.dev`).
+- Verified all 13 health checks via `check-stack.ps1` (all OK). Verified public ngrok URL endpoint returns HTTP 200.
+
+## 2026-11-17T00:15:00+05:30 — Employee PAN field (D-139)
+- Ashish: "add pan card field in employee create form of the sales admin".
+- Stored the D-131 way (masked + keyed hash, never the full PAN); required for new employees; individual PANs only (4th letter P); unique per employee.
+- First test run failed: Hibernate schema validation expected VARCHAR for `pan_hash` but V4 used CHAR(64). Changed to VARCHAR(64) (the CHECK still forces 64 hex characters).
+- Checks: access-service `./mvnw -o test` 75/75 (Docker up; includes D-137/D-138 tests not run before); web `npx vitest run` 57/57, `npm run build` OK, `npm run lint` clean.
+- Not committed (ask first, Rule 7).
+
+## 2026-11-17T00:45:00+05:30 — Memberships per executive (D-140)
+- Ashish: "and even want to see how many membership executives brought in the admin".
+- Added to Employees → Sales Performance rather than a new screen, same period filter. "Sold" = ACTIVE (verified); revenue = VERIFIED payments only, summed in PostgreSQL, sent as strings.
+- Checks: access-service `./mvnw -o test` (new `adminSeesMembershipsEachExecutiveBroughtIn`); web `npx vitest run` 59/59, `npm run build`, `npm run lint`.
+- Not committed (ask first, Rule 7).
+
+## 2026-11-16 — Sales Admin web UI redesign (UI only, uncommitted)
+- Request: redesign the Sales Admin dashboard and pages to match the landing-page palette, with no backend, API or behaviour change. Keycloak sign-in is bypassed for UI work through the existing `VITE_UI_BYPASS_AUTH` / `preview.ts`, which was already in place and not touched.
+- Changed: `web/src/App.tsx` (sign-in, shell and dashboard markup), `Employees.tsx` and `Memberships.tsx` (markup and class names only), and `styles.css` (rewritten; forest #104028, brass #b88828, paper #f7f2ec, General Sans + Inter, self-hosted to satisfy the CSP).
+- Added: `web/src/assets/fonts/*.woff2` and `web/public/brand/logo-{light,color}.png`, copied from landing-page.
+- Not changed: api.ts, auth.ts, config.ts, main.tsx, preview.ts, vite.config.ts, index.html, tests, services. All API paths, handlers and permission checks are unchanged.
+- Removed from the dashboard: the fake estate selector and the "Operational Clearance" and "WhatsApp notifications active" chips.
+- Mobile first: on phones a forest top bar and a fixed bottom tab bar; from 960px up a 264px sidebar. Tables become card rows under 760px. The review drawer is a bottom sheet on phones and a right drawer from 760px up.
+- Fix during the work: the card entrance animation (transform, fill `both`) trapped the fixed review drawer. It is now opacity-only with fill `backwards`.
+- Checks: `npx vitest run` 33/33, `npx tsc -b` clean, `npx oxlint src` clean, `npx vite build` OK. Checked by screenshot at 1440×900 and 390×844, in light and dark, with no horizontal scroll.
+- Notes: the preview audit data uses outcome `ALLOWED`, but the backend writes `SUCCESS`/`FAILURE`, so preview rows show red. The dev console CSP error for `ws://localhost:443` (HMR `clientPort: 443`) was already there and is dev-only.
+
+## 2026-11-16 — Landing page: mobile pass (desktop unchanged, uncommitted)
+- Request: the landing page felt crowded and broken on phone browsers; make it mobile first without changing desktop.
+- New `landing-page/src/app/mobile.css`, imported last in `layout.tsx`. Every rule sits inside a `max-width` query (980/900/760/380px); a PostCSS check found 0 unscoped rules.
+- Fixed overflow: the membership enquiry grid and the plan-ahead shell used a bare `1fr` column, so long content pushed them past the screen; both now use `minmax(0, 1fr)`. Hero booking date fields, the home status label on the membership teaser, and the login method tabs no longer spill out.
+- Less crowded: amenities two to a row, "why choose us" one tile per row with the icon beside the text, gallery filters in one swipe row, map header on two rows, more space above the dining CTA, 44px tap targets on small links and tabs.
+- Hover: wrapped 125 `:hover` rules in 11 stylesheets in `@media (hover: hover) and (pointer: fine)`, in place (PostCSS script), so taps no longer leave a hover state stuck. This changes nothing for a mouse.
+- Bug found: `.plan-mode-tab span { position: relative }` collapses the active-tab pill to 0×0, so the active label is invisible. Fixed on phones only; desktop has the same bug and was left as requested.
+- Checks: 1440px pixel diff on all 9 routes with and without the new rules gave 0 changed pixels (plan-ahead compared on the form half because of its slideshow). No horizontal scroll at 360/390/768. `npm run typecheck` clean, eslint clean on layout.tsx. Pre-change CSS backed up in the session scratchpad.
+
+## 2026-11-16 — Landing page: mobile functional check (Chromium phone emulation over CDP)
+- No Chrome DevTools connector in the session; Playwright drove Chromium over the DevTools protocol with phone emulation (390×844 and 360×844, touch, isMobile). Script: tap through every interactive feature, check for overlapping text and covered controls, record console errors.
+- 55 checks per width, 54 pass at both. The one flagged overlap (Gatherings) is stacked venue cards covering earlier ones as designed; confirmed by screenshots.
+- Tested and working: nav menu open and navigate; hero booking → /plan-ahead with dates and guests; room-row swipe; gallery filters; map Satellite toggle and directions link; Stay zone filter and View room; room photo viewer open/close, guest stepper, booking request; dining menu sheet and photo enlarge open/close; Experiences and Gatherings "What is included"; membership sign-in tab switch, FAQ, enquiry form validation; plan-ahead tabs, demo fill, disabled "coming soon" tabs; login Register pill and demo fill; profile sign-in tabs. No sideways scroll on any page.
+- Fixed, phone-only in mobile.css:
+  - Gatherings: the open list scrolled inside the scrolling text column (nested scroll, last item sliced). Now one scroll area with a bottom fade.
+  - Room guest stepper buttons 32 → 40px.
+  - The translucent sticky header let bold headings show through the logo; solid #fcfaf6 at 760px and below (desktop keeps 0.94).
+- Every rule in mobile.css is still inside a max-width query.
+- Not changed: each page logs a CSP `frame-ancestors` block plus a 400 from the Keycloak check-sso iframe (localhost:8081). This happens at every screen size.
+
+## 2026-11-17 — Membership page: hide sales sections once a member signs in (uncommitted)
+- Request: after signing in with membership credentials, stop showing "Reserve your membership", the FAQ and the other pre-enrolment content.
+- `membership-member-hero.tsx`: new `ProspectOnly` (renders children only when the session has no membership) and `LedgerHeading` ("What is inside" for visitors; "Your privileges in full / Every voucher and coupon in your booklet" for members).
+- `membership/page.tsx`: the welcome keepsake box, the "Before you enrol" FAQ and the "Reserve your membership" enquiry are wrapped in `ProspectOnly`. The voucher ledger stays for members: it is the only place listing what each voucher is (the booklet shows counts only).
+- A guest signed in without a membership still sees the sales sections.
+- Checked in Chromium at 390 and 1440: signed out shows everything; signed in (Membership ID + OTP) hides the three sections and swaps the ledger heading, still hidden after reload; signing out brings them back; no page errors. Typecheck and eslint clean.
+
+## 2026-11-17 — Landing first screen lighter on phones; coordinates removed from plan-ahead (uncommitted)
+- Request: the start of the home page felt text-heavy and crowded on mobile; remove the resort coordinates from the plan-your-stay slideshow card.
+- `plan-ahead/plan-stay-portal.tsx`: removed the "16.3475° N, 75.6259° E · Biligi Ridge" badge; the slideshow counter stays. (The same badge is in `stay-editorial.tsx`, which is not imported anywhere; left alone.)
+- `home-opening.tsx`: the slide name in the hero note is now its own span (`hop-impression-label`); desktop text is unchanged.
+- `mobile.css` (760px and below):
+  - Hero: hide the location kicker, which repeats the headline and the statement kicker. Hide the slide name in the note, leaving "Artist's impression. Design subject to change." Guests and Check availability share a row, so the booking card is two rows.
+  - Statement: 16px lead, tighter gap, smaller credit.
+- Checks: screenshots at 390/360; plan-ahead page text has no coordinates; typecheck clean; mobile.css still fully max-width scoped. The eslint errors in home-opening.tsx:226 and plan-stay-portal.tsx were already there.
+
+## 2026-11-17 — Membership ledger on phones: slim tally, calmer motion (uncommitted)
+- Request: on mobile the privileges scroll and its animation overlapped and made the section unpleasant; keep a minimal effect.
+- Cause: at 760px and below the sticky tally stacked step, sketch, name, three rows and the bar: 404px tall, half the screen. Entries scrolled under it while their photos clip-revealed and zoomed and their lines slid up.
+- `mobile.css` (760px and below):
+  - The tally is a one-row strip (step · part name · "N / 180") underlined by the progress bar: 66px, opaque, soft shadow.
+  - Entries no longer clip-reveal or zoom their photos, and their lines no longer slide; lines fade in once (opacity, 0.4s).
+  - The progress bar filling as you scroll is kept.
+  - The per-part voucher/coupon counts stay in each entry's heading.
+- Checked by screenshots at 390 and 360 at three scroll depths. Desktop and tablet ledger unchanged; mobile.css still fully max-width scoped.
+
+## 2026-11-17T02:00:00+05:30 — Ritvik's UI/UX merged without touching our work (D-141)
+- Ashish: take Ritvik's UI and UX changes (incl. booking date validation and responsive layouts) without harming our backend or the new admin sections. Plan approved.
+- `git fetch`: `origin/Ritvik-Frontend` 2c164d9..0db0ede. Shared base 1d7885c. His work: merge ca6b085 (+ skills-lock.json) and 0db0ede (web + landing-page + DEVLOG only; no backend).
+- Safety: branch `backup/phase1-membership-pre-ritvik` (0f3ab72); work on `merge/ritvik-ui`; `git merge --no-ff --no-commit origin/Ritvik-Frontend`.
+- Conflicts and resolution: DEVLOG (kept both entries); styles.css (his file + an alias-token block and our D-131…D-140 classes; `#fff` on primary → `--primary-ink` for dark mode); App.tsx (his shell/theme/sign-in + our routing and menu rules; his dashboard only for roles with `dashboard`); Employees.tsx and Memberships.tsx (ours + his icons, headers, phone-card tables). Auto-merged: guest-auth.ts (our 8 s timeout kept), plan-stay-portal.tsx. Sales Performance tables also made phone cards.
+- Pins: `lucide-react` 1.73.0 (his lock's version), landing `keycloak-js` back to 26.2.5. `skills-lock.json` untracked again (`git rm --cached`; local copy restored).
+- Checks: `git diff --cached backup/phase1-membership-pre-ritvik -- ERP_DEV/services ERP_DEV/infra ERP_DEV/docs/02-architecture ...` empty. Web `npx vitest run` 61/61 (2 new: theme toggle; Manager keeps dashboard, admin doesn't), `npm run build`, `npm run lint` clean. Landing `npm run typecheck`, `npm run build` OK.
+- Not committed yet (ask first, Rule 7).
+
+## 2026-11-17T03:30:00+05:30 — Production release preparation (D-142)
+- Ashish: production repo https://github.com/quantumclktech/Quantumclk_Resort; push only production-ready work; plan first. Plan approved: clean snapshot history, hide fake flows, setup + architecture docs.
+- Read-only review: production repo reachable and empty (`git ls-remote` exit 0, no refs). Tracked files hold no secrets (realm secrets and SMTP are placeholders; only `.env.example` tracked). Dev history does (archived JwtTokenService secret), so production gets no history.
+- Found and removed fake flows: `/login` (OTP, booking ID, Google/Apple, demo fill, forgot-password modal, free Privilege Club box), `/profile` membership-ID "sample" sign-in and sample linking, stored fake sessions in `guest-session.ts`, `/plan-ahead` fake reservation confirmation and made-up phone, booking-card stored user. Unused CSS for the removed UI left in place on purpose (harmless; one selector is shared).
+- lead-service: V1 schema only; sample leads in `db/dev-seed/V1_1__dev_seed_leads.sql`, `spring.flyway.locations: ${LEAD_FLYWAY_LOCATIONS:classpath:db/migration}`. Dev lead_db held only the 5 seed leads (checked), tables dropped and re-migrated (first drop attempt failed on PowerShell quoting; service hit the checksum mismatch as expected; redone from bash).
+- Release tooling: root `.gitattributes` (export-ignore), `release/export.sh`, `RELEASING.md`, root `README.md`; docs index rewritten; 8 links to internal docs turned into plain text; ERP README status updated; DAY-ONE lists `run-lead-service.ps1`.
+- Checks: landing `npm run typecheck`, `npm run build` OK; lead-service `./mvnw -o test` 8/8; dry-run `git archive --worktree-attributes` 519 files, none excluded.
+- Not committed yet (ask first, Rule 7).
+
+## 2026-11-17T04:00:00+05:30 — Production repo: shipped files only, no tooling; hosting stays on ngrok (D-142 revised)
+- Ashish: no Vercel (keeps ngrok); push to the normal repo and to the production repo; the production repo holds only shipped things; no `.sh` or release tooling; undo what was added for that.
+- Q: undo scope -> A: only the release tooling (website fixes and lead dev seed kept). Q: production contents -> A: runtime + tests (no docs).
+- Removed (were untracked): root `.gitattributes`, `release/export.sh`, `RELEASING.md`, root `README.md`.
+- `ERP_DEV/README.md` no longer links to `docs/` (absent in production). `run-lead-service.ps1` adds the dev-seed location only if that folder exists.
+- Production copy is made with plain git commands (orphan `production` branch from `git archive` of the released commit), checked (file list, gitleaks, greps, builds and tests), then pushed.
+
+## 2026-11-17T09:45:00+05:30 — main is the current work
+- Ashish: remove what is in main, merge the working branch into main and make it the main branch. Plan approved.
+- `main` was 825f3fe (archived pre-restart code, same as `archive/hotel-draft`); `feature/phase1-membership` was 47 commits ahead, 0 behind. `git branch -f main feature/phase1-membership`; `git push origin main` fast-forwarded 825f3fe..61b1ea5 (no force). The old draft files are gone from main because the fresh-start commit 5d220ab removed them; the old code stays on `archive/hotel-draft` and tag `archive-hotel-draft-2026-11-15`.
+- GitHub default branch is still `ashish/backend_phase_1`; Ashish switches it to `main` in the repo settings (no gh CLI or token here).
+- Same session: Docker Desktop had stopped overnight (with Postgres, Keycloak, Redis, proxy, gateway, guest-service, both dev servers and ngrok). Restarted all; the staff ERP dev server had bound to ::1 only (502 on /erp/), restarted with `npm run dev -- --host 0.0.0.0`.
+
+## 2026-11-17T10:23:22+05:30 — Fix: New Gold Member form UI + DOB checks (feature/phase1-membership)
+- Ashish reported (screenshots): +91 prefix overlapping the mobile digits, misaligned DOB/Mobile/Email fields, DOB logic, and asked for a Country dropdown.
+- Cause 1: the global `input:not([type=radio]):not([type=checkbox])` padding out-ranked `.prefixed input`, so the input lost its left padding. Fixed with a selector of higher specificity (`web/src/styles.css`).
+- Cause 2: `label { display: grid }` stretched its rows when the DOB column grew (age pill), pushing Mobile/Email down and making Email taller. Fixed with `align-content: start`.
+- DOB: new `dobProblem()` in `web/src/smartFields.ts` rejects future dates (these used to show nothing and silently blocked Register), impossible dates, years before 1900 (`min=1900-01-01`) and under-18s; Register is blocked on any DOB problem. Tests added in `smartFields.test.ts`.
+- Country: asked Ashish; answer "Dropdown, India only". Now a `<select>` with India only, so D-133 is unchanged.
+- Verified: `npx vitest run` 62/62 passed; `npx tsc --noEmit` clean. Not checked in a browser by Claude. ESLint has no config (it fails to run; this was already the case).
+- Not committed (waiting for approval).

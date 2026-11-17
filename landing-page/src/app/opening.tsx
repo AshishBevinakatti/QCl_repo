@@ -150,8 +150,12 @@ export default function Opening({ slides }: { slides: HeroSlide[] }) {
         <motion.a
           ref={logoLink}
           className="opening-logo"
-          href="#opening-hero"
-          aria-label={settled ? "Golden Hills Resort, return to hero" : "Golden Hills Resort, skip intro"}
+          href="#top"
+          onClick={(e) => {
+            e.preventDefault();
+            window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+          }}
+          aria-label="Golden Hills Resort, return to top"
           style={enhanced ? { transform } : undefined}
         >
           <span className="opening-logo-lockup">

@@ -11,11 +11,19 @@ export type ExperienceCategory = {
   bookingNotes: string[];
   image: string;
   imageAlt: string;
+  /* Added for the day track (unit 3.23). `when` is read off this entry's own
+   * booking notes; `order` sorts the day; `sketch` replaces a stock photo
+   * that does not show this resort (OPEN_QUESTIONS Q-020) with a drawing. */
+  when?: string;
+  phase?: "day" | "sunset" | "evening";
+  order?: number;
+  sketch?: "zipline" | "picnic" | "bonfire" | "cinema";
 };
 
 export const resortExperiences: ExperienceCategory[] = [
   {
     name: "Romantic Candlelight Dinner",
+    when: "7:30 – 11 PM", phase: "evening", order: 6,
     tag: "Couples & Anniversaries",
     specs: "Couples · 2 Hours · Poolside Gazebo",
     duration: "2 Hours",
@@ -41,6 +49,7 @@ export const resortExperiences: ExperienceCategory[] = [
   },
   {
     name: "Poolside Sundowner Date",
+    when: "5 – 7 PM", phase: "sunset", order: 4,
     tag: "Couples & Milestones",
     specs: "Couples · 2 Hours · Pool Deck Loungers",
     duration: "2 Hours",
@@ -65,6 +74,7 @@ export const resortExperiences: ExperienceCategory[] = [
   },
   {
     name: "Under-the-Stars Movie Night",
+    when: "Select evenings", phase: "evening", order: 7, sketch: "cinema",
     tag: "Families & Couples",
     specs: "All Guests · 3–4 Hours · Butterfly Lawn",
     duration: "3–4 Hours",
@@ -89,6 +99,7 @@ export const resortExperiences: ExperienceCategory[] = [
   },
   {
     name: "Starlit Campfire & Acoustic Gathering",
+    when: "7 – 11 PM", phase: "evening", order: 5, sketch: "bonfire",
     tag: "Families & Groups",
     specs: "Groups & Families · 4 Hours · Butterfly Lawn",
     duration: "4 Hours",
@@ -113,6 +124,7 @@ export const resortExperiences: ExperienceCategory[] = [
   },
   {
     name: "Gourmet Garden & Lawn Picnic",
+    when: "11 AM – 4 PM", phase: "day", order: 3, sketch: "picnic",
     tag: "Families & Leisure",
     specs: "Families & Friends · 4 Hours · Manicured Lawns",
     duration: "4 Hours",
@@ -137,6 +149,7 @@ export const resortExperiences: ExperienceCategory[] = [
   },
   {
     name: "Adventure Sports Circuit",
+    when: "10 AM – 5 PM", phase: "day", order: 2, sketch: "zipline",
     tag: "Friends & Corporate Teams",
     specs: "Groups & Active Guests · 2–4 Hours · Activity Zone",
     duration: "2–4 Hours",
@@ -161,6 +174,7 @@ export const resortExperiences: ExperienceCategory[] = [
   },
   {
     name: "Full-Day Outing Experience",
+    when: "10 AM – 5 PM", phase: "day", order: 1,
     tag: "All-Inclusive Day Package",
     specs: "Groups & Day Visitors · 10:00 AM – 05:00 PM · Resort Grounds",
     duration: "7 Hours",

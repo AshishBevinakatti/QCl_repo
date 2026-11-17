@@ -57,7 +57,7 @@ Blockers / missing resources: <list or none>
 - Phase/unit: 3.2 Booking engine        Branch: feature/3.2-booking-engine
 - What: <what was done>
 - Why: <reason / requirement refs: REQ-…, SOW §…>
-- Resources used: <paths from /run/media/ash_63/DATA/ERP_Resouce, or "none">
+- Resources used: <paths from /run/media/ash_63/DATA/Intership wrok/ERP_Resouce, or "none">
 - Files changed: <list or "see commit <hash>">
 - Commands that changed state: <installs, migrations, git operations>
 - Verification: <tests run, results, manual checks, what was NOT verified>
@@ -68,7 +68,7 @@ Blockers / missing resources: <list or none>
 
 ## RESOURCES_LOG.md row
 ```markdown
-| Date | Path (under /run/media/ash_63/DATA/ERP_Resouce) | sha256 (key docs) | Used for | Phase/unit | Extract location |
+| Date | Path (under /run/media/ash_63/DATA/Intership wrok/ERP_Resouce) | sha256 (key docs) | Used for | Phase/unit | Extract location |
 ```
 
 ## ADR (docs/02-architecture/adr/ADR-NNN-slug.md)

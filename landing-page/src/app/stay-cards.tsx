@@ -24,7 +24,25 @@ export type RoomCategory = {
   mealPlans: string[];
   policyNotes: string[];
   images: RoomImage[];
+  /** URL segment for the room's own page, e.g. /stay/premium-queen. */
+  slug: string;
+  /** Singular name used on the room's own page. */
+  title: string;
+  /** The category name the ERP guest portal already uses, so sales sees one label. */
+  inquiryName: string;
+  /** Most guests the booking card allows before an extra bed is added. */
+  maxGuests: number;
+  /** Whether the +₹600 / night rollaway bed is offered. */
+  extraBed: boolean;
+  /** Short, scannable facts for the room page, each taken from this entry's own data. */
+  features: RoomFeature[];
 };
+
+export type RoomFeatureIcon =
+  | "bed" | "ruler" | "shower" | "bath" | "wifi" | "desk" | "sofa" | "leaf"
+  | "home" | "lock" | "paw" | "pool" | "spa" | "users" | "dining";
+
+export type RoomFeature = { icon: RoomFeatureIcon; title: string; detail: string };
 
 function RoomCardMedia({
   images,
@@ -114,7 +132,10 @@ export default function StayCards({ rooms }: { rooms: RoomCategory[] }) {
 
         {/* Card body */}
         <div className="rc-body">
-          <h3 className="rc-name">{room.name}</h3>
+          <h3 className="rc-name">
+            {/* Stretched over the whole card: clicking anywhere opens the room page. */}
+            <Link href={`/stay/${room.slug}`} className="rc-name-link">{room.name}</Link>
+          </h3>
           <p className="rc-desc">{room.lead}</p>
 
           {/* Stats row */}
@@ -180,8 +201,8 @@ export default function StayCards({ rooms }: { rooms: RoomCategory[] }) {
                   <span className="rc-price-sub">{room.taxNote || "Excl. 12% GST"}</span>
                 </div>
               )}
-              <Link href="/plan-ahead#bookings" className="rc-cta-btn">
-                Book Now
+              <Link href={`/stay/${room.slug}#booking`} className="rc-cta-btn">
+                Book now
               </Link>
             </div>
           </div>

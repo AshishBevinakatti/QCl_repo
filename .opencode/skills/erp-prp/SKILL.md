@@ -1,6 +1,6 @@
 ---
 name: erp-prp
-description: Mandatory operating rules for ALL work on the Golden Hills Resort ERP project (QuantumCLK Technologies) - planning, coding, testing, documentation, git commits, and phase progress. Defines the only allowed resource folder (/run/media/ash_63/DATA/ERP_Resouce), the phase-by-phase development flow, record keeping, day-one-ready documentation, ask-before-continuing gates, ask-before-commit rules and the git workflow. Load this skill at the start of every session in this repository and whenever the user mentions the ERP, ERP_PRP, resort, SOW, a phase, a module (ERP-01..ERP-14), documentation, or committing, even if they do not ask for it by name.
+description: Mandatory operating rules for ALL work on the Golden Hills Resort ERP project (QuantumCLK Technologies) - planning, coding, testing, documentation, git commits, and phase progress. Defines the only allowed resource folder (/run/media/ash_63/DATA/Intership wrok/ERP_Resouce), the phase-by-phase development flow, record keeping, day-one-ready documentation, ask-before-continuing gates, ask-before-commit rules and the git workflow. Load this skill at the start of every session in this repository and whenever the user mentions the ERP, ERP_PRP, resort, SOW, a phase, a module (ERP-01..ERP-14), documentation, or committing, even if they do not ask for it by name.
 compatibility: opencode
 ---
 
@@ -36,7 +36,7 @@ Before ending a session or when the user stops, update `STATE.md` so the next se
 
 ## Rule 1 — Resources: one folder only
 
-**Allowed resource root: `/run/media/ash_63/DATA/ERP_Resouce`** (spelling is intentional — it is the real folder name).
+**Allowed resource root: `/run/media/ash_63/DATA/Intership wrok/ERP_Resouce`** (spelling is intentional — it is the real folder name; the path contains a space, so always quote it in shell commands). Moved here from `/run/media/ash_63/DATA/ERP_Resouce` on 2026-11-15 (owner decision).
 
 - All project inputs — the SOW, the Client Requirements & Decision Pack, the Landing Page checklist, client answers, branding assets, images, sample data, sample forms/invoices, hardware sheets, API documents — come from this folder and nowhere else.
 - **Read-only.** Never create, edit, rename, move or delete anything inside it.

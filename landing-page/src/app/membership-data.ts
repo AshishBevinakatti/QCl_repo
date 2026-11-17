@@ -394,6 +394,23 @@ export const membershipCategories: MembershipCategory[] = [
   },
 ];
 
+/* The keepsake box, as objects rather than one long line of product names.
+ * Every word here comes from welcomeKitItems below, split into the thing and
+ * its qualifier so the page can show an icon and a short name. */
+export type KitItem = {
+  icon: "tote" | "flask" | "mug" | "pouch" | "card";
+  name: string;
+  detail: string;
+};
+
+export const welcomeKit: KitItem[] = [
+  { icon: "tote", name: "Jute resort tote", detail: "Handcrafted, eco-friendly" },
+  { icon: "flask", name: "Monogrammed flask", detail: "Digital temperature readout" },
+  { icon: "mug", name: "Ceramic coffee mug", detail: "Matte black, heritage" },
+  { icon: "pouch", name: "Travel organiser pouch", detail: "Water-resistant" },
+  { icon: "card", name: "Membership card", detail: "Gold metallic, QR key" },
+];
+
 export const membershipStats = {
   totalPrivileges: 180,
   totalVouchers: 55,
