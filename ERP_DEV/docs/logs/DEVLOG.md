@@ -435,3 +435,9 @@ History before 2026-11-15 is in `archive/hotel-draft:ERP_DEV/docs/logs/DEVLOG.md
 - Removed (were untracked): root `.gitattributes`, `release/export.sh`, `RELEASING.md`, root `README.md`.
 - `ERP_DEV/README.md` no longer links to `docs/` (absent in production). `run-lead-service.ps1` adds the dev-seed location only if that folder exists.
 - Production copy is made with plain git commands (orphan `production` branch from `git archive` of the released commit), checked (file list, gitleaks, greps, builds and tests), then pushed.
+
+## 2026-11-17T09:45:00+05:30 — main is the current work
+- Ashish: remove what is in main, merge the working branch into main and make it the main branch. Plan approved.
+- `main` was 825f3fe (archived pre-restart code, same as `archive/hotel-draft`); `feature/phase1-membership` was 47 commits ahead, 0 behind. `git branch -f main feature/phase1-membership`; `git push origin main` fast-forwarded 825f3fe..61b1ea5 (no force). The old draft files are gone from main because the fresh-start commit 5d220ab removed them; the old code stays on `archive/hotel-draft` and tag `archive-hotel-draft-2026-11-15`.
+- GitHub default branch is still `ashish/backend_phase_1`; Ashish switches it to `main` in the repo settings (no gh CLI or token here).
+- Same session: Docker Desktop had stopped overnight (with Postgres, Keycloak, Redis, proxy, gateway, guest-service, both dev servers and ngrok). Restarted all; the staff ERP dev server had bound to ::1 only (502 on /erp/), restarted with `npm run dev -- --host 0.0.0.0`.

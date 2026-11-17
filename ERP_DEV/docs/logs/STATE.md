@@ -35,6 +35,8 @@ Done:
 
 17. Production readiness (D-142): fake website flows removed, lead seed data dev-only, docs index and READMEs updated. Production repo gets a plain-git copy of shipped files only (orphan `production` branch, tag per release); no release tooling. Hosting stays on ngrok. Landing typecheck + build OK; lead-service 8/8; dev lead_db recreated (V1 + V1.1 dev seed, 5 leads).
 
+18. `main` on origin = current work (fast-forwarded to `feature/phase1-membership`); GitHub default branch to be switched to `main` by Ashish. Production repo push waits on rerunning access-service, guest-service and Keycloak-extension tests (first run broke when Docker stopped).
+
 Next action:
 1. Present changes to Ashish and request commit approval (Rule 7).
 2. Live check on phone / browser via tunnel.
